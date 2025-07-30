@@ -13,7 +13,8 @@ bool Render()
         window_resized = false;
     } 
 
-    Model_JointMat_UpdateAndUpload();
+    if (models_bone_animated.len)
+        Model_JointMat_UpdateAndUpload();
 
     // DRAW
 
@@ -25,8 +26,8 @@ bool Render()
     }
 
     SDL_GPUTexture* swapchain_texture;
-    Uint32 swapchain_texture_width = window_width;
-    Uint32 swapchain_texture_height = window_height;
+    Uint32 swapchain_texture_width;
+    Uint32 swapchain_texture_height;
     if (!SDL_WaitAndAcquireGPUSwapchainTexture
     (
         command_buffer_draw,
@@ -57,7 +58,8 @@ bool Render()
         .texture = msaa_texture,
         .clear_color = (SDL_FColor){ 0.1f, 0.2f, 0.3f, 1.0f },
         .load_op = SDL_GPU_LOADOP_CLEAR,
-        .store_op = SDL_GPU_STOREOP_STORE,
+        .store_op = SDL_GPU_STOREOP_RESOLVE,
+        .resolve_texture = swapchain_texture,
         .cycle = true
     };
 
@@ -73,7 +75,7 @@ bool Render()
         .cycle = true
     };
 
-    SDL_GPURenderPass* render_pass_3d = SDL_BeginGPURenderPass
+    SDL_GPURenderPass* render_pass = SDL_BeginGPURenderPass
     (
         command_buffer_draw,
         &color_target_info,
@@ -81,14 +83,14 @@ bool Render()
         &depth_stencil_target_info
     );
 
-    if (!render_pass_3d)
+    if (!render_pass)
     {
         SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin render pass: %s", SDL_GetError());
         SDL_CancelGPUCommandBuffer(command_buffer_draw);
         return true;
     }
 
-    SDL_BindGPUGraphicsPipeline(render_pass_3d, pipeline_unanimated);
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_unanimated);
     
     // DRAW UNANIMATED MODELS
 
@@ -103,7 +105,7 @@ bool Render()
         
         SDL_BindGPUVertexBuffers
         (
-            render_pass_3d, 
+            render_pass, 
             0, // vertex buffer slot
             (SDL_GPUBufferBinding[])
             {
@@ -117,7 +119,7 @@ bool Render()
         
         SDL_BindGPUIndexBuffer
         (
-            render_pass_3d, 
+            render_pass, 
             &(SDL_GPUBufferBinding)
             { 
                 .buffer = models_unanimated.arr[i].index_buffer, 
@@ -128,7 +130,7 @@ bool Render()
         
         SDL_BindGPUFragmentSamplers
         (
-            render_pass_3d, 
+            render_pass, 
             0, // fragment sampler slot
             &(SDL_GPUTextureSamplerBinding)
             { 
@@ -140,7 +142,7 @@ bool Render()
 
         SDL_DrawGPUIndexedPrimitives
         (
-            render_pass_3d,
+            render_pass,
             (Uint32)models_unanimated.arr[i].index_count, // num_indices
             1,  // num_instances
             0,  // first_index
@@ -151,10 +153,10 @@ bool Render()
 
     // DRAW BONE ANIMATED MODELS
 
-    SDL_BindGPUGraphicsPipeline(render_pass_3d, pipeline_bone_animated);
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_bone_animated);
     SDL_BindGPUVertexStorageBuffers
     (
-        render_pass_3d,
+        render_pass,
         0, // storage buffer slot
         &joint_matrix_storage_buffer,
         1 // storage buffer count
@@ -176,7 +178,7 @@ bool Render()
 
         SDL_BindGPUVertexBuffers
         (
-            render_pass_3d, 
+            render_pass, 
             0, // vertex buffer slot
             (SDL_GPUBufferBinding[])
             {
@@ -190,7 +192,7 @@ bool Render()
         
         SDL_BindGPUIndexBuffer
         (
-            render_pass_3d, 
+            render_pass, 
             &(SDL_GPUBufferBinding)
             { 
                 .buffer = models_bone_animated.arr[i].index_buffer, 
@@ -201,7 +203,7 @@ bool Render()
         
         SDL_BindGPUFragmentSamplers
         (
-            render_pass_3d, 
+            render_pass, 
             0, // fragment sampler slot
             &(SDL_GPUTextureSamplerBinding)
             { 
@@ -213,7 +215,7 @@ bool Render()
 
         SDL_DrawGPUIndexedPrimitives
         (
-            render_pass_3d,
+            render_pass,
             (Uint32)models_bone_animated.arr[i].index_count, // num_indices
             1,  // num_instances
             0,  // first_index
@@ -222,34 +224,9 @@ bool Render()
         );
     }
 
-    SDL_EndGPURenderPass(render_pass_3d);
-
     // DRAW UI
 
-    SDL_GPUColorTargetInfo ui_color_target_info = 
-    {
-        .texture = msaa_texture,
-        .load_op = SDL_GPU_LOADOP_LOAD,
-        .store_op = SDL_GPU_STOREOP_RESOLVE,
-        .resolve_texture = swapchain_texture
-    };
-
-    // Begin the UI render pass. Note the NULL for depth/stencil info.
-    SDL_GPURenderPass* render_pass_ui = SDL_BeginGPURenderPass
-    (
-        command_buffer_draw,
-        &ui_color_target_info,
-        1,
-        NULL // No depth buffer
-    );
-    if (!render_pass_ui)
-    {
-        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin UI render pass: %s", SDL_GetError());
-        SDL_CancelGPUCommandBuffer(command_buffer_draw); // Cancel if pass fails
-        return true;
-    }
-
-    SDL_BindGPUGraphicsPipeline(render_pass_ui, pipeline_text);
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_text);
     
     char test_text[256];
     // snprintf(test_text, sizeof(test_text), "Camera Position: (%.2f, %.2f, %.2f)\nVertices: %d, Indices: %d", camera.position[0], camera.position[1], camera.position[2], text_renderable.vertex_count, text_renderable.index_count);
@@ -285,7 +262,7 @@ bool Render()
 
     SDL_BindGPUVertexBuffers
     (
-        render_pass_ui,
+        render_pass,
         0, // vertex buffer slot
         (SDL_GPUBufferBinding[])
         {
@@ -299,7 +276,7 @@ bool Render()
 
     SDL_BindGPUIndexBuffer
     (
-        render_pass_ui,
+        render_pass,
         &(SDL_GPUBufferBinding)
         { 
             .buffer = text_renderable.index_buffer, 
@@ -313,7 +290,7 @@ bool Render()
     {
         SDL_BindGPUFragmentSamplers
         (
-            render_pass_ui,
+            render_pass,
             0, // fragment sampler slot
             &(SDL_GPUTextureSamplerBinding)
             { 
@@ -325,7 +302,7 @@ bool Render()
     
         SDL_DrawGPUIndexedPrimitives
         (
-            render_pass_ui,
+            render_pass,
             sequence->num_indices, // num_indices
             1, // num_instances
             index_offset, // first_index
@@ -337,7 +314,7 @@ bool Render()
         vertex_offset += sequence->num_vertices;
     }
 
-    SDL_EndGPURenderPass(render_pass_ui);
+    SDL_EndGPURenderPass(render_pass);
     
     SDL_SubmitGPUCommandBuffer(command_buffer_draw);
 

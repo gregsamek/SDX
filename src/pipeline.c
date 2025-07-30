@@ -334,16 +334,16 @@ bool Pipeline_Text_Init()
                     .enable_color_write_mask = true
                 }
             }},
-            .has_depth_stencil_target = false,
+            .has_depth_stencil_target = true,
             .depth_stencil_format = depth_texture_format
         },
-        // .depth_stencil_state = (SDL_GPUDepthStencilState)
-        // {
-        //     .enable_depth_test = false,
-        //     .enable_depth_write = false,
-        //     .enable_stencil_test = false,
-        //     .compare_op = SDL_GPU_COMPAREOP_LESS,
-        // },
+        .depth_stencil_state = (SDL_GPUDepthStencilState)
+        {
+            .enable_depth_test = false,
+            .enable_depth_write = false,
+            .enable_stencil_test = false,
+            .compare_op = SDL_GPU_COMPAREOP_LESS,
+        },
         .rasterizer_state = (SDL_GPURasterizerState)
         {
             .cull_mode = SDL_GPU_CULLMODE_NONE,
@@ -381,7 +381,7 @@ bool Pipeline_Text_Init()
         .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
         .vertex_shader = vertex_shader,
         .fragment_shader = fragment_shader,
-        .multisample_state = (SDL_GPUMultisampleState) { .sample_count = SDL_GPU_SAMPLECOUNT_4 }
+        .multisample_state = (SDL_GPUMultisampleState) { .sample_count = msaa_level }
     };
 
     pipeline_text = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
