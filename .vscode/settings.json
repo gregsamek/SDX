@@ -1,0 +1,26 @@
+{
+    "files.associations": {
+        "tinyobj.h": "c",
+        "sdl.h": "c",
+        "ios": "c",
+        "sdl_image.h": "c",
+        "sdl_main.h": "c",
+        "camera.h": "c",
+        "sampler.h": "c",
+        "pipeline.h": "c",
+        "helper.h": "c",
+        "sstream": "c",
+        "init.h": "c",
+        "gltf.h": "c",
+        "texture.h": "c",
+        "type_traits": "cpp",
+        "utility": "cpp",
+        "limits": "cpp",
+        "raymath.h": "c",
+        "math.h": "c",
+        "cglm.h": "c",
+        "globals.h": "c",
+        "events.h": "c",
+        "sdl_ttf.h": "c"
+    }
+}

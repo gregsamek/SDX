@@ -1,0 +1,76 @@
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+*.DS_Store
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+# Media
+*.png
+*.gif
+*.jpg
+*.jpeg
+*.webp
+*.svg
+*.ico
+*.bmp
+*.tiff
+*.tif
+*.wav
+*.mp3
+*.ttf
+fonts/
+
+# Build files
+SDL3_shadercross-3.0.0-darwin-arm64-x64/
+CMakeFiles/
+CMakeCache.txt
+*.cmake
+Makefile
