@@ -90,8 +90,6 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
 
 bool HandleWindowResize()
 {
-	int old_window_width = window_width;
-	int old_window_height = window_height;
 	SDL_GetWindowSizeInPixels(window, &window_width, &window_height);
 
 	SDL_WaitForGPUIdle(gpu_device);
