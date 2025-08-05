@@ -147,6 +147,101 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
     }
 }
 
+static bool Render_Text(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
+{
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_text);
+    
+    char test_text[256];
+    // snprintf(test_text, sizeof(test_text), "Camera Position: (%.2f, %.2f, %.2f)\nVertices: %d, Indices: %d", camera.position[0], camera.position[1], camera.position[2], text_renderable.vertex_count, text_renderable.index_count);
+    snprintf(test_text, sizeof(test_text), "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789\n!@#$%%^&*()_+[]{}|;':\",.<>?/~`");
+    
+    // TODO updating text should probably happen separately at the beginning of the frame 
+    Text_UpdateAndUpload(test_text);
+    
+    int text_width, text_height;
+    if (!TTF_GetTextSize(text_renderable.ttf_text, &text_width, &text_height))
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to get text size");
+        return false;
+    }
+
+    // SDL_Log("Text Width: %d, Text Height: %d", text_width, text_height);
+
+    // TODO this relative target should be specified in the text renderable
+    float text_target_width = 0.25f;
+    float text_scale_correction = text_target_width * (float)virtual_screen_texture_width / (float)text_width;
+    
+    mat4 model_matrix;
+    glm_mat4_identity(model_matrix);
+    // vec3 scale_vec = { text_scale_correction, text_scale_correction, 1.0f };
+    // glm_scale(model_matrix, scale_vec);
+    
+    mat4 projection_matrix_ortho;
+    glm_ortho(0.0f, (float)virtual_screen_texture_width, -(float)virtual_screen_texture_height, 0.0f, 0.0f, 1.0f, projection_matrix_ortho);
+    // glm_ortho(0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, projection_matrix_ortho);
+    
+    mat4 mvp_matrix;
+    glm_mat4_mul(projection_matrix_ortho, model_matrix, mvp_matrix);
+    
+    SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp_matrix, sizeof(mvp_matrix));
+
+    SDL_BindGPUVertexBuffers
+    (
+        render_pass,
+        0, // vertex buffer slot
+        (SDL_GPUBufferBinding[])
+        {
+            { 
+                .buffer = text_renderable.vertex_buffer, 
+                .offset = 0 
+            },
+        },
+        1 // vertex buffer count
+    );
+
+    SDL_BindGPUIndexBuffer
+    (
+        render_pass,
+        &(SDL_GPUBufferBinding)
+        { 
+            .buffer = text_renderable.index_buffer, 
+            .offset = 0 
+        },
+        SDL_GPU_INDEXELEMENTSIZE_32BIT
+    );
+
+    int index_offset = 0, vertex_offset = 0;
+    for (TTF_GPUAtlasDrawSequence* sequence = text_renderable.draw_sequence; sequence != NULL; sequence = sequence->next)
+    {
+        SDL_BindGPUFragmentSamplers
+        (
+            render_pass,
+            0, // fragment sampler slot
+            &(SDL_GPUTextureSamplerBinding)
+            { 
+                .texture = sequence->atlas_texture, 
+                .sampler = default_texture_sampler 
+            },
+            1 // num_bindings
+        );
+    
+        SDL_DrawGPUIndexedPrimitives
+        (
+            render_pass,
+            sequence->num_indices, // num_indices
+            1, // num_instances
+            index_offset, // first_index
+            vertex_offset, // vertex_offset
+            0  // first_instance
+        );
+
+        index_offset += sequence->num_indices;
+        vertex_offset += sequence->num_vertices;
+    }
+
+    return true;
+}
+
 bool Render()
 {
     if (window_resized)
@@ -158,10 +253,7 @@ bool Render()
         window_resized = false;
     } 
 
-    if (models_bone_animated.len)
-        Model_JointMat_UpdateAndUpload();
-
-    // DRAW
+    if (models_bone_animated.len) Model_JointMat_UpdateAndUpload();
 
     SDL_GPUCommandBuffer* command_buffer_draw = SDL_AcquireGPUCommandBuffer(gpu_device);
     if (command_buffer_draw == NULL)
@@ -224,94 +316,14 @@ bool Render()
 
     Render_BoneAnimated(virtual_render_pass, command_buffer_draw);
 
-    // DRAW UI
-
-    SDL_BindGPUGraphicsPipeline(virtual_render_pass, pipeline_text);
-    
-    char test_text[256];
-    // snprintf(test_text, sizeof(test_text), "Camera Position: (%.2f, %.2f, %.2f)\nVertices: %d, Indices: %d", camera.position[0], camera.position[1], camera.position[2], text_renderable.vertex_count, text_renderable.index_count);
-    snprintf(test_text, sizeof(test_text), "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789\n!@#$%%^&*()_+[]{}|;':\",.<>?/~`");
-    Text_UpdateAndUpload(test_text);
-    
-    int text_width, text_height;
-    if (!TTF_GetTextSize(text_renderable.ttf_text, &text_width, &text_height))
+    // TODO need to overhaul text rendering
+    if (text_renderable.vertex_buffer && text_renderable.index_buffer)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to get text size");
-        return false;
-    }
-
-    // SDL_Log("Text Width: %d, Text Height: %d", text_width, text_height);
-
-    // TODO this relative target should be specified in the text renderable
-    float text_target_width = 0.25f;
-    float text_scale_correction = text_target_width * (float)virtual_screen_texture_width / (float)text_width;
-    
-    mat4 model_matrix;
-    glm_mat4_identity(model_matrix);
-    // vec3 scale_vec = { text_scale_correction, text_scale_correction, 1.0f };
-    // glm_scale(model_matrix, scale_vec);
-    
-    mat4 projection_matrix_ortho;
-    glm_ortho(0.0f, (float)virtual_screen_texture_width, -(float)virtual_screen_texture_height, 0.0f, 0.0f, 1.0f, projection_matrix_ortho);
-    // glm_ortho(0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, projection_matrix_ortho);
-    
-    mat4 mvp_matrix;
-    glm_mat4_mul(projection_matrix_ortho, model_matrix, mvp_matrix);
-    
-    SDL_PushGPUVertexUniformData(command_buffer_draw, 0, &mvp_matrix, sizeof(mvp_matrix));
-
-    SDL_BindGPUVertexBuffers
-    (
-        virtual_render_pass,
-        0, // vertex buffer slot
-        (SDL_GPUBufferBinding[])
+        if (!Render_Text(virtual_render_pass, command_buffer_draw))
         {
-            { 
-                .buffer = text_renderable.vertex_buffer, 
-                .offset = 0 
-            },
-        },
-        1 // vertex buffer count
-    );
-
-    SDL_BindGPUIndexBuffer
-    (
-        virtual_render_pass,
-        &(SDL_GPUBufferBinding)
-        { 
-            .buffer = text_renderable.index_buffer, 
-            .offset = 0 
-        },
-        SDL_GPU_INDEXELEMENTSIZE_32BIT
-    );
-
-    int index_offset = 0, vertex_offset = 0;
-    for (TTF_GPUAtlasDrawSequence* sequence = text_renderable.draw_sequence; sequence != NULL; sequence = sequence->next)
-    {
-        SDL_BindGPUFragmentSamplers
-        (
-            virtual_render_pass,
-            0, // fragment sampler slot
-            &(SDL_GPUTextureSamplerBinding)
-            { 
-                .texture = sequence->atlas_texture, 
-                .sampler = default_texture_sampler 
-            },
-            1 // num_bindings
-        );
-    
-        SDL_DrawGPUIndexedPrimitives
-        (
-            virtual_render_pass,
-            sequence->num_indices, // num_indices
-            1, // num_instances
-            index_offset, // first_index
-            vertex_offset, // vertex_offset
-            0  // first_instance
-        );
-
-        index_offset += sequence->num_indices;
-        vertex_offset += sequence->num_vertices;
+            SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to render text");
+            return true;
+        }
     }
 
     SDL_EndGPURenderPass(virtual_render_pass);
@@ -370,6 +382,7 @@ bool Render()
 
     SDL_BindGPUGraphicsPipeline(swapchain_render_pass, pipeline_fullscreen_quad);
 
+    mat4 projection_matrix_ortho;
     glm_ortho(0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, projection_matrix_ortho);
     SDL_PushGPUVertexUniformData(command_buffer_draw, 0, &projection_matrix_ortho, sizeof(projection_matrix_ortho));
 
