@@ -1,6 +1,7 @@
 #include "render.h"
 #include "globals.h"
 #include "text.h"
+#include "init.h"
 
 static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
 {
@@ -8,8 +9,8 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
 
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_unanimated);
 
-    mat4 projection_matrix_ortho;
-    glm_ortho(-2.0f, 2.0f, -2.0f, 2.0f, 0.0f, 1.0f, projection_matrix_ortho);
+    // mat4 projection_matrix_ortho;
+    // glm_ortho(-2.0f, 2.0f, -2.0f, 2.0f, 0.0f, 1.0f, projection_matrix_ortho);
 
     for (size_t i = 0; i < models_unanimated.len; i++)
     {
@@ -17,8 +18,8 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         glm_mat4_identity(model_matrix);
         
         mat4 mvp_matrix;
-        // glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
-        glm_mat4_mul(projection_matrix_ortho, model_matrix, mvp_matrix);
+        glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
+        // glm_mat4_mul(projection_matrix_ortho, model_matrix, mvp_matrix);
         SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp_matrix, sizeof(mvp_matrix));
         
         SDL_BindGPUVertexBuffers

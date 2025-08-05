@@ -9,7 +9,8 @@ typedef Uint8 InputState; enum
     InputState_COUNT,
 };
 
-bool HandleWindowResize();
+#define HandleWindowResize() Init_RenderTargets()
+
 bool HandleEvent_InputState_DEFAULT(SDL_Event* event);
 
 #endif // EVENTS_H
