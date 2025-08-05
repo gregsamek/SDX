@@ -2,6 +2,6 @@
 #define UPDATE_H
 
 bool Update();
-void FrameRate_Update(void);
+void Update_FrameRate(void);
 
 #endif // UPDATE_H

@@ -18,7 +18,7 @@ SDL_AppResult SDL_AppIterate(void *appstate)
         return SDL_APP_FAILURE;
     }
 
-    FrameRate_Update();
+    Update_FrameRate();
     
     return SDL_APP_CONTINUE;
 }

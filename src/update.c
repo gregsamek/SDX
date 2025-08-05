@@ -19,7 +19,7 @@ bool Update()
     return true;
 }
 
-void FrameRate_Update(void)
+void Update_FrameRate(void)
 {
     #define FRAME_TIME_ARRAY_SIZE 512
     static Uint64 previous_frame_end_ticks = 0;
