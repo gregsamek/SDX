@@ -2,8 +2,78 @@
 #include "globals.h"
 #include "text.h"
 
+static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
+{
+    if (!models_unanimated.len) return;
+
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_unanimated);
+
+    mat4 projection_matrix_ortho;
+    glm_ortho(-2.0f, 2.0f, -2.0f, 2.0f, 0.0f, 1.0f, projection_matrix_ortho);
+
+    for (size_t i = 0; i < models_unanimated.len; i++)
+    {
+        mat4 model_matrix;
+        glm_mat4_identity(model_matrix);
+        
+        mat4 mvp_matrix;
+        // glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
+        glm_mat4_mul(projection_matrix_ortho, model_matrix, mvp_matrix);
+        SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp_matrix, sizeof(mvp_matrix));
+        
+        SDL_BindGPUVertexBuffers
+        (
+            render_pass, 
+            0, // vertex buffer slot
+            (SDL_GPUBufferBinding[])
+            {
+                { 
+                    .buffer = models_unanimated.arr[i].vertex_buffer, 
+                    .offset = 0 
+                },
+            }, 
+            1 // vertex buffer count
+        );            
+        
+        SDL_BindGPUIndexBuffer
+        (
+            render_pass, 
+            &(SDL_GPUBufferBinding)
+            { 
+                .buffer = models_unanimated.arr[i].index_buffer, 
+                .offset = 0 
+            }, 
+            SDL_GPU_INDEXELEMENTSIZE_16BIT
+        );
+        
+        SDL_BindGPUFragmentSamplers
+        (
+            render_pass, 
+            0, // fragment sampler slot
+            &(SDL_GPUTextureSamplerBinding)
+            { 
+                .texture = models_unanimated.arr[i].texture, 
+                .sampler = default_texture_sampler 
+            }, 
+            1 // num_bindings
+        );
+
+        SDL_DrawGPUIndexedPrimitives
+        (
+            render_pass,
+            (Uint32)models_unanimated.arr[i].index_count, // num_indices
+            1,  // num_instances
+            0,  // first_index
+            0,  // vertex_offset
+            0   // first_instance
+        );
+    }
+}
+
 static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
 {
+    if (!models_bone_animated.len) return;
+
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_bone_animated);
     SDL_BindGPUVertexStorageBuffers
     (
@@ -149,71 +219,8 @@ bool Render()
             .max_depth = 1.0f
         }
     );
-
-    SDL_BindGPUGraphicsPipeline(virtual_render_pass, pipeline_unanimated);
-
-    mat4 projection_matrix_ortho;
-    glm_ortho(-2.0f, 2.0f, -2.0f, 2.0f, 0.0f, 1.0f, projection_matrix_ortho);
     
-    // DRAW UNANIMATED MODELS
-
-    // for (size_t i = 0; i < models_unanimated.len; i++)
-    // {
-    //     mat4 model_matrix;
-    //     glm_mat4_identity(model_matrix);
-        
-    //     mat4 mvp_matrix;
-    //     // glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
-    //     glm_mat4_mul(projection_matrix_ortho, model_matrix, mvp_matrix);
-    //     SDL_PushGPUVertexUniformData(command_buffer_draw, 0, &mvp_matrix, sizeof(mvp_matrix));
-        
-    //     SDL_BindGPUVertexBuffers
-    //     (
-    //         virtual_render_pass, 
-    //         0, // vertex buffer slot
-    //         (SDL_GPUBufferBinding[])
-    //         {
-    //             { 
-    //                 .buffer = models_unanimated.arr[i].vertex_buffer, 
-    //                 .offset = 0 
-    //             },
-    //         }, 
-    //         1 // vertex buffer count
-    //     );            
-        
-    //     SDL_BindGPUIndexBuffer
-    //     (
-    //         virtual_render_pass, 
-    //         &(SDL_GPUBufferBinding)
-    //         { 
-    //             .buffer = models_unanimated.arr[i].index_buffer, 
-    //             .offset = 0 
-    //         }, 
-    //         SDL_GPU_INDEXELEMENTSIZE_16BIT
-    //     );
-        
-    //     SDL_BindGPUFragmentSamplers
-    //     (
-    //         virtual_render_pass, 
-    //         0, // fragment sampler slot
-    //         &(SDL_GPUTextureSamplerBinding)
-    //         { 
-    //             .texture = models_unanimated.arr[i].texture, 
-    //             .sampler = default_texture_sampler 
-    //         }, 
-    //         1 // num_bindings
-    //     );
-
-    //     SDL_DrawGPUIndexedPrimitives
-    //     (
-    //         virtual_render_pass,
-    //         (Uint32)models_unanimated.arr[i].index_count, // num_indices
-    //         1,  // num_instances
-    //         0,  // first_index
-    //         0,  // vertex_offset
-    //         0   // first_instance
-    //     );
-    // }
+    Render_Unanimated(virtual_render_pass, command_buffer_draw);
 
     Render_BoneAnimated(virtual_render_pass, command_buffer_draw);
 
@@ -244,6 +251,7 @@ bool Render()
     // vec3 scale_vec = { text_scale_correction, text_scale_correction, 1.0f };
     // glm_scale(model_matrix, scale_vec);
     
+    mat4 projection_matrix_ortho;
     glm_ortho(0.0f, (float)virtual_screen_texture_width, -(float)virtual_screen_texture_height, 0.0f, 0.0f, 1.0f, projection_matrix_ortho);
     // glm_ortho(0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 1.0f, projection_matrix_ortho);
     
