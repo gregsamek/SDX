@@ -16,11 +16,11 @@ void Camera_Update()
     }
     if (keyboard_state[SDL_SCANCODE_A])
     {
-        move_direction[0] += 1.0f;
+        move_direction[0] -= 1.0f;
     }
     if (keyboard_state[SDL_SCANCODE_D])
     {
-        move_direction[0] -= 1.0f;
+        move_direction[0] += 1.0f;
     }
     if (keyboard_state[SDL_SCANCODE_Q])
     {
