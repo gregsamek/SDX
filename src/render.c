@@ -2,6 +2,81 @@
 #include "globals.h"
 #include "text.h"
 
+static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
+{
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_bone_animated);
+    SDL_BindGPUVertexStorageBuffers
+    (
+        render_pass,
+        0, // storage buffer slot
+        &joint_matrix_storage_buffer,
+        1 // storage buffer count
+    );
+
+    for (size_t i = 0; i < models_bone_animated.len; i++)
+    {
+        mat4 mvp_matrix;
+        glm_mat4_mul(camera.view_projection_matrix, models_bone_animated.arr[i].model_matrix, mvp_matrix);
+        // glm_mat4_mul(projection_matrix_ortho, models_bone_animated.arr[i].model_matrix, mvp_matrix);
+        SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp_matrix, sizeof(mvp_matrix));
+
+        SDL_PushGPUVertexUniformData
+        (
+            command_buffer, 
+            1, 
+            &models_bone_animated.arr[i].storage_buffer_offset_bytes, 
+            sizeof(Uint32)
+        );
+
+        SDL_BindGPUVertexBuffers
+        (
+            render_pass, 
+            0, // vertex buffer slot
+            (SDL_GPUBufferBinding[])
+            {
+                { 
+                    .buffer = models_bone_animated.arr[i].vertex_buffer, 
+                    .offset = 0 
+                },
+            }, 
+            1 // vertex buffer count
+        );            
+        
+        SDL_BindGPUIndexBuffer
+        (
+            render_pass, 
+            &(SDL_GPUBufferBinding)
+            { 
+                .buffer = models_bone_animated.arr[i].index_buffer, 
+                .offset = 0 
+            }, 
+            SDL_GPU_INDEXELEMENTSIZE_16BIT
+        );
+        
+        SDL_BindGPUFragmentSamplers
+        (
+            render_pass, 
+            0, // fragment sampler slot
+            &(SDL_GPUTextureSamplerBinding)
+            { 
+                .texture = models_bone_animated.arr[i].texture, 
+                .sampler = default_texture_sampler 
+            }, 
+            1 // num_bindings
+        );
+
+        SDL_DrawGPUIndexedPrimitives
+        (
+            render_pass,
+            (Uint32)models_bone_animated.arr[i].index_count, // num_indices
+            1,  // num_instances
+            0,  // first_index
+            0,  // vertex_offset
+            0   // first_instance
+        );
+    }
+}
+
 bool Render()
 {
     if (window_resized)
@@ -140,79 +215,7 @@ bool Render()
     //     );
     // }
 
-    // DRAW BONE ANIMATED MODELS
-
-    SDL_BindGPUGraphicsPipeline(virtual_render_pass, pipeline_bone_animated);
-    SDL_BindGPUVertexStorageBuffers
-    (
-        virtual_render_pass,
-        0, // storage buffer slot
-        &joint_matrix_storage_buffer,
-        1 // storage buffer count
-    );
-
-    for (size_t i = 0; i < models_bone_animated.len; i++)
-    {
-        mat4 mvp_matrix;
-        glm_mat4_mul(camera.view_projection_matrix, models_bone_animated.arr[i].model_matrix, mvp_matrix);
-        // glm_mat4_mul(projection_matrix_ortho, models_bone_animated.arr[i].model_matrix, mvp_matrix);
-        SDL_PushGPUVertexUniformData(command_buffer_draw, 0, &mvp_matrix, sizeof(mvp_matrix));
-
-        SDL_PushGPUVertexUniformData
-        (
-            command_buffer_draw, 
-            1, 
-            &models_bone_animated.arr[i].storage_buffer_offset_bytes, 
-            sizeof(Uint32)
-        );
-
-        SDL_BindGPUVertexBuffers
-        (
-            virtual_render_pass, 
-            0, // vertex buffer slot
-            (SDL_GPUBufferBinding[])
-            {
-                { 
-                    .buffer = models_bone_animated.arr[i].vertex_buffer, 
-                    .offset = 0 
-                },
-            }, 
-            1 // vertex buffer count
-        );            
-        
-        SDL_BindGPUIndexBuffer
-        (
-            virtual_render_pass, 
-            &(SDL_GPUBufferBinding)
-            { 
-                .buffer = models_bone_animated.arr[i].index_buffer, 
-                .offset = 0 
-            }, 
-            SDL_GPU_INDEXELEMENTSIZE_16BIT
-        );
-        
-        SDL_BindGPUFragmentSamplers
-        (
-            virtual_render_pass, 
-            0, // fragment sampler slot
-            &(SDL_GPUTextureSamplerBinding)
-            { 
-                .texture = models_bone_animated.arr[i].texture, 
-                .sampler = default_texture_sampler 
-            }, 
-            1 // num_bindings
-        );
-
-        SDL_DrawGPUIndexedPrimitives
-        (
-            virtual_render_pass,
-            (Uint32)models_bone_animated.arr[i].index_count, // num_indices
-            1,  // num_instances
-            0,  // first_index
-            0,  // vertex_offset
-            0   // first_instance
-        );
-    }
+    Render_BoneAnimated(virtual_render_pass, command_buffer_draw);
 
     // DRAW UI
 
