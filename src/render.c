@@ -272,6 +272,14 @@ bool Render()
         .cycle = true
     };
 
+    if (msaa_level > SDL_GPU_SAMPLECOUNT_1)
+    {
+        virtual_target_info.texture = msaa_texture;
+        virtual_target_info.store_op = SDL_GPU_STOREOP_RESOLVE_AND_STORE;
+        virtual_target_info.resolve_texture = virtual_screen_texture;
+        virtual_target_info.cycle_resolve_texture = true;
+    }
+
     SDL_GPUDepthStencilTargetInfo depth_stencil_target_info = 
     {
         .texture = depth_texture,

@@ -466,7 +466,7 @@ bool Pipeline_FullscreenQuad_Init()
         .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
         .vertex_shader = vertex_shader,
         .fragment_shader = fragment_shader,
-        .multisample_state = (SDL_GPUMultisampleState) { .sample_count = msaa_level }
+        .multisample_state = (SDL_GPUMultisampleState) { .sample_count = SDL_GPU_SAMPLECOUNT_1 }
     };
 
     pipeline_fullscreen_quad = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);

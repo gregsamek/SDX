@@ -55,6 +55,7 @@ double target_frame_time = 1.0 / 60.0;
 bool manage_frame_rate_manually = false;
 SDL_GPUSampleCount msaa_level = SDL_GPU_SAMPLECOUNT_1;
 Uint32 n_mipmap_levels = 6;
+bool use_linear_filtering = false;
 SDL_GPUDevice* gpu_device = NULL;
 SDL_GPUTextureFormat depth_texture_format = SDL_GPU_TEXTUREFORMAT_INVALID;
 SDL_GPUGraphicsPipeline* pipeline_unanimated = NULL;

@@ -58,6 +58,7 @@ extern double target_frame_time;
 bool manage_frame_rate_manually;
 extern SDL_GPUSampleCount msaa_level;
 extern Uint32 n_mipmap_levels;
+extern bool use_linear_filtering;
 extern SDL_GPUDevice* gpu_device;
 extern SDL_GPUTextureFormat depth_texture_format;
 extern SDL_GPUGraphicsPipeline* pipeline_unanimated;

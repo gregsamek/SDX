@@ -16,58 +16,9 @@ bool Init_RenderTargets()
 
 	SDL_WaitForGPUIdle(gpu_device);
 
-	if (depth_texture)
-	{
-		SDL_ReleaseGPUTexture(gpu_device, depth_texture);
-	}
-	depth_texture = SDL_CreateGPUTexture
-	(
-		gpu_device,
-		&(SDL_GPUTextureCreateInfo)
-		{
-			.type = SDL_GPU_TEXTURETYPE_2D,
-			.width = (Uint32)window_width,
-			.height = (Uint32)window_height,
-			.layer_count_or_depth = 1,
-			.num_levels = 1,
-			.sample_count = msaa_level,
-			.format = depth_texture_format, // Match pipeline
-			.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET
-		}
-	);
-	if (depth_texture == NULL)
-	{
-		SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to recreate depth texture: %s", SDL_GetError());
-		return false;
-	}
-
-    if (msaa_texture)
-    {
-        SDL_ReleaseGPUTexture(gpu_device, msaa_texture);
-    }
-    msaa_texture = SDL_CreateGPUTexture
-    (
-        gpu_device,
-        &(SDL_GPUTextureCreateInfo)
-        {
-            .type = SDL_GPU_TEXTURETYPE_2D,
-            .width = (Uint32)window_width,
-            .height = (Uint32)window_height,
-            .layer_count_or_depth = 1,
-            .num_levels = 1,
-            .sample_count = msaa_level, // MSAA
-            .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET
-        }
-    );
-    if (msaa_texture == NULL)
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to recreate MSAA texture: %s", SDL_GetError());
-        return false;
-    }
-
+    // virtual_screen_texture_height = window_height;
     virtual_screen_texture_width = virtual_screen_texture_height * window_width / window_height;
-
+    
     if (virtual_screen_texture)
     {
         SDL_ReleaseGPUTexture(gpu_device, virtual_screen_texture);
@@ -90,6 +41,56 @@ bool Init_RenderTargets()
     if (virtual_screen_texture == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create virtual screen texture: %s", SDL_GetError());
+        return false;
+    }
+
+	if (depth_texture)
+	{
+		SDL_ReleaseGPUTexture(gpu_device, depth_texture);
+	}
+	depth_texture = SDL_CreateGPUTexture
+	(
+		gpu_device,
+		&(SDL_GPUTextureCreateInfo)
+		{
+			.type = SDL_GPU_TEXTURETYPE_2D,
+			.width = virtual_screen_texture_width,
+			.height = virtual_screen_texture_height,
+			.layer_count_or_depth = 1,
+			.num_levels = 1,
+			.sample_count = msaa_level,
+			.format = depth_texture_format, // Match pipeline
+			.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET
+		}
+	);
+	if (depth_texture == NULL)
+	{
+		SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to recreate depth texture: %s", SDL_GetError());
+		return false;
+	}
+    
+    if (msaa_texture)
+    {
+        SDL_ReleaseGPUTexture(gpu_device, msaa_texture);
+    }
+    msaa_texture = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .width = virtual_screen_texture_width,
+            .height = virtual_screen_texture_height,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = msaa_level, // MSAA
+            .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET
+        }
+    );
+    if (msaa_texture == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to recreate MSAA texture: %s", SDL_GetError());
         return false;
     }
 

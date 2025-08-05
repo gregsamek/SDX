@@ -3,6 +3,6 @@
 
 #include <SDL3/SDL.h>
 
-bool SamplerInit();
+bool Sampler_Init();
 
 #endif // SAMPLER_H
