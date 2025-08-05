@@ -145,6 +145,33 @@ bool HandleWindowResize()
         return false;
     }
 
+    virtual_screen_texture_width = virtual_screen_texture_height * window_width / window_height;
+
+    if (virtual_screen_texture)
+    {
+        SDL_ReleaseGPUTexture(gpu_device, virtual_screen_texture);
+    }
+    virtual_screen_texture = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .width = virtual_screen_texture_width,
+            .height = virtual_screen_texture_height,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+        }
+    );
+    if (virtual_screen_texture == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create virtual screen texture: %s", SDL_GetError());
+        return false;
+    }
+
 	return true;
 }
 

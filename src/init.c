@@ -41,12 +41,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    window = SDL_CreateWindow("SDL GPU glTF Viewer", 1280, 720, window_flags);
+    window = SDL_CreateWindow("SDL GPU glTF Viewer", 1352, 815, window_flags);
     if (window == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "SDL_CreateWindow failed: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
+
+    // SDL_SetWindowBordered(window, false);
 
     SDL_Surface* icon = LoadImage("test_texture.png");
     SDL_SetWindowIcon(window, icon);
@@ -157,6 +159,29 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     if (msaa_texture == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create MSAA texture: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    virtual_screen_texture_width = virtual_screen_texture_height * window_width / window_height;
+
+    virtual_screen_texture = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .width = virtual_screen_texture_width,
+            .height = virtual_screen_texture_height,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+        }
+    );
+    if (virtual_screen_texture == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create virtual screen texture: %s", SDL_GetError());
         return SDL_APP_FAILURE;
     }
 

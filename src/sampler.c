@@ -10,9 +10,9 @@ bool SamplerInit()
         gpu_device, 
         &(SDL_GPUSamplerCreateInfo)
         {
-            .min_filter = SDL_GPU_FILTER_LINEAR,
-            .mag_filter = SDL_GPU_FILTER_LINEAR,
-            .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR,
+            .min_filter = SDL_GPU_FILTER_NEAREST,
+            .mag_filter = SDL_GPU_FILTER_NEAREST,
+            .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
             .min_lod = 0.0f,
             .max_lod = 16.0f, // arbitrary limit (i.e. use every mip level)
             .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,

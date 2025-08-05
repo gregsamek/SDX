@@ -9,6 +9,7 @@ bool Pipeline_BoneAnimated_Init();
 bool Pipeline_RigidAnimated_Init();
 bool Pipeline_Instanced_Init();
 bool Pipeline_Text_Init();
+bool Pipeline_FullscreenQuad_Init();
 
 SDL_GPUComputePipeline* Pipeline_Compute_Init
 (
