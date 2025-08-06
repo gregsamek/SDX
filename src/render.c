@@ -243,6 +243,42 @@ static bool Render_Text(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* co
     return true;
 }
 
+static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
+{
+    if (!sprites.len) return;
+
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_sprite);
+
+    for (size_t i = 0; i < sprites.len; i++)
+    {
+        float sprite_height = sprites.arr[i].height;
+        float sprite_width = sprite_height * sprites.arr[i].aspect_ratio * virtual_screen_texture_height / (float)virtual_screen_texture_width;
+        float vertex_pos[4][4] = 
+        {
+            {0.0f, 0.0f, 0.0f, 0.0f}, // top left
+            {sprite_width, 0.0f, 0.0f, 0.0f}, // top right
+            {0.0f, sprite_height, 0.0f, 0.0f}, // bottom left
+            {sprite_width, sprite_height, 0.0f, 0.0f}  // bottom right
+        };
+
+        SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_pos, sizeof(vertex_pos));
+        
+        SDL_BindGPUFragmentSamplers
+        (
+            render_pass, 
+            0, // fragment sampler slot
+            &(SDL_GPUTextureSamplerBinding)
+            { 
+                .texture = sprites.arr[i].texture, 
+                .sampler = default_texture_sampler 
+            }, 
+            1 // num_bindings
+        );
+
+        SDL_DrawGPUPrimitives(render_pass, 6, 1, 0, 0);
+    }
+}
+
 bool Render()
 {
     if (window_resized)
@@ -334,6 +370,8 @@ bool Render()
             return true;
         }
     }
+
+    Render_Sprite(virtual_render_pass, command_buffer_draw);
 
     SDL_EndGPURenderPass(virtual_render_pass);
 

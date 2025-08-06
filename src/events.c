@@ -72,7 +72,12 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload models");
                     return false;
                 }
-                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Models reloaded successfully.");
+                if (!Sprite_LoadSprites())
+                {
+                    SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload sprites");
+                    return false;
+                }
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "assets reloaded successfully.");
             }
             else if (event->key.scancode == SDL_SCANCODE_TAB)
             {

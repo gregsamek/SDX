@@ -9,6 +9,7 @@
 #include "pipeline.h"
 #include "gltf.h"
 #include "text.h"
+#include "sprite.h"
 
 bool Init_RenderTargets()
 {
@@ -206,8 +207,18 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     {
         return SDL_APP_FAILURE;
     }
-    
-    Init_RenderTargets();
+
+    if (!Init_RenderTargets())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize render targets");
+        return SDL_APP_FAILURE;
+    }
+
+    if (!Sprite_LoadSprites())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to load sprites");
+        return SDL_APP_FAILURE;
+    }
 
     if (!Model_LoadAllModels())
     {

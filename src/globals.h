@@ -8,6 +8,7 @@
 #include "camera.h"
 #include "events.h"
 #include "text.h"
+#include "sprite.h"
 
 /*
     Maybe not the most logical place for this, 
@@ -40,6 +41,8 @@ extern InputState input_state;
 extern Array_Model models_unanimated;
 extern Array_Model_BoneAnimated models_bone_animated;
 
+extern Array_Sprite sprites;
+
 extern float input_deadzone_squared;
 extern Camera camera;
 
@@ -67,6 +70,7 @@ extern SDL_GPUGraphicsPipeline* pipeline_rigid_animated;
 extern SDL_GPUGraphicsPipeline* pipeline_instanced;
 extern SDL_GPUGraphicsPipeline* pipeline_fullscreen_quad;
 extern SDL_GPUGraphicsPipeline* pipeline_text;
+extern SDL_GPUGraphicsPipeline* pipeline_sprite;
 extern SDL_GPUTexture* depth_texture;
 extern SDL_GPUTexture* msaa_texture;
 extern SDL_GPUTexture* virtual_screen_texture;

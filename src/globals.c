@@ -26,13 +26,15 @@ InputState input_state = InputState_DEFAULT;
 Array_Model models_unanimated = {0};
 Array_Model_BoneAnimated models_bone_animated = {0};
 
+Array_Sprite sprites = {0};
+
 float input_deadzone_squared = 0.001f;
 Camera camera =
 {
     .position = {0.0f, 2.5f, -3.0f},
-    .forward = {0.0f, -0.5f, -0.5f},
-    .up = {0.0f, 1.0f, -0.5f},
-    .right = {1.0f, 0.0f, 0.0f},
+    .forward = {0},
+    .up = {0},
+    .right = {0},
     .yaw = 90.0f,
     .pitch = -30.0f,
     .fov = 75.0f,
@@ -64,11 +66,12 @@ SDL_GPUGraphicsPipeline* pipeline_rigid_animated = NULL;
 SDL_GPUGraphicsPipeline* pipeline_instanced = NULL;
 SDL_GPUGraphicsPipeline* pipeline_text = NULL;
 SDL_GPUGraphicsPipeline* pipeline_fullscreen_quad = NULL;
+SDL_GPUGraphicsPipeline* pipeline_sprite = NULL;
 SDL_GPUTexture* depth_texture = NULL;
 SDL_GPUTexture* msaa_texture = NULL;
 SDL_GPUTexture* virtual_screen_texture = NULL;
 Uint32 virtual_screen_texture_width = 0;
-Uint32 virtual_screen_texture_height = 360;
+Uint32 virtual_screen_texture_height = 240;
 SDL_GPUSampler* default_texture_sampler = NULL;
 SDL_GPUBuffer* joint_matrix_storage_buffer = NULL;
 SDL_GPUTransferBuffer* joint_matrix_transfer_buffer = NULL;
