@@ -15,6 +15,9 @@ set -e
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/text.frag.hlsl -o MyApp.app/Contents/Resources/shaders/text.frag.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/text.frag.hlsl -o MyApp.app/Contents/Resources/shaders/text.frag.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/fullscreen_quad.vert.hlsl -o MyApp.app/Contents/Resources/shaders/fullscreen_quad.vert.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/fullscreen_quad.vert.hlsl -o MyApp.app/Contents/Resources/shaders/fullscreen_quad.vert.json
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/sprite.vert.hlsl -o MyApp.app/Contents/Resources/shaders/sprite.vert.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/sprite.vert.hlsl -o MyApp.app/Contents/Resources/shaders/sprite.vert.json
     # SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross entity_shader.vert.hlsl -o MyApp.app/Contents/Resources/shaders/entity_shader.vert.msl
     # SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross entity_shader.vert.hlsl -o MyApp.app/Contents/Resources/shaders/entity_shader.vert.json
     # SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross entity_shader.frag.hlsl -o MyApp.app/Contents/Resources/shaders/entity_shader.frag.msl
