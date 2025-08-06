@@ -1,7 +1,17 @@
+#ifdef __HLSL_VERSION            // compiled as HLSL → DXIL/SPIR-V
+    #define CLIP_TEST(v)  clip(v)
+#elif defined(__METAL_VERSION__) // compiled as Metal Shading Language
+    #include <metal_stdlib>
+    using namespace metal;
+    #define CLIP_TEST(v)  if (any((v) < 0)) discard_fragment()
+#else                           // assume GLSL
+    #define CLIP_TEST(v)  if (any((v) < 0)) discard
+#endif
+
 // Texture bound at space2, texture register t0
-Texture2D CubeTexture : register(t0, space2);
+Texture2D Texture : register(t0, space2);
 // Sampler bound at space2, sampler register s0
-SamplerState CubeSampler : register(s0, space2);
+SamplerState Sampler : register(s0, space2);
 
 // Input structure received from the vertex shader
 // TEXCOORD0 matches the semantic used for TexCoord in VertexOutput
@@ -24,14 +34,9 @@ FragmentOutput main(FragmentInput input)
     FragmentOutput output;
 
     // Sample the texture using the interpolated texture coordinate and the bound sampler
-    output.Color = CubeTexture.Sample(CubeSampler, input.TexCoord);
+    output.Color = Texture.Sample(Sampler, input.TexCoord);
 
-    // Optional: Apply lighting or other effects here
-    // output.Color *= float4(1.0, 1.0, 1.0, 1.0); // Example: No lighting
-
-    // Ensure alpha is set (e.g., fully opaque) if the texture doesn't have it
-    // or if blending is enabled
-    // output.Color.a = 1.0f;
+    CLIP_TEST(output.Color.a - 0.5);
 
     return output;
 }
