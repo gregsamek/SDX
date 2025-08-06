@@ -343,6 +343,7 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
     // Cleanup Upload Resources
     SDL_ReleaseGPUTransferBuffer(gpu_device, transfer_buffer);
     SDL_ReleaseGPUTransferBuffer(gpu_device, texture_transfer_buffer);
+    SDL_DestroySurface(texture_surface);
 
     SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Successfully loaded unanimated model: %s", node->name);
 
@@ -873,6 +874,7 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
 
     SDL_ReleaseGPUTransferBuffer(gpu_device, transfer_buffer);
     SDL_ReleaseGPUTransferBuffer(gpu_device, texture_transfer_buffer);
+    SDL_DestroySurface(texture_surface);
 
     SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Successfully loaded bone animated model: %s", node->name);
 
