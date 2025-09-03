@@ -582,7 +582,7 @@ SDL_GPUComputePipeline* Pipeline_Compute_Init
 	SDL_GPUComputePipelineCreateInfo *createInfo
 ) 
 {
-	char fullPath[512];
+	char fullPath[MAXIMUM_URI_LENGTH];
 	SDL_GPUShaderFormat backendFormats = SDL_GetGPUShaderFormats(gpu_device);
 	SDL_GPUShaderFormat format = SDL_GPU_SHADERFORMAT_INVALID;
 	const char *entrypoint;

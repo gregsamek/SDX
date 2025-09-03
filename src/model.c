@@ -28,7 +28,7 @@ bool Model_LoadAllModels(void)
         return false;
     }
     
-    char path[512];
+    char path[MAXIMUM_URI_LENGTH];
     SDL_snprintf(path, sizeof(path), "%smodels/%s", base_path, "_models_list.txt");
     size_t models_list_txt_size = 0;
     char* models_list_txt = (char*)SDL_LoadFile(path, &models_list_txt_size);
@@ -883,7 +883,7 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
 
 bool Model_Load(const char* filename)
 {
-    char model_path[512];
+    char model_path[MAXIMUM_URI_LENGTH];
     SDL_snprintf(model_path, sizeof(model_path), "%smodels/%s", base_path, filename);
     size_t gltf_file_buffer_size = 0;
     void* gltf_file_buffer = SDL_LoadFile(model_path, &gltf_file_buffer_size);

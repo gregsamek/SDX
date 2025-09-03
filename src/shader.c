@@ -27,7 +27,7 @@ SDL_GPUShader* Shader_Load
 		return NULL;
 	}
 
-	char fullPath[512];
+	char fullPath[MAXIMUM_URI_LENGTH];
 	SDL_GPUShaderFormat supported_shader_formats = SDL_GetGPUShaderFormats(gpu_device);
 	SDL_GPUShaderFormat format = SDL_GPU_SHADERFORMAT_INVALID;
 	const char *entrypoint;

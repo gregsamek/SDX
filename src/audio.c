@@ -17,8 +17,8 @@ bool Audio_Init()
         return false;
     }
 
-    char music_path[512];
-    char sound_path[512];
+    char music_path[MAXIMUM_URI_LENGTH];
+    char sound_path[MAXIMUM_URI_LENGTH];
     SDL_snprintf(music_path, sizeof(music_path), "%saudio/test_music.wav", base_path);
     SDL_snprintf(sound_path, sizeof(sound_path), "%saudio/test_sound.wav", base_path);
 
