@@ -32,6 +32,7 @@ extern Uint64 current_ticks;
 extern Uint64 performance_frequency;
 extern float delta_time;
 
+#define MAXIMUM_URI_LENGTH 512
 extern const char* base_path;
 
 extern bool* keyboard_state;

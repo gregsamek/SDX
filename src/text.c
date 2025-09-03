@@ -10,10 +10,11 @@ bool Text_Init()
         return false;
     }
 
-    char font_path[512];
-    SDL_snprintf(font_path, sizeof(font_path), "%sfonts/NotoSans-Regular.ttf", base_path);
+    char font_path[MAXIMUM_URI_LENGTH];
+    SDL_snprintf(font_path, sizeof(font_path), "%sfonts/ari-w9500-display.ttf", base_path);
+    // SDL_snprintf(font_path, sizeof(font_path), "%sfonts/NotoSans-Regular.ttf", base_path);
     
-    font = TTF_OpenFont(font_path, 128);
+    font = TTF_OpenFont(font_path, 11);
 
     if (font == NULL)
     {
@@ -21,14 +22,11 @@ bool Text_Init()
         return false;
     }
 
-    TTF_SetFontSDF(font, true);
-    TTF_SetFontSizeDPI(font, 64.0f, 96, 96);
-    // int hdpi, vdpi;
-    // TTF_GetFontDPI(font, &hdpi, &vdpi);
-    // SDL_Log("Font DPI: %d x %d", hdpi, vdpi);
+    // TTF_SetFontSDF(font, true);
+    // TTF_SetFontSizeDPI(font, 64.0f, 96, 96);
 
     TTF_SetFontHinting(font, TTF_HINTING_LIGHT_SUBPIXEL);
-    TTF_SetFontWrapAlignment(font, TTF_HORIZONTAL_ALIGN_CENTER);
+    TTF_SetFontWrapAlignment(font, TTF_HORIZONTAL_ALIGN_LEFT);
 
     textEngine = TTF_CreateGPUTextEngine(gpu_device);
     if (textEngine == NULL)
@@ -44,6 +42,8 @@ bool Text_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to create text! SDL_ttf Error: %s\n", SDL_GetError());
         return false;
     }
+
+    // TTF_SetTextWrapWidth(text_renderable.ttf_text, 0);
 
     // TODO this doesn't seem to do anything...
     // TTF_SetTextColorFloat(text, 1.0f, 1.0f, 1.0f, 1.0f);
@@ -114,6 +114,7 @@ bool Text_Init()
     return true;
 }
 
+// TODO should call this ASAP in a frame, not at the end with the UI draw calls
 bool Text_UpdateAndUpload(const char* new_text)
 {
     TTF_SetTextString(text_renderable.ttf_text, new_text, 0);

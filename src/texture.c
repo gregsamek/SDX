@@ -3,7 +3,7 @@
 
 SDL_Surface* LoadImage(const char* imageFilename)
 {
-	char fullPath[512];
+	char fullPath[MAXIMUM_URI_LENGTH];
 	SDL_Surface *result;
 	SDL_PixelFormat format = SDL_PIXELFORMAT_RGBA32;
 

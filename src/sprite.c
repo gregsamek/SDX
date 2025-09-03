@@ -118,7 +118,7 @@ bool Sprite_LoadSprites(void)
         return false;
     }
 
-    char path[512];
+    char path[MAXIMUM_URI_LENGTH];
     SDL_snprintf(path, sizeof(path), "%stextures/%s", base_path, "_sprites_list.txt");
     size_t sprites_list_txt_size = 0;
     char* sprites_list_txt = (char*)SDL_LoadFile(path, &sprites_list_txt_size);
