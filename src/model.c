@@ -336,7 +336,7 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
 
     SDL_EndGPUCopyPass(copy_pass);
 
-    SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, model->texture);
+    if (n_mipmap_levels > 1) SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, model->texture);
 
     SDL_SubmitGPUCommandBuffer(upload_command_buffer);
 
@@ -869,7 +869,9 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
     );
 
     SDL_EndGPUCopyPass(copy_pass);
-    SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, model->texture);
+    
+    if (n_mipmap_levels > 1) SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, model->texture);
+    
     SDL_SubmitGPUCommandBuffer(upload_command_buffer);
 
     SDL_ReleaseGPUTransferBuffer(gpu_device, transfer_buffer);

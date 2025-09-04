@@ -97,7 +97,7 @@ static bool Sprite_Load(const char* sprite_name, Sprite* sprite)
 
     SDL_EndGPUCopyPass(copy_pass);
 
-    SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, sprite->texture);
+    if (n_mipmap_levels > 1) SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, sprite->texture);
 
     SDL_SubmitGPUCommandBuffer(upload_command_buffer);
 
