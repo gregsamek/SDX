@@ -17,6 +17,11 @@ static const float2 vertexUVs[4] =
     {0.0f, 1.0f},
     {1.0f, 1.0f}
 };
+
+/*
+    This is the hard-coded result of `glm_ortho(0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, projection_matrix_ortho)`
+    * note the switch between row/col major!
+*/
 static const float4x4 ViewProjectionMatrix =
 {
     {2.0f, 0.0f, 0.0f, -1.0f},
@@ -29,11 +34,9 @@ Output main(uint id : SV_VertexID)
 {
     uint vert = triangleIndices[id % 6];
 
-    float3 coordWithDepth = float3(vertexPos[vert].xy, 0.5);
-
     Output output;
 
-    output.Position = mul(ViewProjectionMatrix, float4(coordWithDepth, 1.0f));
+    output.Position = mul(ViewProjectionMatrix, vertexPos[vert]);
     output.Texcoord = vertexUVs[vert];
 
     return output;
