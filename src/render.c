@@ -255,10 +255,10 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
         float sprite_width = sprite_height * sprites.arr[i].aspect_ratio * virtual_screen_texture_height / (float)virtual_screen_texture_width;
         float vertex_pos[4][4] = 
         {
-            {0.0f, 0.0f, 0.0f, 0.0f}, // top left
-            {sprite_width, 0.0f, 0.0f, 0.0f}, // top right
-            {0.0f, sprite_height, 0.0f, 0.0f}, // bottom left
-            {sprite_width, sprite_height, 0.0f, 0.0f}  // bottom right
+            {0.0f, 0.0f, 0.0f, 1.0f}, // top left
+            {sprite_width, 0.0f, 0.0f, 1.0f}, // top right
+            {0.0f, sprite_height, 0.0f, 1.0f}, // bottom left
+            {sprite_width, sprite_height, 0.0f, 1.0f}  // bottom right
         };
 
         SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_pos, sizeof(vertex_pos));
