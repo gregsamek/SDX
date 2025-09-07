@@ -2,13 +2,6 @@
 #include "globals.h"
 #include "audio.h"
 
-typedef bool (*HandleEventFunction)(SDL_Event *event);
-
-static HandleEventFunction HandleEventFunctions[InputState_COUNT] =
-{
-    [InputState_DEFAULT] = HandleEvent_InputState_DEFAULT,
-};
-
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
 {
@@ -26,10 +19,17 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
             return SDL_APP_CONTINUE;
         }
         default:
-        if (!HandleEventFunctions[input_state](event))
-        {
-            return SDL_APP_FAILURE;
-        }
+            switch(input_state)
+            {
+                case InputState_DEFAULT:
+                    if (!HandleEvent_InputState_DEFAULT(event))
+                    {
+                        return SDL_APP_FAILURE;
+                    } break;
+                default:
+                    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unhandled input state %d", input_state);
+                    break;
+            }
     }
     return SDL_APP_CONTINUE;
 }
