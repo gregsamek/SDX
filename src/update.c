@@ -14,7 +14,10 @@ bool Update()
         delta_time = MAXIMUM_DELTA_TIME;
     }
 
-    Camera_Update();
+    if (input_state == InputState_DEFAULT)
+    {
+        Camera_Update();
+    }
 
     return true;
 }
