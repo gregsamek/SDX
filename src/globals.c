@@ -10,7 +10,7 @@ vec3 WORLD_UP_VECTOR = {0.0f, 1.0f, 0.0f};
 SDL_Window* window;
 SDL_WindowFlags window_flags = SDL_WINDOW_RESIZABLE;
 int window_width, window_height;
-bool window_resized = false;
+bool renderer_needs_to_be_reinitialized = false;
 
 Uint64 last_ticks = 0;
 Uint64 current_ticks = 0;
@@ -71,7 +71,7 @@ SDL_GPUTexture* depth_texture = NULL;
 SDL_GPUTexture* msaa_texture = NULL;
 SDL_GPUTexture* virtual_screen_texture = NULL;
 Uint32 virtual_screen_texture_width = 0;
-Uint32 virtual_screen_texture_height = 240;
+Uint32 virtual_screen_texture_height = 360;
 SDL_GPUSampler* default_texture_sampler = NULL;
 SDL_GPUBuffer* joint_matrix_storage_buffer = NULL;
 SDL_GPUTransferBuffer* joint_matrix_transfer_buffer = NULL;

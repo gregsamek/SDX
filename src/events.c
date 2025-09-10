@@ -15,7 +15,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
         {
             SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Window size changed event");
-            window_resized = true;
+            renderer_needs_to_be_reinitialized = true;
             return SDL_APP_CONTINUE;
         }
         default:

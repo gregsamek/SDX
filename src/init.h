@@ -3,6 +3,6 @@
 
 #include <SDL3/SDL.h>
 
-bool Init_RenderTargets();
+bool Init_Renderer();
 
 #endif // INIT_H

@@ -137,7 +137,11 @@ bool Pipeline_Unanimated_Init()
         .fragment_shader = fragment_shader,
         .multisample_state = (SDL_GPUMultisampleState) { .sample_count = msaa_level }
     };
-
+    if (pipeline_unanimated)
+    {
+        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_unanimated);
+        pipeline_unanimated = NULL;
+    }
     pipeline_unanimated = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
     if (pipeline_unanimated == NULL)
     {
@@ -265,7 +269,11 @@ bool Pipeline_BoneAnimated_Init()
         .fragment_shader = fragment_shader,
         .multisample_state = (SDL_GPUMultisampleState) { .sample_count = msaa_level }
     };
-
+    if (pipeline_bone_animated)
+    {
+        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_bone_animated);
+        pipeline_bone_animated = NULL;
+    }
     pipeline_bone_animated = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
     if (pipeline_bone_animated == NULL)
     {
@@ -393,7 +401,11 @@ bool Pipeline_Text_Init()
         .fragment_shader = fragment_shader,
         .multisample_state = (SDL_GPUMultisampleState) { .sample_count = msaa_level }
     };
-
+    if (pipeline_text)
+    {
+        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_text);
+        pipeline_text = NULL;
+    }
     pipeline_text = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
     if (pipeline_text == NULL)
     {
@@ -473,7 +485,11 @@ bool Pipeline_FullscreenQuad_Init()
         .fragment_shader = fragment_shader,
         .multisample_state = (SDL_GPUMultisampleState) { .sample_count = SDL_GPU_SAMPLECOUNT_1 }
     };
-
+    if (pipeline_fullscreen_quad)
+    {
+        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_fullscreen_quad);
+        pipeline_fullscreen_quad = NULL;
+    }
     pipeline_fullscreen_quad = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
     if (pipeline_fullscreen_quad == NULL)
     {
@@ -561,7 +577,11 @@ bool Pipeline_Sprite_Init()
         .fragment_shader = fragment_shader,
         .multisample_state = (SDL_GPUMultisampleState) { .sample_count = msaa_level }
     };
-
+    if (pipeline_sprite)
+    {
+        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_sprite);
+        pipeline_sprite = NULL;
+    }
     pipeline_sprite = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
     if (pipeline_sprite == NULL)
     {
@@ -575,65 +595,65 @@ bool Pipeline_Sprite_Init()
     return true;
 }
 
-SDL_GPUComputePipeline* Pipeline_Compute_Init
-(
-	SDL_GPUDevice* gpu_device,
-	const char* shaderFilename,
-	SDL_GPUComputePipelineCreateInfo *createInfo
-) 
-{
-	char fullPath[MAXIMUM_URI_LENGTH];
-	SDL_GPUShaderFormat backendFormats = SDL_GetGPUShaderFormats(gpu_device);
-	SDL_GPUShaderFormat format = SDL_GPU_SHADERFORMAT_INVALID;
-	const char *entrypoint;
+// SDL_GPUComputePipeline* Pipeline_Compute_Init
+// (
+// 	SDL_GPUDevice* gpu_device,
+// 	const char* shaderFilename,
+// 	SDL_GPUComputePipelineCreateInfo *createInfo
+// ) 
+// {
+// 	char fullPath[MAXIMUM_URI_LENGTH];
+// 	SDL_GPUShaderFormat backendFormats = SDL_GetGPUShaderFormats(gpu_device);
+// 	SDL_GPUShaderFormat format = SDL_GPU_SHADERFORMAT_INVALID;
+// 	const char *entrypoint;
 
-	if (backendFormats & SDL_GPU_SHADERFORMAT_SPIRV) 
-    {
-		SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/%s.spv", base_path, shaderFilename);
-		format = SDL_GPU_SHADERFORMAT_SPIRV;
-		entrypoint = "main";
-	} 
-    else if (backendFormats & SDL_GPU_SHADERFORMAT_MSL) 
-    {
-		SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/%s.msl", base_path, shaderFilename);
-		format = SDL_GPU_SHADERFORMAT_MSL;
-		entrypoint = "main0";
-	} 
-    else if (backendFormats & SDL_GPU_SHADERFORMAT_DXIL) 
-    {
-		SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/%s.dxil", base_path, shaderFilename);
-		format = SDL_GPU_SHADERFORMAT_DXIL;
-		entrypoint = "main";
-	} 
-    else 
-    {
-		SDL_Log("%s", "Unrecognized backend shader format!");
-		return NULL;
-	}
+// 	if (backendFormats & SDL_GPU_SHADERFORMAT_SPIRV) 
+//     {
+// 		SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/%s.spv", base_path, shaderFilename);
+// 		format = SDL_GPU_SHADERFORMAT_SPIRV;
+// 		entrypoint = "main";
+// 	} 
+//     else if (backendFormats & SDL_GPU_SHADERFORMAT_MSL) 
+//     {
+// 		SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/%s.msl", base_path, shaderFilename);
+// 		format = SDL_GPU_SHADERFORMAT_MSL;
+// 		entrypoint = "main0";
+// 	} 
+//     else if (backendFormats & SDL_GPU_SHADERFORMAT_DXIL) 
+//     {
+// 		SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/%s.dxil", base_path, shaderFilename);
+// 		format = SDL_GPU_SHADERFORMAT_DXIL;
+// 		entrypoint = "main";
+// 	} 
+//     else 
+//     {
+// 		SDL_Log("%s", "Unrecognized backend shader format!");
+// 		return NULL;
+// 	}
 
-	size_t codeSize;
-	void* code = SDL_LoadFile(fullPath, &codeSize);
-	if (code == NULL)
-	{
-		SDL_Log("Failed to load compute shader from disk! %s", fullPath);
-		return NULL;
-	}
+// 	size_t codeSize;
+// 	void* code = SDL_LoadFile(fullPath, &codeSize);
+// 	if (code == NULL)
+// 	{
+// 		SDL_Log("Failed to load compute shader from disk! %s", fullPath);
+// 		return NULL;
+// 	}
 
-	// Make a copy of the create data, then overwrite the parts we need
-	SDL_GPUComputePipelineCreateInfo newCreateInfo = *createInfo;
-	newCreateInfo.code = (const Uint8*) code;
-	newCreateInfo.code_size = codeSize;
-	newCreateInfo.entrypoint = entrypoint;
-	newCreateInfo.format = format;
+// 	// Make a copy of the create data, then overwrite the parts we need
+// 	SDL_GPUComputePipelineCreateInfo newCreateInfo = *createInfo;
+// 	newCreateInfo.code = (const Uint8*) code;
+// 	newCreateInfo.code_size = codeSize;
+// 	newCreateInfo.entrypoint = entrypoint;
+// 	newCreateInfo.format = format;
 
-	SDL_GPUComputePipeline* pipeline = SDL_CreateGPUComputePipeline(gpu_device, &newCreateInfo);
-	if (pipeline == NULL)
-	{
-		SDL_Log("Failed to create compute pipeline!");
-		SDL_free(code);
-		return NULL;
-	}
+// 	SDL_GPUComputePipeline* pipeline = SDL_CreateGPUComputePipeline(gpu_device, &newCreateInfo);
+// 	if (pipeline == NULL)
+// 	{
+// 		SDL_Log("Failed to create compute pipeline!");
+// 		SDL_free(code);
+// 		return NULL;
+// 	}
 
-	SDL_free(code);
-	return pipeline;
-}
+// 	SDL_free(code);
+// 	return pipeline;
+// }

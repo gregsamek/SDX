@@ -7,9 +7,11 @@ bool Sampler_Init()
 {
     SDL_GPUSamplerCreateInfo sampler_create_info =
     {
+        // Note: these three settings may be overridden below if linear filtering is desired
         .min_filter = SDL_GPU_FILTER_NEAREST,
         .mag_filter = SDL_GPU_FILTER_NEAREST,
         .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
+        
         .min_lod = 0.0f,
         .max_lod = 16.0f, // arbitrary limit (i.e. use every mip level)
         .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
@@ -26,7 +28,11 @@ bool Sampler_Init()
         sampler_create_info.mag_filter = SDL_GPU_FILTER_LINEAR;
         sampler_create_info.mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_LINEAR;
     }
-
+    if (default_texture_sampler)
+    {
+        SDL_ReleaseGPUSampler(gpu_device, default_texture_sampler);
+        default_texture_sampler = NULL;
+    }
     default_texture_sampler = SDL_CreateGPUSampler
     (
         gpu_device, 

@@ -281,14 +281,15 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
 
 bool Render()
 {
-    if (window_resized)
+    // TODO still need code to change virtual resolution, msaa, sampling (linear vs nearest), vsync during runtime
+    if (renderer_needs_to_be_reinitialized)
     {
-        if (!HandleWindowResize())
+        if (!Init_Renderer())
         {
             return false;
         }
-        window_resized = false;
-    } 
+        renderer_needs_to_be_reinitialized = false;
+    }
 
     if (models_bone_animated.len) Model_JointMat_UpdateAndUpload();
 

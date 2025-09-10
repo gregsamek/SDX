@@ -11,11 +11,10 @@
 #include "text.h"
 #include "sprite.h"
 
+
 bool Init_RenderTargets()
 {
 	SDL_GetWindowSizeInPixels(window, &window_width, &window_height);
-
-	SDL_WaitForGPUIdle(gpu_device);
 
     // virtual_screen_texture_height = window_height;
     virtual_screen_texture_width = virtual_screen_texture_height * window_width / window_height;
@@ -98,6 +97,63 @@ bool Init_RenderTargets()
 	return true;
 }
 
+bool Init_Renderer()
+{
+    SDL_WaitForGPUIdle(gpu_device);
+
+    if (!SDL_WindowSupportsGPUSwapchainComposition(gpu_device, window, swapchain_composition))
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Window does not support GPU swapchain composition! SDL Error: %s\n", SDL_GetError());
+        swapchain_composition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Fallback to SDR
+    }
+
+    if (!SDL_WindowSupportsGPUPresentMode(gpu_device, window, swapchain_present_mode))
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Window does not support GPU present mode %d! SDL Error: %s\n", swapchain_present_mode, SDL_GetError());
+        swapchain_present_mode = SDL_GPU_PRESENTMODE_VSYNC; // Fallback to VSync
+    }
+
+    if (swapchain_present_mode == SDL_GPU_PRESENTMODE_IMMEDIATE)
+    {
+        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Immediate present mode may cause tearing! Consider using VSync or Mailbox instead.");
+        // TODO how to abstract this for the user? settings generally just have a flag to disable/enable vsync
+        manage_frame_rate_manually = true;
+    }
+
+    if (!SDL_SetGPUSwapchainParameters
+        (
+            gpu_device,
+            window,
+            swapchain_composition,
+            swapchain_present_mode
+        ))
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to set GPU swapchain parameters! SDL Error: %s\n", SDL_GetError());
+        return false;
+    }
+
+    if (!Pipeline_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize graphics pipelines");
+        return false;
+    }
+    
+    SDL_LogTrace(SDL_LOG_CATEGORY_GPU, "All graphics pipelines initialized successfully.");
+
+    if (!Sampler_Init())
+    {
+        return false;
+    }
+
+    if (!Init_RenderTargets())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize render targets");
+        return false;
+    }
+
+    return true;
+}
+
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
     // SDL_SetLogPriority(SDL_LOG_CATEGORY_GPU, SDL_LOG_PRIORITY_VERBOSE);
@@ -164,53 +220,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         depth_texture_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
     }
     
-    if (!SDL_WindowSupportsGPUSwapchainComposition(gpu_device, window, swapchain_composition))
+    if (!Init_Renderer())
     {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Window does not support GPU swapchain composition! SDL Error: %s\n", SDL_GetError());
-        swapchain_composition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Fallback to SDR
-    }
-
-    if (!SDL_WindowSupportsGPUPresentMode(gpu_device, window, swapchain_present_mode))
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Window does not support GPU present mode %d! SDL Error: %s\n", swapchain_present_mode, SDL_GetError());
-        swapchain_present_mode = SDL_GPU_PRESENTMODE_VSYNC; // Fallback to VSync
-    }
-
-    if (swapchain_present_mode == SDL_GPU_PRESENTMODE_IMMEDIATE)
-    {
-        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Immediate present mode may cause tearing! Consider using VSync or Mailbox instead.");
-        // TODO how to abstract this for the user? settings generally just have a flag to disable/enable vsync
-        manage_frame_rate_manually = true;
-    }
-
-    if (!SDL_SetGPUSwapchainParameters
-        (
-            gpu_device,
-            window,
-            swapchain_composition,
-            swapchain_present_mode
-        ))
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to set GPU swapchain parameters! SDL Error: %s\n", SDL_GetError());
-        return SDL_APP_FAILURE;
-    }
-
-    if (!Pipeline_Init())
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize graphics pipelines");
-        return SDL_APP_FAILURE;
-    }
-    
-    SDL_LogTrace(SDL_LOG_CATEGORY_GPU, "All graphics pipelines initialized successfully.");
-
-    if (!Sampler_Init())
-    {
-        return SDL_APP_FAILURE;
-    }
-
-    if (!Init_RenderTargets())
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize render targets");
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize renderer!");
         return SDL_APP_FAILURE;
     }
 

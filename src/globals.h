@@ -24,7 +24,7 @@ extern vec3 WORLD_UP_VECTOR;
 extern SDL_Window* window;
 extern SDL_WindowFlags window_flags;
 extern int window_width, window_height;
-extern bool window_resized;
+extern bool renderer_needs_to_be_reinitialized;
 
 #define MAXIMUM_DELTA_TIME 0.1f
 extern Uint64 last_ticks;
