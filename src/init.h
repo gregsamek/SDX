@@ -3,6 +3,8 @@
 
 #include <SDL3/SDL.h>
 
-bool Init_Renderer();
+/*
+    init.c only defines SDL_AppInit
+*/
 
 #endif // INIT_H

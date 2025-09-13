@@ -65,7 +65,7 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
                     is_mouse_captured = false;
                 }
             }
-            else if (event->key.scancode == SDL_SCANCODE_R) // RELOAD MODELS
+            else if (event->key.scancode == SDL_SCANCODE_R) // RELOAD ASSETS
             {
                 if (!Model_LoadAllModels())
                 {

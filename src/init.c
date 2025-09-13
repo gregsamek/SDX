@@ -5,154 +5,10 @@
 #include "audio.h"
 #include "globals.h"
 #include "texture.h"
-#include "sampler.h"
-#include "pipeline.h"
 #include "gltf.h"
 #include "text.h"
 #include "sprite.h"
-
-
-bool Init_RenderTargets()
-{
-	SDL_GetWindowSizeInPixels(window, &window_width, &window_height);
-
-    // virtual_screen_texture_height = window_height;
-    virtual_screen_texture_width = virtual_screen_texture_height * window_width / window_height;
-    
-    if (virtual_screen_texture)
-    {
-        SDL_ReleaseGPUTexture(gpu_device, virtual_screen_texture);
-    }
-    virtual_screen_texture = SDL_CreateGPUTexture
-    (
-        gpu_device,
-        &(SDL_GPUTextureCreateInfo)
-        {
-            .type = SDL_GPU_TEXTURETYPE_2D,
-            .width = virtual_screen_texture_width,
-            .height = virtual_screen_texture_height,
-            .layer_count_or_depth = 1,
-            .num_levels = 1,
-            .sample_count = SDL_GPU_SAMPLECOUNT_1,
-            .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
-        }
-    );
-    if (virtual_screen_texture == NULL)
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create virtual screen texture: %s", SDL_GetError());
-        return false;
-    }
-
-	if (depth_texture)
-	{
-		SDL_ReleaseGPUTexture(gpu_device, depth_texture);
-	}
-	depth_texture = SDL_CreateGPUTexture
-	(
-		gpu_device,
-		&(SDL_GPUTextureCreateInfo)
-		{
-			.type = SDL_GPU_TEXTURETYPE_2D,
-			.width = virtual_screen_texture_width,
-			.height = virtual_screen_texture_height,
-			.layer_count_or_depth = 1,
-			.num_levels = 1,
-			.sample_count = msaa_level,
-			.format = depth_texture_format, // Match pipeline
-			.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET
-		}
-	);
-	if (depth_texture == NULL)
-	{
-		SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to recreate depth texture: %s", SDL_GetError());
-		return false;
-	}
-    
-    if (msaa_texture)
-    {
-        SDL_ReleaseGPUTexture(gpu_device, msaa_texture);
-    }
-    msaa_texture = SDL_CreateGPUTexture
-    (
-        gpu_device,
-        &(SDL_GPUTextureCreateInfo)
-        {
-            .type = SDL_GPU_TEXTURETYPE_2D,
-            .width = virtual_screen_texture_width,
-            .height = virtual_screen_texture_height,
-            .layer_count_or_depth = 1,
-            .num_levels = 1,
-            .sample_count = msaa_level, // MSAA
-            .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET
-        }
-    );
-    if (msaa_texture == NULL)
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to recreate MSAA texture: %s", SDL_GetError());
-        return false;
-    }
-
-	return true;
-}
-
-bool Init_Renderer()
-{
-    SDL_WaitForGPUIdle(gpu_device);
-
-    if (!SDL_WindowSupportsGPUSwapchainComposition(gpu_device, window, swapchain_composition))
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Window does not support GPU swapchain composition! SDL Error: %s\n", SDL_GetError());
-        swapchain_composition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Fallback to SDR
-    }
-
-    if (!SDL_WindowSupportsGPUPresentMode(gpu_device, window, swapchain_present_mode))
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Window does not support GPU present mode %d! SDL Error: %s\n", swapchain_present_mode, SDL_GetError());
-        swapchain_present_mode = SDL_GPU_PRESENTMODE_VSYNC; // Fallback to VSync
-    }
-
-    if (swapchain_present_mode == SDL_GPU_PRESENTMODE_IMMEDIATE)
-    {
-        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Immediate present mode may cause tearing! Consider using VSync or Mailbox instead.");
-        // TODO how to abstract this for the user? settings generally just have a flag to disable/enable vsync
-        manage_frame_rate_manually = true;
-    }
-
-    if (!SDL_SetGPUSwapchainParameters
-        (
-            gpu_device,
-            window,
-            swapchain_composition,
-            swapchain_present_mode
-        ))
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to set GPU swapchain parameters! SDL Error: %s\n", SDL_GetError());
-        return false;
-    }
-
-    if (!Pipeline_Init())
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize graphics pipelines");
-        return false;
-    }
-    
-    SDL_LogTrace(SDL_LOG_CATEGORY_GPU, "All graphics pipelines initialized successfully.");
-
-    if (!Sampler_Init())
-    {
-        return false;
-    }
-
-    if (!Init_RenderTargets())
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize render targets");
-        return false;
-    }
-
-    return true;
-}
+#include "render.h"
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
@@ -220,7 +76,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         depth_texture_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
     }
     
-    if (!Init_Renderer())
+    if (!Render_Init())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize renderer!");
         return SDL_APP_FAILURE;
