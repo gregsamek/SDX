@@ -39,6 +39,20 @@ bool Render_LoadRenderSettings()
             {
                 virtual_screen_texture_height = (Uint32)SDL_strtoul(setting_value, NULL, 10);
             }
+            else if (SDL_strcmp(setting_name, "msaa_level") == 0)
+            {
+                int msaa = SDL_strtol(setting_value, NULL, 10);
+                switch (msaa)
+                {
+                    case 1: msaa_level = SDL_GPU_SAMPLECOUNT_1; break;
+                    case 2: msaa_level = SDL_GPU_SAMPLECOUNT_2; break;
+                    case 4: msaa_level = SDL_GPU_SAMPLECOUNT_4; break;
+                    default:
+                        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Invalid MSAA level %d in settings.txt, using 1x MSAA", msaa);
+                        msaa_level = SDL_GPU_SAMPLECOUNT_1;
+                        break;
+                }
+            }
         }
         
         line = SDL_strtok_r(NULL, "\r\n", &saveptr);
@@ -470,7 +484,7 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
 
 bool Render()
 {
-    // TODO still need code to change virtual resolution, msaa, sampling (linear vs nearest), vsync during runtime
+    // TODO still need code to change, sampling (linear vs nearest), vsync, n_mipmap_levels during runtime
     if (renderer_needs_to_be_reinitialized)
     {
         if (!Render_LoadRenderSettings())
