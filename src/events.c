@@ -71,17 +71,6 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
                 SDL_Log("WARNING: ASSET RELOADING CURRENTLY LEAKS MEMORY"); // TODO free old assets first
                 SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Event: request to reload assets and reinitialize renderer");
                 renderer_needs_to_be_reinitialized = true;
-                if (!Model_LoadAllModels())
-                {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload models");
-                    return false;
-                }
-                if (!Sprite_LoadSprites())
-                {
-                    SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload sprites");
-                    return false;
-                }
-                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "assets reloaded successfully.");
             }
             else if (event->key.scancode == SDL_SCANCODE_TAB)
             {

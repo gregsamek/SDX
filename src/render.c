@@ -57,6 +57,10 @@ bool Render_LoadRenderSettings()
             {
                 use_linear_filtering = SDL_strtol(setting_value, NULL, 10);
             }
+            else if (SDL_strcmp(setting_name, "n_mipmap_levels") == 0)
+            {
+                n_mipmap_levels = (Uint32)SDL_strtoul(setting_value, NULL, 10);
+            }
             else
             {
                 SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unknown setting name in settings.txt: %s", setting_name);
@@ -498,6 +502,16 @@ bool Render()
         if (!Render_LoadRenderSettings())
         {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load render settings");
+            return false;
+        }
+        if (!Model_LoadAllModels())
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload models");
+            return false;
+        }
+        if (!Sprite_LoadSprites())
+        {
+            SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload sprites");
             return false;
         }
         if (!Render_Init())
