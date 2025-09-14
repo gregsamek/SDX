@@ -6,6 +6,48 @@
 
 ////////// INITIALIZATION /////////////
 
+bool Render_LoadRenderSettings()
+{
+    char path[MAXIMUM_URI_LENGTH];
+    SDL_snprintf(path, sizeof(path), "%s%s", base_path, "settings.txt");
+    size_t settings_txt_size = 0;
+    char* settings_txt = (char*)SDL_LoadFile(path, &settings_txt_size);
+    if (!settings_txt)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load sprite list: %s", SDL_GetError());
+        return false;
+    }
+
+    char* saveptr = NULL;
+    char* line = SDL_strtok_r(settings_txt, "\r\n", &saveptr);
+
+    while (line != NULL)
+    {
+        // Trim leading whitespace
+        while (*line == ' ' || *line == '\t') 
+            line++;
+        
+        // Skip empty lines
+        if (*line != '\0')
+        {
+            char* setting_name = line;
+
+            char* setting_value; 
+            SDL_strtok_r(line, " ", &setting_value);
+
+            if (SDL_strcmp(setting_name, "virtual_screen_texture_height") == 0)
+            {
+                virtual_screen_texture_height = (Uint32)SDL_strtoul(setting_value, NULL, 10);
+            }
+        }
+        
+        line = SDL_strtok_r(NULL, "\r\n", &saveptr);
+    }
+
+    SDL_free(settings_txt);
+    return true;
+}
+
 bool Render_InitRenderTargets()
 {
 	SDL_GetWindowSizeInPixels(window, &window_width, &window_height);
@@ -431,6 +473,11 @@ bool Render()
     // TODO still need code to change virtual resolution, msaa, sampling (linear vs nearest), vsync during runtime
     if (renderer_needs_to_be_reinitialized)
     {
+        if (!Render_LoadRenderSettings())
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load render settings");
+            return false;
+        }
         if (!Render_Init())
         {
             return false;

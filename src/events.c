@@ -65,8 +65,10 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
                     is_mouse_captured = false;
                 }
             }
-            else if (event->key.scancode == SDL_SCANCODE_R) // RELOAD ASSETS
+            else if (event->key.scancode == SDL_SCANCODE_R) // Reset Rendering (reload assets, reinitialize renderer, etc.)
             {
+                SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Event: request to reload assets and reinitialize renderer");
+                renderer_needs_to_be_reinitialized = true;
                 if (!Model_LoadAllModels())
                 {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload models");
