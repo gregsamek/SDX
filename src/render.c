@@ -53,6 +53,14 @@ bool Render_LoadRenderSettings()
                         break;
                 }
             }
+            else if (SDL_strcmp(setting_name, "use_linear_filtering") == 0)
+            {
+                use_linear_filtering = SDL_strtol(setting_value, NULL, 10);
+            }
+            else
+            {
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unknown setting name in settings.txt: %s", setting_name);
+            }
         }
         
         line = SDL_strtok_r(NULL, "\r\n", &saveptr);
@@ -484,7 +492,7 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
 
 bool Render()
 {
-    // TODO still need code to change, sampling (linear vs nearest), vsync, n_mipmap_levels during runtime
+    // TODO still need code to change, vsync, n_mipmap_levels during runtime
     if (renderer_needs_to_be_reinitialized)
     {
         if (!Render_LoadRenderSettings())
