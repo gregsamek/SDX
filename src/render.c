@@ -61,6 +61,18 @@ bool Render_LoadRenderSettings()
             {
                 n_mipmap_levels = (Uint32)SDL_strtoul(setting_value, NULL, 10);
             }
+            else if (SDL_strcmp(setting_name, "vsync") == 0)
+            {
+                int vsync = SDL_strtol(setting_value, NULL, 10);
+                if (vsync == 0)
+                {
+                    swapchain_present_mode = SDL_GPU_PRESENTMODE_IMMEDIATE;
+                }
+                else
+                {
+                    swapchain_present_mode = SDL_GPU_PRESENTMODE_VSYNC;
+                }
+            }
             else
             {
                 SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unknown setting name in settings.txt: %s", setting_name);
@@ -496,7 +508,7 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
 
 bool Render()
 {
-    // TODO still need code to change, vsync, n_mipmap_levels during runtime
+    // TODO still need code to change, vsync during runtime
     if (renderer_needs_to_be_reinitialized)
     {
         if (!Render_LoadRenderSettings())
