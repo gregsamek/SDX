@@ -73,6 +73,10 @@ bool Render_LoadRenderSettings()
                     swapchain_present_mode = SDL_GPU_PRESENTMODE_VSYNC;
                 }
             }
+            else if (SDL_strcmp(setting_name, "maximum_frame_rate") == 0)
+            {
+                minimum_frame_time = 1.0 / (double)SDL_strtol(setting_value, NULL, 10);
+            }
             else
             {
                 SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unknown setting name in settings.txt: %s", setting_name);
@@ -508,7 +512,6 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
 
 bool Render()
 {
-    // TODO still need code to change, vsync during runtime
     if (renderer_needs_to_be_reinitialized)
     {
         if (!Render_LoadRenderSettings())

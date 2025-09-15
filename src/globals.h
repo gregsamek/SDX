@@ -58,7 +58,7 @@ extern SDL_GPUTransferBuffer* text_transfer_buffer;
 #define MAX_TOTAL_JOINTS_TO_RENDER 99 // This determines the size of the joint matrix storage buffer
 extern SDL_GPUSwapchainComposition swapchain_composition;
 extern SDL_GPUPresentMode swapchain_present_mode;
-extern double target_frame_time;
+extern double minimum_frame_time;
 bool manage_frame_rate_manually;
 extern SDL_GPUSampleCount msaa_level;
 extern Uint32 n_mipmap_levels;

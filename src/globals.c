@@ -53,7 +53,7 @@ SDL_GPUTransferBuffer* text_transfer_buffer = NULL;
 // GPU
 SDL_GPUSwapchainComposition swapchain_composition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
 SDL_GPUPresentMode swapchain_present_mode = SDL_GPU_PRESENTMODE_VSYNC;
-double target_frame_time = 1.0 / 60.0;
+double minimum_frame_time = 1.0 / 60.0;
 bool manage_frame_rate_manually = false;
 SDL_GPUSampleCount msaa_level = SDL_GPU_SAMPLECOUNT_1;
 Uint32 n_mipmap_levels = 6;

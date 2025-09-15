@@ -47,9 +47,9 @@ void Update_FrameRate(void)
         SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "%f avg fps over last %d frames", 1.0 / average_frame_time, FRAME_TIME_ARRAY_SIZE);
     }
 
-    if (frame_time < target_frame_time && manage_frame_rate_manually) 
+    if (manage_frame_rate_manually && (frame_time < minimum_frame_time)) 
     {
-        SDL_DelayPrecise((target_frame_time - frame_time) * 1000000000.0);
+        SDL_DelayPrecise((minimum_frame_time - frame_time) * 1000000000.0);
     }
 
     previous_frame_end_ticks = SDL_GetPerformanceCounter();
