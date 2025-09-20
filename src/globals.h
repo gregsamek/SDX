@@ -31,6 +31,7 @@ extern Uint64 last_ticks;
 extern Uint64 current_ticks;
 extern Uint64 performance_frequency;
 extern float delta_time;
+extern double average_frame_rate;
 
 #define MAXIMUM_URI_LENGTH 512
 extern const char* base_path;

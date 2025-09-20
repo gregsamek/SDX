@@ -16,6 +16,7 @@ Uint64 last_ticks = 0;
 Uint64 current_ticks = 0;
 Uint64 performance_frequency = 0;
 float delta_time = 0.0f;
+double average_frame_rate = 0.0;
 
 const char* base_path = NULL;
 

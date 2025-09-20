@@ -24,7 +24,7 @@ bool Update()
 
 void Update_FrameRate(void)
 {
-    #define FRAME_TIME_ARRAY_SIZE 512
+    #define FRAME_TIME_ARRAY_SIZE 128
     static Uint64 previous_frame_end_ticks = 0;
     static float frame_times[FRAME_TIME_ARRAY_SIZE] = {0};
     static Uint16 frame_time_index = 0;
@@ -37,14 +37,12 @@ void Update_FrameRate(void)
 
     if (frame_time_index == 0)
     {
-        // Calculate average frame time
         double total_frame_time = 0.0;
         for (int i = 0; i < FRAME_TIME_ARRAY_SIZE; i++)
         {
             total_frame_time += frame_times[i];
         }
-        double average_frame_time = total_frame_time / FRAME_TIME_ARRAY_SIZE;
-        SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "%f avg fps over last %d frames", 1.0 / average_frame_time, FRAME_TIME_ARRAY_SIZE);
+        average_frame_rate = 1.0 / (total_frame_time / FRAME_TIME_ARRAY_SIZE);
     }
 
     if (manage_frame_rate_manually && (frame_time < minimum_frame_time)) 

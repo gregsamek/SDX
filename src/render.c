@@ -385,7 +385,8 @@ static bool Render_Text(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* co
     
     char test_text[256];
     // snprintf(test_text, sizeof(test_text), "Camera Position: (%.2f, %.2f, %.2f)\nVertices: %d, Indices: %d", camera.position[0], camera.position[1], camera.position[2], text_renderable.vertex_count, text_renderable.index_count);
-    snprintf(test_text, sizeof(test_text), "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789\n!@#$%%^&*()_+[]{}|;':\",.<>?/~`");
+    // snprintf(test_text, sizeof(test_text), "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789\n!@#$%%^&*()_+[]{}|;':\",.<>?/~`");
+    snprintf(test_text, sizeof(test_text), "%.0f", average_frame_rate);
     
     // TODO updating text should probably happen separately at the beginning of the frame 
     Text_UpdateAndUpload(test_text);
@@ -400,7 +401,7 @@ static bool Render_Text(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* co
     // SDL_Log("Text Width: %d, Text Height: %d", text_width, text_height);
 
     // TODO this relative target should be specified in the text renderable
-    float text_target_width = 0.25f;
+    float text_target_width = 0.0625f;
     float text_scale_correction = text_target_width * (float)virtual_screen_texture_width / (float)text_width;
     
     mat4 model_matrix;
@@ -484,12 +485,13 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
     {
         float sprite_height = sprites.arr[i].height;
         float sprite_width = sprite_height * sprites.arr[i].aspect_ratio * virtual_screen_texture_height / (float)virtual_screen_texture_width;
+        float sprite_depth = 0.01f; // TODO depth should be a property of the sprite
         float vertex_pos[4][4] = 
         {
-            {0.0f, 0.0f, 0.0f, 1.0f}, // top left
-            {sprite_width, 0.0f, 0.0f, 1.0f}, // top right
-            {0.0f, sprite_height, 0.0f, 1.0f}, // bottom left
-            {sprite_width, sprite_height, 0.0f, 1.0f}  // bottom right
+            {0.0f, 0.0f, sprite_depth, 1.0f}, // top left
+            {sprite_width, 0.0f, sprite_depth, 1.0f}, // top right
+            {0.0f, sprite_height, sprite_depth, 1.0f}, // bottom left
+            {sprite_width, sprite_height, sprite_depth, 1.0f}  // bottom right
         };
 
         SDL_PushGPUVertexUniformData(command_buffer, 0, &vertex_pos, sizeof(vertex_pos));
@@ -636,7 +638,7 @@ bool Render()
         SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "SDL_WaitAndAcquireGPUSwapchainTexture failed: %s", SDL_GetError());
         // let's just skip the frame, but this may be a legitimate error
         // for e.g. a minimized window, SDL_WaitAndAcquireGPUSwapchainTexture should still return true, 
-        // albeit with a NULL swapchain_texture (which is checked in the next if statement)
+        // albeit with a NULL swapchain_texture (which is checked in the next `if` statement)
         SDL_CancelGPUCommandBuffer(command_buffer_draw);
         return true;
     }

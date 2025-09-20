@@ -19,7 +19,7 @@ struct VertexOutput
 VertexOutput main(VertexInput input)
 {
     VertexOutput output;
-    output.Position = mul(mvp, float4(input.Position, 0.01, 1.0f));
+    output.Position = mul(mvp, float4(input.Position, 0.001, 1.0f));
     output.TexCoord = input.TexCoord;
     output.Color = float4(0.0f, 0.0f, 0.0f, 1.0f);
     return output;
