@@ -999,7 +999,7 @@ void Model_BoneAnimated_Free(Model_BoneAnimated* model)
     SDL_memset(model, 0, sizeof(Model_BoneAnimated));
 }
 
-static void calculate_joint_matrices(Joint* joint, mat4 parent_global_transform, Uint8* joint_matrices_out, Joint* root_joint) 
+static void Model_CalculateJointMatrices(Joint* joint, mat4 parent_global_transform, Uint8* joint_matrices_out, Joint* root_joint) 
 {
     mat4 local_transform;
     mat4 t_matrix, r_matrix, s_matrix;
@@ -1025,7 +1025,7 @@ static void calculate_joint_matrices(Joint* joint, mat4 parent_global_transform,
     
     for (int i = 0; i < joint->num_children; i++) 
     {
-        calculate_joint_matrices(&root_joint[joint->children[i]], global_transform, joint_matrices_out, root_joint);
+        Model_CalculateJointMatrices(&root_joint[joint->children[i]], global_transform, joint_matrices_out, root_joint);
     }
 }
 
@@ -1111,7 +1111,7 @@ bool Model_JointMat_UpdateAndUpload()
             // for mixamo models, the first joint should also be the root node 
             // in the future this may need to be determined by checking the joint hierarchy
             
-            calculate_joint_matrices
+            Model_CalculateJointMatrices
             (
                 models_bone_animated.arr[i].joints, 
                 models_bone_animated.arr[i].armature_correction_matrix, // parent transform

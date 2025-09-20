@@ -149,5 +149,5 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     performance_frequency = SDL_GetPerformanceFrequency();
     last_ticks = SDL_GetPerformanceCounter();
 
-    return SDL_APP_CONTINUE; // Success
+    return SDL_APP_CONTINUE;
 }
