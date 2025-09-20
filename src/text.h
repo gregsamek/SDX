@@ -4,7 +4,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
-// TODO what would be good defaults for these?
+// TODO what would be good defaults for these? should be enough for the longest string, right?
 // maybe just make them configurable
 #define MAX_TEXT_VERTEX_COUNT 4000
 #define MAX_TEXT_INDEX_COUNT  6000

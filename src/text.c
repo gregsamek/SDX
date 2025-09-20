@@ -114,7 +114,7 @@ bool Text_Init()
     return true;
 }
 
-// TODO should call this ASAP in a frame, not at the end with the UI draw calls
+// TODO since we're sending a buffer to the GPU, should call this ASAP in a frame, not at the end with the draw calls
 bool Text_UpdateAndUpload(const char* new_text)
 {
     TTF_SetTextString(text_renderable.ttf_text, new_text, 0);

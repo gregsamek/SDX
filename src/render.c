@@ -194,7 +194,8 @@ bool Render_Init()
     if (swapchain_present_mode == SDL_GPU_PRESENTMODE_IMMEDIATE)
     {
         SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Immediate present mode may cause tearing! Consider using VSync or Mailbox instead.");
-        // TODO how to abstract this for the user? settings generally just have a flag to disable/enable vsync
+        // TODO check for MAILBOX support and make that option available
+        // if MAILBOX is supported, use that as the default instead of IMMEDIATE
         manage_frame_rate_manually = true;
     }
 
@@ -514,6 +515,7 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
 
 bool Render()
 {
+    // TODO break this up into separate states e.g. assets need reloaded, piplines need reloaded, etc.
     if (renderer_needs_to_be_reinitialized)
     {
         if (!Render_LoadRenderSettings())

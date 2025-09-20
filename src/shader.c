@@ -64,8 +64,8 @@ SDL_GPUShader* Shader_Load
 		return NULL;
 	}
 
-	// TODO switch to reflection to load json shader info e.g. num samplers, num uniform buffers, etc.
-	// instead of hardcoding into calls of Shader_Load()
+	// TODO use reflection to load json shader info e.g. num samplers, num uniform buffers, etc.
+	// instead of hardcoding into calls of Shader_Load()?
 
 	SDL_GPUShaderCreateInfo shaderInfo = 
     {
