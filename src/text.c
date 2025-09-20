@@ -145,7 +145,7 @@ bool Text_UpdateAndUpload(const char* new_text)
 
     text_renderable.draw_sequence = text_geometry;
 
-    for ( ; text_geometry; text_geometry = text_geometry->next)
+    while (text_geometry)
     {
         for (size_t i = 0; i < text_geometry->num_vertices; i++)
         {
@@ -159,6 +159,8 @@ bool Text_UpdateAndUpload(const char* new_text)
 
         text_renderable.vertex_count += text_geometry->num_vertices;
         text_renderable.index_count += text_geometry->num_indices;
+
+        text_geometry = text_geometry->next;
     }
 
     Text_Vertex* transfer_data_mapped = SDL_MapGPUTransferBuffer(gpu_device, text_transfer_buffer, true);
