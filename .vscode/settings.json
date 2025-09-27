@@ -21,6 +21,7 @@
         "cglm.h": "c",
         "globals.h": "c",
         "events.h": "c",
-        "sdl_ttf.h": "c"
+        "sdl_ttf.h": "c",
+        "render.h": "c"
     }
 }

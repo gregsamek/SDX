@@ -74,11 +74,6 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             }
             else if (event->key.scancode == SDL_SCANCODE_TAB)
             {
-                if (!Audio_PlayTestSound())
-                {
-                    SDL_LogError(SDL_LOG_CATEGORY_AUDIO, "Failed to play test sound");
-                    return false;
-                }
                 SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
             }
         } break;

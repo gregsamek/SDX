@@ -1,7 +1,7 @@
+#ifdef SDL3_MIXER
 #include <SDL3_mixer/SDL_mixer.h>
 
 #include "audio.h"
-#include "globals.h"
 
 static Mix_Music *test_music = NULL;
 static Mix_Chunk *test_sound = NULL;
@@ -52,3 +52,7 @@ bool Audio_PlayTestSound()
     }
     return true;
 }
+#endif // SDL3_MIXER
+#include "audio.h"
+bool Audio_Init() { return true; }
+bool Audio_PlayTestSound() { return false; }

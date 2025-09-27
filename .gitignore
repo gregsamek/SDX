@@ -74,3 +74,6 @@ CMakeFiles/
 CMakeCache.txt
 *.cmake
 Makefile
+external/SDL3_image.xcframework/
+external/SDL3_ttf.xcframework/
+external/SDL3.xcframework/

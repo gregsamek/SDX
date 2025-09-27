@@ -1,48 +1,86 @@
-#!/bin/sh
+#!/usr/bin/env bash
+set -euo pipefail
 
-set -e
+./compile_shaders.sh
 
-(
-    ./compile_shaders.sh
+APP="MyApp.app"
+APP_MACOS="$APP/Contents/MacOS"
+APP_FRAMEWORKS="$APP/Contents/Frameworks"
+mkdir -p "$APP_MACOS" "$APP_FRAMEWORKS" obj
 
-    mkdir -p obj
+# Where the xcframeworks live
+DEPS_DIR="$(pwd)/external"
+SDL3_XC="$DEPS_DIR/SDL3.xcframework"
+SDL3_TTF_XC="$DEPS_DIR/SDL3_ttf.xcframework"
+SDL3_IMG_XC="$DEPS_DIR/SDL3_image.xcframework"
 
-    # Determine the number of available CPU cores
-    if command -v nproc >/dev/null; then
-        JOBS=$(nproc)
-    elif command -v sysctl >/dev/null; then
-        JOBS=$(sysctl -n hw.ncpu)
-    else
-        JOBS=2
-    fi
+# macOS slice in each xcframework
+SDL3_SLICE="$SDL3_XC/macos-arm64_x86_64"
+SDL3_TTF_SLICE="$SDL3_TTF_XC/macos-arm64_x86_64"
+SDL3_IMG_SLICE="$SDL3_IMG_XC/macos-arm64_x86_64"
 
-    find src -name "*.c" | xargs -P "$JOBS" -I {} sh -c '
-        source_file="$1"
-        echo "Compiling $source_file"
-        clang -c "$source_file" -o "obj/$(basename "$source_file" .c).o" \
-            -I/usr/local/include \
-            -fcolor-diagnostics -fansi-escape-codes \
-            -g -O0 \
-            -fno-omit-frame-pointer
-    ' _ {}
-
-    echo "Linking..."
-    clang obj/*.o -o \
-        MyApp.app/Contents/MacOS/main \
-        -L./MyApp.app/Contents/Frameworks \
-        -lSDL3 -lSDL3_ttf -lSDL3_image -lSDL3_mixer \
-        "-Wl,-rpath,@executable_path/../Frameworks" \
-        -g # Keep -g on the link line to tell the linker to preserve symbols
-
-    echo "Generating dSYM file..."
-    dsymutil MyApp.app/Contents/MacOS/main
-
-    rm -rf obj
-
-    echo "Build complete."
-
-    # ./MyApp.app/Contents/MacOS/main
+# Framework search flags (used for both compile and link)
+FW_CFLAGS=(
+  -F "$SDL3_SLICE"
+  -F "$SDL3_TTF_SLICE"
+  -F "$SDL3_IMG_SLICE"
 )
+
+# If you still include as #include <SDL.h> etc., uncomment the headers line(s):
+# FW_CFLAGS+=( -I "$SDL3_SLICE/SDL3.framework/Headers" )
+# FW_CFLAGS+=( -I "$SDL3_TTF_SLICE/SDL3_ttf.framework/Headers" )
+# FW_CFLAGS+=( -I "$SDL3_IMG_SLICE/SDL3_image.framework/Headers" )
+
+# Determine parallelism
+if command -v nproc >/dev/null 2>&1; then
+  JOBS=$(nproc)
+elif command -v sysctl >/dev/null 2>&1; then
+  JOBS=$(sysctl -n hw.ncpu)
+else
+  JOBS=2
+fi
+
+# Compile all C sources in parallel using xargs correctly
+export LC_ALL=C
+find src -name "*.c" -print0 | xargs -0 -P "$JOBS" -I {} sh -c '
+  src="$1"; shift
+  obj="obj/${src##*/}"; obj="${obj%.c}.o"
+  echo "Compiling $src -> $obj"
+  clang -c "$src" -o "$obj" "$@" \
+    -fcolor-diagnostics -fansi-escape-codes -g -O0 -fno-omit-frame-pointer
+' _ {} "${FW_CFLAGS[@]}"
+
+echo "Linking..."
+clang obj/*.o -o "$APP_MACOS/main" \
+  "${FW_CFLAGS[@]}" \
+  -framework SDL3 \
+  -framework SDL3_ttf \
+  -framework SDL3_image \
+  -Wl,-rpath,@executable_path/../Frameworks \
+  -Wl,-rpath,@loader_path/../Frameworks \
+  -g
+
+echo "Embedding frameworks..."
+cp -R "$SDL3_SLICE/SDL3.framework"         "$APP_FRAMEWORKS/" 2>/dev/null || true
+cp -R "$SDL3_TTF_SLICE/SDL3_ttf.framework" "$APP_FRAMEWORKS/" 2>/dev/null || true
+cp -R "$SDL3_IMG_SLICE/SDL3_image.framework" "$APP_FRAMEWORKS/" 2>/dev/null || true
+
+echo "Codesigning (ad-hoc for local runs)..."
+for FW in SDL3 SDL3_ttf SDL3_image; do
+  if [ -d "$APP_FRAMEWORKS/$FW.framework" ]; then
+    codesign --force --sign - --timestamp=none "$APP_FRAMEWORKS/$FW.framework"
+  fi
+done
+codesign --force --sign - --timestamp=none "$APP"
+
+echo "Generating dSYM file..."
+dsymutil "$APP_MACOS/main"
+
+rm -rf obj
+echo "Build complete."
+
+echo "Verify linkage:"
+otool -L "$APP_MACOS/main" || true
 
 # OTHER SCRIPTS THAT OCCASIONALLY NEED TO BE RUN:
 
@@ -53,37 +91,3 @@ set -e
 # find SDL3_shadercross-3.0.0-darwin-arm64-x64 -type f -exec xattr -d com.apple.quarantine {} \; 2>/dev/null
 
 ########################
-
-# SDL has started using .framework folders instead of .dylibs 
-# to keep compiling as .dylibs, use the option to turn frameworks off 
-# once all of the libraries (mixer, net) have precompiled official binaries released, I may switch. 
-# But until then, I need to compile those helper libraries from source; 
-# I can't get them to compile using the frameworks, but I can compile with the dylibs installed to usr/local
-
-# check dependencies with otools:
-# otool -L MyApp.app/Contents/Frameworks/libSDL3_ttf.0.dylib
-
-# cmake -S . -B ./build -DSDL_SHARED=ON -DSDL3_FRAMEWORK=OFF -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
-
-# these dylibs end of being broken because they are still linked to the framework versions of SDL3,
-# so I need to fix the install names and change the framework references to the dylibs
-
-# cd MyApp.app/Contents/Frameworks
-
-# install_name_tool -id @rpath/libSDL3.0.dylib libSDL3.0.dylib
-# install_name_tool -change @rpath/SDL3.framework/Versions/A/SDL3 @rpath/libSDL3.0.dylib libSDL3_ttf.0.dylib
-# install_name_tool -change @rpath/SDL3.framework/Versions/A/SDL3 @rpath/libSDL3.0.dylib libSDL3_image.0.dylib
-
-# because I'm compiling SDL_ttf from source, I also need to copy over libfreetype and libpng,
-# and fix their install names to point to the rpath, so that they can be found
-
-# otool -L libSDL3_ttf.0.dylib
-
-# cp /opt/homebrew/opt/freetype/lib/libfreetype.6.dylib .
-# install_name_tool -id @rpath/libfreetype.6.dylib libfreetype.6.dylib
-# install_name_tool -change /opt/homebrew/opt/freetype/lib/libfreetype.6.dylib @rpath/libfreetype.6.dylib libSDL3_ttf.0.dylib
-# otool -L libfreetype.6.dylib
-
-# cp /opt/homebrew/opt/libpng/lib/libpng16.16.dylib .
-# install_name_tool -id @rpath/libpng16.16.dylib libpng16.16.dylib
-# install_name_tool -change /opt/homebrew/opt/libpng/lib/libpng16.16.dylib @rpath/libpng16.16.dylib libfreetype.6.dylib
