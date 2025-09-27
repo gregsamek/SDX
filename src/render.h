@@ -6,6 +6,7 @@
 #include "events.h"
 #include "model.h"
 
+bool Render_LoadRenderSettings();
 bool Render_Init();
 bool Render();
 

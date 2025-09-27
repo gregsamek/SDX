@@ -82,8 +82,6 @@ echo "Build complete."
 echo "Verify linkage:"
 otool -L "$APP_MACOS/main" || true
 
-# OTHER SCRIPTS THAT OCCASIONALLY NEED TO BE RUN:
-
 ########################
 
 # run this when shadercross is updated to fix Apple quarantine nonsense

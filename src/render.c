@@ -94,7 +94,6 @@ bool Render_InitRenderTargets()
 {
 	SDL_GetWindowSizeInPixels(window, &window_width, &window_height);
 
-    // virtual_screen_texture_height = window_height;
     virtual_screen_texture_width = virtual_screen_texture_height * window_width / window_height;
     
     if (virtual_screen_texture)
