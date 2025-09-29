@@ -55,7 +55,7 @@ bool Pipeline_Unanimated_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "unanimated.frag", // Base filename
+        "unlit_alphatest.frag", // Base filename
         1, // num_samplers (for the single texture)
         0, // num_storage_textures
         0, // num_storage_buffers
@@ -175,7 +175,7 @@ bool Pipeline_BoneAnimated_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "unanimated.frag", // Base filename
+        "unlit_alphatest.frag", // Base filename
         1, // num_samplers (for the single texture)
         0, // num_storage_textures
         0, // num_storage_buffers
@@ -439,7 +439,7 @@ bool Pipeline_FullscreenQuad_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "unanimated.frag", // Base filename
+        "unlit_alphatest.frag", // Base filename
         1, // num_samplers (for the single texture)
         0, // num_storage_textures
         0, // num_storage_buffers
@@ -523,7 +523,7 @@ bool Pipeline_Sprite_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "unanimated.frag", // Base filename
+        "unlit_alphatest.frag", // Base filename
         1, // num_samplers (for the single texture)
         0, // num_storage_textures
         0, // num_storage_buffers

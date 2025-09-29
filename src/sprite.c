@@ -2,6 +2,11 @@
 #include "globals.h"
 #include "texture.h"
 
+// TODO switch to sprite sheets, add UV coordinates to Sprite struct
+// (current implementation uses a dedicated texture for each sprite)
+
+// TODO animated sprites
+
 static bool Sprite_Load(const char* sprite_name, Sprite* sprite)
 {
     SDL_Surface* texture_surface = LoadImage(sprite_name);

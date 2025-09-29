@@ -352,9 +352,6 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
 
 static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_BoneAnimated* model)
 {
-    cgltf_mesh* mesh;
-    cgltf_skin* skin = node->skin;
-    
     /*
         If this is a mixamo model...
 
@@ -396,6 +393,8 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
     glm_mat4_mul(model->armature_correction_matrix, s_matrix, model->armature_correction_matrix);
 
     glm_mat4_identity(model->model_matrix);
+
+    cgltf_skin* skin = node->skin;
     
     if (skin)
     {
@@ -403,6 +402,8 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
         return false;
     }
     
+    // we don't know the order of the children,
+    // we just know one of them should have the skin
     for (size_t i = 0; i < node->children_count; ++i)
     {
         skin = node->children[i]->skin;
@@ -419,9 +420,9 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ERROR: Failed to load skin; node: %s", node->name);
         return false;
     }
-        
-    mesh = node->mesh;
-    
+
+    cgltf_mesh* mesh = node->mesh;
+
     model->num_joints = (Uint8)node->skin->joints_count;
     model->joints = (Joint*)SDL_malloc(sizeof(Joint) * model->num_joints);
     if (model->joints == NULL)
