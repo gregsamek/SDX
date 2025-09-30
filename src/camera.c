@@ -66,8 +66,8 @@ void Camera_Update()
     glm_vec3_crossn(camera.right, camera.forward, camera.up);
 
     vec3 camera_target = { camera.position[0] + camera.forward[0], camera.position[1] + camera.forward[1], camera.position[2] + camera.forward[2] };
-    mat4 view_matrix;
-    glm_lookat(camera.position, camera_target, camera.up, view_matrix);
+
+    glm_lookat(camera.position, camera_target, camera.up, camera.view_matrix);
 
     mat4 projection_matrix;
     glm_perspective
@@ -79,7 +79,7 @@ void Camera_Update()
         projection_matrix
     );
 
-    glm_mat4_mul(projection_matrix, view_matrix, camera.view_projection_matrix);
+    glm_mat4_mul(projection_matrix, camera.view_matrix, camera.view_projection_matrix);
 }
 
 void Camera_Log()

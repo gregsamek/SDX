@@ -17,16 +17,45 @@ typedef Uint8 Model_Type; enum
 	MODEL_TYPE_INSTANCED,
 };
 
+typedef struct TransformsUBO
+{
+    mat4 mvp; // VP * M
+    mat4 mv;  // V * M
+	#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+	mat4 normal; // upper-left 3x3 is the normal matrix, rest identity
+	#endif
+} TransformsUBO;
+
+typedef struct LightingUBO
+{
+    vec3 light_pos_vs; float pad0;   // light position in view space
+    vec3 light_color;  float pad1;   // RGB [0..1]
+    vec3 ambient_color; float shininess; // ambient RGB and shininess exponent
+} LightingUBO;
+
 typedef struct Vertex_Position
 {
 	float x, y, z;
 } Vertex_Position;
+
+typedef struct Vertex_PositionNormal
+{
+	float x, y, z;  // position
+	float nx, ny, nz; // normal
+} Vertex_PositionNormal;
 
 typedef struct Vertex_PositionTexture
 {
 	float x, y, z;
 	float u, v;
 } Vertex_PositionTexture;
+
+typedef struct Vertex_PositionNormalTexture
+{
+    float x, y, z;  // position
+    float nx, ny, nz; // normal
+    float u, v;     // texcoord
+} Vertex_PositionNormalTexture;
 
 #define MAX_JOINTS_PER_VERTEX 4
 

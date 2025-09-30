@@ -95,6 +95,7 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
     }
 
     cgltf_accessor* position_accessor = NULL;
+    cgltf_accessor* normal_accessor = NULL;
     cgltf_accessor* texcoord_accessor = NULL;
 
     for (size_t i = 0; i < primitive->attributes_count; ++i)
@@ -104,19 +105,23 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
         {
             position_accessor = attr->data;
         }
+        else if (attr->type == cgltf_attribute_type_normal)
+        {
+            normal_accessor = attr->data;
+        }
         else if (attr->type == cgltf_attribute_type_texcoord && attr->index == 0)
         {
             texcoord_accessor = attr->data;
         }
     }
 
-    if (!position_accessor || !texcoord_accessor)
+    if (!position_accessor || !normal_accessor || !texcoord_accessor)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing POSITION or TEXCOORD attributes.");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing POSITION, NORMAL or TEXCOORD attributes.");
         return false;
     }
 
-    Uint32 vertex_data_size = (Uint32)(sizeof(Vertex_PositionTexture) * position_accessor->count);
+    Uint32 vertex_data_size = (Uint32)(sizeof(Vertex_PositionNormalTexture) * position_accessor->count);
     model->vertex_buffer = SDL_CreateGPUBuffer
     (
         gpu_device,
@@ -179,7 +184,7 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
         return false;
     }
 
-    Uint8* transfer_buffer_mapped = SDL_MapGPUTransferBuffer(gpu_device, transfer_buffer, false);
+    Vertex_PositionNormalTexture* transfer_buffer_mapped = SDL_MapGPUTransferBuffer(gpu_device, transfer_buffer, false);
     if (transfer_buffer_mapped == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to map vertex/index transfer buffer: %s", SDL_GetError());
@@ -189,21 +194,28 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
     for (size_t i = 0; i < position_accessor->count; ++i)
     {
         // Read position (vec3 float)
-        if (!cgltf_accessor_read_float(position_accessor, i, (float*)(transfer_buffer_mapped + i * sizeof(Vertex_PositionTexture)), 3))
+        if (!cgltf_accessor_read_float(position_accessor, i, &transfer_buffer_mapped[i].x, 3))
         {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read position for vertex %zu", i);
             return false;
         }
 
+        // Read normal (vec3 float), handle missing accessor
+        if (!cgltf_accessor_read_float(normal_accessor, i, &transfer_buffer_mapped[i].nx, 3))
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read normal for vertex %zu", i);
+            return false;
+        }
+
         // Read texcoord (vec2 float), handle missing accessor
-        if (!cgltf_accessor_read_float(texcoord_accessor, i, (float*)(transfer_buffer_mapped + i * sizeof(Vertex_PositionTexture) + sizeof(Vertex_Position)), 2))
+        if (!cgltf_accessor_read_float(texcoord_accessor, i, &transfer_buffer_mapped[i].u, 2))
         {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read texcoord for vertex %zu", i);
             return false;
         }
     }
 
-    size_t unpacked_count = cgltf_accessor_unpack_indices(index_accessor, (transfer_buffer_mapped + vertex_data_size), sizeof(Uint16), model->index_count);
+    size_t unpacked_count = cgltf_accessor_unpack_indices(index_accessor, (transfer_buffer_mapped + position_accessor->count), sizeof(Uint16), model->index_count);
     if (unpacked_count != model->index_count)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error unpacking gltf primitive indices: unexpected index_count (unpacked %zu, expected %u).", unpacked_count, model->index_count);

@@ -240,18 +240,57 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
 
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_unanimated);
 
-    // mat4 projection_matrix_ortho;
-    // glm_ortho(-2.0f, 2.0f, -2.0f, 2.0f, 0.0f, 1.0f, projection_matrix_ortho);
-
     for (size_t i = 0; i < models_unanimated.len; i++)
     {
+        // TODO implement model matrix per model
         mat4 model_matrix;
         glm_mat4_identity(model_matrix);
+
+        mat4 mv_matrix;
+        glm_mat4_mul(camera.view_matrix, model_matrix, mv_matrix);
         
         mat4 mvp_matrix;
         glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
-        // glm_mat4_mul(projection_matrix_ortho, model_matrix, mvp_matrix);
-        SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp_matrix, sizeof(mvp_matrix));
+        
+        TransformsUBO transforms = {0};
+        glm_mat4_copy(mvp_matrix, transforms.mvp);
+        glm_mat4_copy(mv_matrix, transforms.mv);
+
+        #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+        // normal matrix = inverse-transpose of the upper-left 3x3 of mv
+        mat3 mv3, normal3;
+        glm_mat4_pick3(mv_matrix, mv3);     // take upper-left 3x3
+        glm_mat3_inv(mv3, normal3);
+        glm_mat3_transpose(normal3);
+        glm_mat4_identity(transforms.normal);
+        glm_mat4_ins3(normal3, transforms.normal);
+        #endif
+
+        SDL_PushGPUVertexUniformData(command_buffer, 0, &transforms, sizeof(transforms));
+
+        vec3 light_position_world = {0.0f, 10.0f, 0.0f};
+        vec3 light_color = {1.0f, 1.0f, 1.0f};
+        vec3 ambient_color = {0.1f, 0.1f, 0.1f};
+        float shininess = 32.0f;
+        
+        vec4 lp_world4 = { light_position_world[0], light_position_world[1], light_position_world[2], 1.0f };
+        vec4 lp_view4;
+        glm_mat4_mulv(camera.view_matrix, lp_world4, lp_view4);
+        vec3 light_pos_vs = { lp_view4[0], lp_view4[1], lp_view4[2] };
+
+        LightingUBO lighting = {0};
+        lighting.light_pos_vs[0] = light_pos_vs[0];
+        lighting.light_pos_vs[1] = light_pos_vs[1];
+        lighting.light_pos_vs[2] = light_pos_vs[2];
+        lighting.light_color[0] = light_color[0];
+        lighting.light_color[1] = light_color[1];
+        lighting.light_color[2] = light_color[2];
+        lighting.ambient_color[0] = ambient_color[0];
+        lighting.ambient_color[1] = ambient_color[1];
+        lighting.ambient_color[2] = ambient_color[2];
+        lighting.shininess = shininess;
+
+        SDL_PushGPUFragmentUniformData(command_buffer, 0, &lighting, sizeof(lighting));
         
         SDL_BindGPUVertexBuffers
         (
@@ -277,17 +316,20 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
             }, 
             SDL_GPU_INDEXELEMENTSIZE_16BIT
         );
+
+        SDL_GPUTexture* diffuse_tex = models_unanimated.arr[i].texture;    
+        SDL_GPUTexture* specular_tex = models_unanimated.arr[i].texture;
         
         SDL_BindGPUFragmentSamplers
         (
             render_pass, 
-            0, // fragment sampler slot
-            &(SDL_GPUTextureSamplerBinding)
-            { 
-                .texture = models_unanimated.arr[i].texture, 
-                .sampler = default_texture_sampler 
-            }, 
-            1 // num_bindings
+            0, // first slot
+            (SDL_GPUTextureSamplerBinding[])
+            {
+                { .texture = diffuse_tex,  .sampler = default_texture_sampler },
+                { .texture = specular_tex, .sampler = default_texture_sampler }
+            },
+            2 // num_bindings
         );
 
         SDL_DrawGPUIndexedPrimitives
