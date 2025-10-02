@@ -14,9 +14,8 @@ SamplerState Sampler  : register(s0, space2);
 
 cbuffer LightingUBO : register(b0, space3)
 {
-    float3 lightPosVS; float pad0;
-    float3 lightColor; float pad1;
-    float3 ambientColor; float shininess;
+    float3 lightPosVS; float ambientStrength;
+    float3 lightColor; float shininess;
 };
 
 struct FragmentInput
@@ -45,12 +44,18 @@ FragmentOutput main(FragmentInput input)
     float3 N = normalize(input.NormalVS);
     float3 L = normalize(lightPosVS - input.PositionVS);
     float3 V = normalize(-input.PositionVS); // camera at origin in view space
-    float3 R = reflect(-L, N);
+    float3 H = normalize(L + V);
 
-    float NdotL = saturate(dot(N, L));
-    float spec = (NdotL > 0.0f) ? pow(saturate(dot(R, V)), max(shininess, 0.0f)) : 0.0f;
+    // fyi NdotL is sometimes referred to as the "lambertian"
+    // float NdotL = saturate(dot(N, L));
 
-    float3 ambient  = ambientColor * albedo.rgb;
+    // this is Valve's Half Lambert trick
+    // it's less harsh, and looks less flat than jacking the ambient term way up
+    // see: https://developer.valvesoftware.com/wiki/Half_Lambert
+    float NdotL = pow(dot(N, L) * 0.5 + 0.5, 2);
+    float spec = (NdotL > 0.0f) ? pow(saturate(dot(H, N)), shininess) : 0.0f;
+
+    float3 ambient  = ambientStrength * lightColor * albedo.rgb;
     float3 diffuse  = lightColor * NdotL * albedo.rgb;
     float3 specular = lightColor * spec * specSample;
 

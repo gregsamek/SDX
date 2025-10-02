@@ -270,7 +270,7 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
 
         vec3 light_position_world = {0.0f, 10.0f, 0.0f};
         vec3 light_color = {1.0f, 1.0f, 1.0f};
-        vec3 ambient_color = {0.1f, 0.1f, 0.1f};
+        float ambient_strength = 0.1f;
         float shininess = 32.0f;
         
         vec4 lp_world4 = { light_position_world[0], light_position_world[1], light_position_world[2], 1.0f };
@@ -285,9 +285,9 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         lighting.light_color[0] = light_color[0];
         lighting.light_color[1] = light_color[1];
         lighting.light_color[2] = light_color[2];
-        lighting.ambient_color[0] = ambient_color[0];
-        lighting.ambient_color[1] = ambient_color[1];
-        lighting.ambient_color[2] = ambient_color[2];
+        lighting.ambient_strength = ambient_strength;
+
+        // TODO shininess should be a material property, not a light property
         lighting.shininess = shininess;
 
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &lighting, sizeof(lighting));

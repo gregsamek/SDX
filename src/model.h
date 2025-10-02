@@ -28,9 +28,8 @@ typedef struct TransformsUBO
 
 typedef struct LightingUBO
 {
-    vec3 light_pos_vs; float pad0;   // light position in view space
-    vec3 light_color;  float pad1;   // RGB [0..1]
-    vec3 ambient_color; float shininess; // ambient RGB and shininess exponent
+    vec3 light_pos_vs; float ambient_strength;   // light position is in view space
+    vec3 light_color;  float shininess;
 } LightingUBO;
 
 typedef struct Vertex_Position
