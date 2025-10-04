@@ -6,12 +6,12 @@ set -e
     # find SDL3_shadercross-3.0.0-darwin-arm64-x64 -type f -exec xattr -d com.apple.quarantine {} \; 2>/dev/null
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/unanimated.vert.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/unanimated.vert.json
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unanimated_phong.vert.hlsl -o MyApp.app/Contents/Resources/shaders/unanimated_phong.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unanimated_phong.vert.hlsl -o MyApp.app/Contents/Resources/shaders/unanimated_phong.vert.json
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/blinnphong_unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_unanimated.vert.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/blinnphong_unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_unanimated.vert.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unlit_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/unlit_alphatest.frag.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unlit_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/unlit_alphatest.frag.json
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/phong_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/phong_alphatest.frag.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/phong_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/phong_alphatest.frag.json
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/blinnphong_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_alphatest.frag.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/blinnphong_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_alphatest.frag.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/bone_animated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/bone_animated.vert.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/bone_animated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/bone_animated.vert.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/text.vert.hlsl -o MyApp.app/Contents/Resources/shaders/text.vert.msl

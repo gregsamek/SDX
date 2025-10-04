@@ -165,7 +165,7 @@ bool Pipeline_Unanimated_Phong_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "unanimated_phong.vert", // Base filename
+        "blinnphong_unanimated.vert", // Base filename
         0, // num_samplers
         0, // num_storage_textures
         0, // num_storage_buffers
@@ -180,7 +180,7 @@ bool Pipeline_Unanimated_Phong_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "phong_alphatest.frag", // Base filename
+        "blinnphong_alphatest.frag", // Base filename
         2, // num_samplers (for the single texture)
         0, // num_storage_textures
         0, // num_storage_buffers

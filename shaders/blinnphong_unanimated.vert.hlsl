@@ -2,7 +2,9 @@ cbuffer TransformUBO : register(b0, space1)
 {
     float4x4 mvp; // VP * M
     float4x4 mv;  // V * M
-    // float4x4 normalMat4; // upper-left 3x3 = inverse-transpose of (V*M).xyz
+#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+    float4x4 normalMat4; // upper-left 3x3 = inverse-transpose of (V*M).xyz
+#endif
 };
 
 struct VertexInput
@@ -30,12 +32,12 @@ VertexOutput main(VertexInput input)
     float4 posVS = mul(mv, posWS);
     output.PositionVS = posVS.xyz;
 
-    #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
-        float3x3 normalMat = (float3x3)normalMat4;
-        output.NormalVS = normalize(mul(normalMat, input.Normal));
-    #else
-        output.NormalVS = normalize(mul((float3x3)mv, input.Normal));
-    #endif
+#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+    float3x3 normalMat = (float3x3)normalMat4;
+    output.NormalVS = normalize(mul(normalMat, input.Normal));
+#else
+    output.NormalVS = normalize(mul((float3x3)mv, input.Normal));
+#endif
 
     output.TexCoord = input.TexCoord;
 

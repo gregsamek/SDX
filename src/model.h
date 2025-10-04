@@ -21,9 +21,9 @@ typedef struct TransformsUBO
 {
     mat4 mvp; // VP * M
     mat4 mv;  // V * M
-	#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
 	mat4 normal; // upper-left 3x3 is the normal matrix, rest identity
-	#endif
+#endif
 } TransformsUBO;
 
 typedef struct LightingUBO

@@ -256,7 +256,7 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         glm_mat4_copy(mvp_matrix, transforms.mvp);
         glm_mat4_copy(mv_matrix, transforms.mv);
 
-        #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
         // normal matrix = inverse-transpose of the upper-left 3x3 of mv
         mat3 mv3, normal3;
         glm_mat4_pick3(mv_matrix, mv3);     // take upper-left 3x3
@@ -264,11 +264,11 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         glm_mat3_transpose(normal3);
         glm_mat4_identity(transforms.normal);
         glm_mat4_ins3(normal3, transforms.normal);
-        #endif
+#endif
 
         SDL_PushGPUVertexUniformData(command_buffer, 0, &transforms, sizeof(transforms));
 
-        vec3 light_position_world = {0.0f, 10.0f, 0.0f};
+        vec3 light_position_world = {0.0f, 5.0f, 0.0f};
         vec3 light_color = {1.0f, 1.0f, 1.0f};
         float ambient_strength = 0.1f;
         float shininess = 32.0f;
