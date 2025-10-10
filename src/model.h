@@ -26,12 +26,6 @@ typedef struct TransformsUBO
 #endif
 } TransformsUBO;
 
-typedef struct LightingUBO
-{
-    vec3 light_pos_vs; float ambient_strength;   // light position is in view space
-    vec3 light_color;  float shininess;
-} LightingUBO;
-
 typedef struct Vertex_Position
 {
 	float x, y, z;

@@ -10,20 +10,23 @@ typedef struct
     vec3 direction;
     float strength; // ???
     vec3 color;
+    float padding; // pad to vec4 size
 } Light_Directional;
 
 typedef struct
 {
-    vec3 location;
-    float attenuation_constant; // ???
+    vec3 position;
+    float attenuation_constant_linear; 
     vec3 color;
+    float attenuation_constant_quadratic;
 } Light_Point;
 
 typedef struct
 {
     vec3 position;
-    float cutoff;  // don't pass angle; pass SDL_cosf(glm_rad(angle))
+    float cutoff_inner;  // don't pass angle; pass SDL_cosf(glm_rad(angle))
     vec3 direction;
+    float cutoff_outer;  // don't pass angle; pass SDL_cosf(glm_rad(angle))
 } Light_Spotlight;
 
 

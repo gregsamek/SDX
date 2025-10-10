@@ -15,7 +15,7 @@ SamplerState Sampler  : register(s0, space2);
 cbuffer LightingUBO : register(b0, space3)
 {
     float3 lightPosVS; float ambientStrength;
-    float3 lightColor; float shininess;
+    float3 lightColor; float padding1;
 };
 
 struct FragmentInput
@@ -58,6 +58,8 @@ FragmentOutput main(FragmentInput input)
     // less harsh; looks better than boosting the ambient term way up
     // https://developer.valvesoftware.com/wiki/Half_Lambert
     float NdotL = pow(dot(N, L) * 0.5 + 0.5, 2);
+
+    float shininess = 32.0f; // adjustable parameter; technically supposed to be per-material
     float spec = (NdotL > 0.0f) ? pow(saturate(dot(H, N)), shininess) : 0.0f;
 
     float3 ambient  = attenuation * ambientStrength * lightColor * albedo.rgb;

@@ -3,6 +3,7 @@
 #include "text.h"
 #include "sampler.h"
 #include "pipeline.h"
+#include "lights.h"
 
 ////////// INITIALIZATION /////////////
 
@@ -271,24 +272,19 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         vec3 light_position_world = {0.0f, 5.0f, 0.0f};
         vec3 light_color = {1.0f, 1.0f, 1.0f};
         float ambient_strength = 0.1f;
-        float shininess = 32.0f;
         
         vec4 lp_world4 = { light_position_world[0], light_position_world[1], light_position_world[2], 1.0f };
         vec4 lp_view4;
         glm_mat4_mulv(camera.view_matrix, lp_world4, lp_view4);
         vec3 light_pos_vs = { lp_view4[0], lp_view4[1], lp_view4[2] };
 
-        LightingUBO lighting = {0};
-        lighting.light_pos_vs[0] = light_pos_vs[0];
-        lighting.light_pos_vs[1] = light_pos_vs[1];
-        lighting.light_pos_vs[2] = light_pos_vs[2];
-        lighting.light_color[0] = light_color[0];
-        lighting.light_color[1] = light_color[1];
-        lighting.light_color[2] = light_color[2];
-        lighting.ambient_strength = ambient_strength;
-
-        // TODO shininess should be a material property, not a light property
-        lighting.shininess = shininess;
+        Light_Point lighting = {0};
+        lighting.position[0] = light_pos_vs[0];
+        lighting.position[1] = light_pos_vs[1];
+        lighting.position[2] = light_pos_vs[2];
+        lighting.color[0] = light_color[0];
+        lighting.color[1] = light_color[1];
+        lighting.color[2] = light_color[2];
 
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &lighting, sizeof(lighting));
         
