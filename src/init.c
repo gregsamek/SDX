@@ -8,6 +8,7 @@
 #include "text.h"
 #include "sprite.h"
 #include "render.h"
+#include "lights.h"
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
 {
@@ -99,8 +100,9 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    // TODO size joint buffers appropriately based on the number of joints in the loaded models
+    // STORAGE BUFFERS
 
+    // TODO size joint buffers appropriately based on the number of joints in the loaded models
     joint_matrix_storage_buffer = SDL_CreateGPUBuffer
     (
         gpu_device, 
@@ -126,6 +128,36 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         }
     );
     if (joint_matrix_transfer_buffer == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create bone matrix transfer buffer: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    lights_storage_buffer = SDL_CreateGPUBuffer
+    (
+        gpu_device, 
+        &(SDL_GPUBufferCreateInfo)
+        {
+            .usage = SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ,
+            .size = MAX_TOTAL_LIGHTS * sizeof(Light_Spotlight)
+        }
+    );
+    if (lights_storage_buffer == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create bone matrix storage buffer: %s", SDL_GetError());
+        return SDL_APP_FAILURE;
+    }
+
+    lights_transfer_buffer = SDL_CreateGPUTransferBuffer
+    (
+        gpu_device,
+        &(SDL_GPUTransferBufferCreateInfo)
+        {
+            .usage = SDL_GPU_TRANSFERBUFFERUSAGE_UPLOAD,
+            .size = MAX_TOTAL_JOINTS_TO_RENDER * sizeof(mat4)
+        }
+    );
+    if (lights_transfer_buffer == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create bone matrix transfer buffer: %s", SDL_GetError());
         return SDL_APP_FAILURE;

@@ -24,9 +24,13 @@ typedef struct
 typedef struct
 {
     vec3 position;
-    float cutoff_inner;  // don't pass angle; pass SDL_cosf(glm_rad(angle))
+    float attenuation_constant_linear; 
+    vec3 color;
+    float attenuation_constant_quadratic;
     vec3 direction;
-    float cutoff_outer;  // don't pass angle; pass SDL_cosf(glm_rad(angle))
+    float cutoff_inner;  // don't pass angle; pass SDL_cosf(glm_rad(angle))
+    float cutoff_outer;
+    float padding[3]; // pad to vec4 size
 } Light_Spotlight;
 
 

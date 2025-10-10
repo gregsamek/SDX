@@ -57,6 +57,7 @@ extern SDL_GPUTransferBuffer* text_transfer_buffer;
 
 // GPU
 #define MAX_TOTAL_JOINTS_TO_RENDER 99 // This determines the size of the joint matrix storage buffer
+#define MAX_TOTAL_LIGHTS 16
 extern SDL_GPUSwapchainComposition swapchain_composition;
 extern SDL_GPUPresentMode swapchain_present_mode;
 extern double minimum_frame_time;
@@ -81,5 +82,7 @@ extern Uint32 virtual_screen_texture_height;
 extern SDL_GPUSampler* default_texture_sampler;
 extern SDL_GPUBuffer* joint_matrix_storage_buffer;
 extern SDL_GPUTransferBuffer* joint_matrix_transfer_buffer;
+extern SDL_GPUBuffer* lights_storage_buffer;
+extern SDL_GPUTransferBuffer* lights_transfer_buffer;
 
 #endif // GLOBALS_H

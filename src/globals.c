@@ -76,3 +76,5 @@ Uint32 virtual_screen_texture_height = 360;
 SDL_GPUSampler* default_texture_sampler = NULL;
 SDL_GPUBuffer* joint_matrix_storage_buffer = NULL;
 SDL_GPUTransferBuffer* joint_matrix_transfer_buffer = NULL;
+SDL_GPUBuffer* lights_storage_buffer = NULL;
+SDL_GPUTransferBuffer* lights_transfer_buffer = NULL;

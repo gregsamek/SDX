@@ -241,6 +241,14 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
 
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_unanimated);
 
+    SDL_BindGPUVertexStorageBuffers
+    (
+        render_pass,
+        0, // storage buffer slot
+        &lights_storage_buffer,
+        1 // storage buffer count
+    );
+
     for (size_t i = 0; i < models_unanimated.len; i++)
     {
         // TODO implement model matrix per model
