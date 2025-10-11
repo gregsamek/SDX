@@ -267,28 +267,13 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         glm_mat4_ins3(normal3, transforms.normal);
 #endif
 
-        SDL_PushGPUVertexUniformData(command_buffer, 0, &transforms, sizeof(transforms));
-
-        vec3 light_direction_world = {10.0f, 0.0f, 0.0f};
-        vec3 light_color = {1.0f, 0.0f, 0.0f};
-        float ambient_strength = 0.0f;
-        
-        vec4 l_d_world4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
-        vec4 l_d_view4;
-        glm_mat4_mulv(camera.view_matrix, l_d_world4, l_d_view4);
-        vec3 light_direction_vs = { l_d_view4[0], l_d_view4[1], l_d_view4[2] };
-        glm_vec3_normalize(light_direction_vs);
-
-        Light_Directional lighting = {0};
-        lighting.direction[0] = light_direction_vs[0];
-        lighting.direction[1] = light_direction_vs[1];
-        lighting.direction[2] = light_direction_vs[2];
-        lighting.color[0] = light_color[0];
-        lighting.color[1] = light_color[1];
-        lighting.color[2] = light_color[2];
-        lighting.strength = ambient_strength;
-
-        SDL_PushGPUFragmentUniformData(command_buffer, 0, &lighting, sizeof(lighting));
+        SDL_PushGPUVertexUniformData
+        (
+            command_buffer, 
+            0, // uniform buffer slot
+            &transforms, 
+            sizeof(transforms)
+        );
         
         SDL_BindGPUVertexBuffers
         (
@@ -357,10 +342,37 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
 
     for (size_t i = 0; i < models_bone_animated.len; i++)
     {
+        // TODO implement model matrix per model
+        mat4 model_matrix;
+        glm_mat4_identity(model_matrix);
+
+        mat4 mv_matrix;
+        glm_mat4_mul(camera.view_matrix, model_matrix, mv_matrix);
+        
         mat4 mvp_matrix;
-        glm_mat4_mul(camera.view_projection_matrix, models_bone_animated.arr[i].model_matrix, mvp_matrix);
-        // glm_mat4_mul(projection_matrix_ortho, models_bone_animated.arr[i].model_matrix, mvp_matrix);
-        SDL_PushGPUVertexUniformData(command_buffer, 0, &mvp_matrix, sizeof(mvp_matrix));
+        glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
+        
+        TransformsUBO transforms = {0};
+        glm_mat4_copy(mvp_matrix, transforms.mvp);
+        glm_mat4_copy(mv_matrix, transforms.mv);
+
+#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+        // normal matrix = inverse-transpose of the upper-left 3x3 of mv
+        mat3 mv3, normal3;
+        glm_mat4_pick3(mv_matrix, mv3);     // take upper-left 3x3
+        glm_mat3_inv(mv3, normal3);
+        glm_mat3_transpose(normal3);
+        glm_mat4_identity(transforms.normal);
+        glm_mat4_ins3(normal3, transforms.normal);
+#endif
+
+        SDL_PushGPUVertexUniformData
+        (
+            command_buffer, 
+            0, 
+            &transforms, 
+            sizeof(transforms)
+        );
 
         SDL_PushGPUVertexUniformData
         (
@@ -655,6 +667,29 @@ bool Render()
         &lights_storage_buffer,
         1 // storage buffer count
     );
+
+    ///////// constant directional light /////////
+    vec3 light_direction_world = {0.0f, -10.0f, -10.0f};
+    vec3 light_color = {1.0f, 1.0f, 1.0f};
+    float ambient_strength = 0.0f;
+    
+    vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
+    vec4 light_direction_viewspace_4;
+    glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
+    vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
+    glm_vec3_normalize(light_direction_viewspace);
+
+    Light_Directional light_directional = {0};
+    light_directional.direction[0] = light_direction_viewspace[0];
+    light_directional.direction[1] = light_direction_viewspace[1];
+    light_directional.direction[2] = light_direction_viewspace[2];
+    light_directional.color[0] = light_color[0];
+    light_directional.color[1] = light_color[1];
+    light_directional.color[2] = light_color[2];
+    light_directional.strength = ambient_strength;
+
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &light_directional, sizeof(light_directional));
+    //////////////////////////////////
     
     Render_Unanimated(virtual_render_pass, command_buffer_draw);
 

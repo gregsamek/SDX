@@ -1,12 +1,12 @@
-// Uniform buffer bound at space1, binding 0
-// Contains the Model-View-Projection matrix
 cbuffer TransformUBO : register(b0, space1)
 {
-    float4x4 mvp; // Model-View-Projection matrix
+    float4x4 mvp; // VP * M
+    float4x4 mv;  // V * M
+#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+    float4x4 normalMat4; // upper-left 3x3 = inverse-transpose of (V*M).xyz
+#endif
 };
 
-// Uniform buffer for per-draw data (skinning offset)
-// Bound at vertex shader uniform slot 1
 cbuffer SkinningUBO : register(b1, space1)
 {
     uint baseJointOffsetBytes; // The offset into the global joint matrix buffer
@@ -22,16 +22,18 @@ StructuredBuffer<float4x4> JointMatrixBuffer : register(t0, space0);
 struct VertexInput
 {
     float3 Position : TEXCOORD0;
-    float2 TexCoord : TEXCOORD1;
-    uint BoneIndices : TEXCOORD2; // 4 bone indices packed into a single uint
-    float4 BoneWeights : TEXCOORD3;
+    float3 Normal : TEXCOORD1;
+    float2 TexCoord : TEXCOORD2;
+    uint BoneIndices : TEXCOORD3; // 4 bone indices packed into a single uint
+    float4 BoneWeights : TEXCOORD4;
 };
 
-// Output structure passed to the fragment shader
 struct VertexOutput
 {
-    float4 Position : SV_Position; // Clip space position (mandatory)
-    float2 TexCoord : TEXCOORD0;   // Pass texture coordinate to fragment shader
+    float4 PositionCS : SV_Position; // clip-space position
+    float3 PositionVS : TEXCOORD0;   // view-space position
+    float3 NormalVS   : TEXCOORD1;   // view-space normal
+    float2 TexCoord   : TEXCOORD2;
 };
 
 // Vertex Shader Main Function
@@ -63,14 +65,22 @@ VertexOutput main(VertexInput input)
     skinMatrix += JointMatrixBuffer[index2] * input.BoneWeights.z;
     skinMatrix += JointMatrixBuffer[index3] * input.BoneWeights.w;
 
-    // --- 3. Apply Transformations ---
-    // First, apply the skinning matrix to the local-space vertex position.
+    // apply the skinning matrix to the local-space vertex position.
     float4 skinnedPosition = mul(skinMatrix, float4(input.Position, 1.0f));
 
-    // Then, transform the skinned position to clip space using the MVP matrix.
-    output.Position = mul(mvp, skinnedPosition);
+    // transform the skinned position to clip space using the MVP matrix.
+    output.PositionCS = mul(mvp, skinnedPosition);
 
-    // Pass texture coordinate through to the fragment shader
+    float4 position_viewspace = mul(mv, skinnedPosition);
+    output.PositionVS = position_viewspace.xyz;
+    
+#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+    float3x3 normalMat = (float3x3)normalMat4;
+    output.NormalVS = normalize(mul(normalMat, input.Normal));
+#else
+    output.NormalVS = normalize(mul((float3x3)mv, input.Normal));
+#endif
+
     output.TexCoord = input.TexCoord;
 
     return output;

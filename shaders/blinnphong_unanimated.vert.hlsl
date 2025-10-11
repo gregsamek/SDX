@@ -26,12 +26,12 @@ VertexOutput main(VertexInput input)
 {
     VertexOutput output;
 
-    float4 posWS = float4(input.Position, 1.0f);
-    output.PositionCS = mul(mvp, posWS);
+    float4 position_worldspace = float4(input.Position, 1.0f);
+    output.PositionCS = mul(mvp, position_worldspace);
 
-    float4 posVS = mul(mv, posWS);
-    output.PositionVS = posVS.xyz;
-
+    float4 position_viewspace = mul(mv, position_worldspace);
+    output.PositionVS = position_viewspace.xyz;
+    
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
     float3x3 normalMat = (float3x3)normalMat4;
     output.NormalVS = normalize(mul(normalMat, input.Normal));

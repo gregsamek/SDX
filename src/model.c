@@ -1,6 +1,5 @@
 #include "model.h"
 #include "globals.h"
-#include "../external/cgltf.h"
 #include "texture.h"
 
 // TODO: remove other libc references from cgltf and replace with SDL versions
@@ -65,7 +64,106 @@ bool Model_LoadAllModels(void)
     return true;
 }
 
-static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model)
+bool Model_Load(const char* filename)
+{
+    char model_path[MAXIMUM_URI_LENGTH];
+    SDL_snprintf(model_path, sizeof(model_path), "%smodels/%s", base_path, filename);
+    size_t gltf_file_buffer_size = 0;
+    void* gltf_file_buffer = SDL_LoadFile(model_path, &gltf_file_buffer_size);
+    if (!gltf_file_buffer)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load glTF model file: %s", SDL_GetError());
+        return false;
+    }
+    
+    cgltf_options options = {0};
+    cgltf_data* gltf_data = NULL;
+    cgltf_result result = cgltf_parse(&options, gltf_file_buffer, gltf_file_buffer_size, &gltf_data);
+    if (result != cgltf_result_success)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "cgltf_parse_file failed: %d for %s", result, model_path);
+        return false;
+    }
+
+    result = cgltf_load_buffers(&options, gltf_data, model_path);
+    if (result != cgltf_result_success)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "cgltf_load_buffers failed: %d", result);
+        cgltf_free(gltf_data);
+        return false;
+    }
+
+    result = cgltf_validate(gltf_data);
+    if (result != cgltf_result_success)
+    {
+        // Continue even if validation fails? might still work
+        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "cgltf_validate failed: %d (continuing anyway)", result);
+    }
+
+	// assume we only have the single default scene
+    #define root_nodes gltf_data->scene->nodes
+    if (!gltf_data->scene || !root_nodes)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "No root nodes found in the glTF scene.");
+        cgltf_free(gltf_data);
+        return false;
+    }
+	for (size_t i = 0; i < gltf_data->scene->nodes_count; i++)
+	{
+		if (root_nodes[i]->name == NULL)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Root Node %zu has no name; nodes MUST be named and prefixed with numerical Model_Type", i);
+            cgltf_free(gltf_data);
+            return false;
+        }
+        switch (SDL_atoi(root_nodes[i]->name))
+        {
+            case MODEL_TYPE_UNRENDERED:
+                break;
+            case MODEL_TYPE_UNANIMATED:
+            {
+                Model new_model = {0};
+                if (!Model_Load_Unanimated(gltf_data, root_nodes[i], &new_model))
+                {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load unanimated model of node %s", root_nodes[i]->name);
+                    Model_Free(&new_model);
+                    cgltf_free(gltf_data);
+                    return false;
+                }
+                Array_Append(&models_unanimated, new_model);
+                break;
+            }
+            case MODEL_TYPE_BONE_ANIMATED:
+            {
+                Model_BoneAnimated model_bone_animated = {0};
+                if (!Model_Load_BoneAnimated(gltf_data, root_nodes[i], &model_bone_animated))
+                {
+                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load unanimated model of node %s", root_nodes[i]->name);
+                    Model_BoneAnimated_Free(&model_bone_animated);
+                    cgltf_free(gltf_data);
+                    return false;
+                }
+                Array_Append(&models_bone_animated, model_bone_animated);
+                break;
+            }
+            case MODEL_TYPE_RIGID_ANIMATED:
+                break;
+            case MODEL_TYPE_INSTANCED:
+                break;
+            default:
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Node %s has unsupported model type", root_nodes[i]->name);
+                cgltf_free(gltf_data);
+                return false;
+        }
+	}
+
+    cgltf_free(gltf_data); // maps to SDL_free
+
+    return true;
+    #undef root_nodes
+}
+
+bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model)
 {
     if (!gltf_data || !node)
     {
@@ -117,7 +215,7 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
 
     if (!position_accessor || !normal_accessor || !texcoord_accessor)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing POSITION, NORMAL or TEXCOORD attributes.");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing at least one attribute: POSITION, NORMAL, TEXCOORD.");
         return false;
     }
 
@@ -151,7 +249,7 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
 
     model->index_count = index_accessor->count;
 
-    Uint32 index_data_size = (Uint32)(sizeof(Uint16) * model->index_count); // Assumes Uint16
+    Uint32 index_data_size = (Uint32)(sizeof(Uint16) * model->index_count);
     model->index_buffer = SDL_CreateGPUBuffer
     (
         gpu_device,
@@ -193,21 +291,18 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
 
     for (size_t i = 0; i < position_accessor->count; ++i)
     {
-        // Read position (vec3 float)
         if (!cgltf_accessor_read_float(position_accessor, i, &transfer_buffer_mapped[i].x, 3))
         {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read position for vertex %zu", i);
             return false;
         }
 
-        // Read normal (vec3 float), handle missing accessor
         if (!cgltf_accessor_read_float(normal_accessor, i, &transfer_buffer_mapped[i].nx, 3))
         {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read normal for vertex %zu", i);
             return false;
         }
 
-        // Read texcoord (vec2 float), handle missing accessor
         if (!cgltf_accessor_read_float(texcoord_accessor, i, &transfer_buffer_mapped[i].u, 2))
         {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read texcoord for vertex %zu", i);
@@ -362,7 +457,7 @@ static bool Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* mode
     return true;
 }
 
-static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_BoneAnimated* model)
+bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_BoneAnimated* model)
 {
     /*
         If this is a mixamo model...
@@ -594,6 +689,7 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
     }
 
     cgltf_accessor* position_accessor = NULL;
+    cgltf_accessor* normal_accessor = NULL;
     cgltf_accessor* texcoord_accessor = NULL;
     cgltf_accessor* joint_ids_accessor = NULL;
     cgltf_accessor* joint_weights_accessor = NULL;
@@ -604,6 +700,10 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
         if (attr->type == cgltf_attribute_type_position)
         {
             position_accessor = attr->data;
+        }
+        else if (attr->type == cgltf_attribute_type_normal)
+        {
+            normal_accessor = attr->data;
         }
         else if (attr->type == cgltf_attribute_type_texcoord && attr->index == 0)
         {
@@ -618,9 +718,9 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
             joint_weights_accessor = attr->data;
         }
     }
-    if (!position_accessor || !texcoord_accessor || !joint_ids_accessor || !joint_weights_accessor)
+    if (!position_accessor || !normal_accessor || !texcoord_accessor || !joint_ids_accessor || !joint_weights_accessor)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing POSITION, TEXCOORD, JOINTS or WEIGHTS attributes.");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing at least one attribute: POSITION, NORMAL, TEXCOORD, JOINTS, WEIGHTS.");
         return false;
     }
     if (joint_ids_accessor->component_type != cgltf_component_type_r_8u || joint_weights_accessor->component_type != cgltf_component_type_r_32f)
@@ -659,7 +759,7 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
 
     model->index_count = index_accessor->count;
 
-    Uint32 index_data_size = (Uint32)(sizeof(Uint16) * model->index_count); // Assumes Uint16
+    Uint32 index_data_size = (Uint32)(sizeof(Uint16) * model->index_count);
     model->index_buffer = SDL_CreateGPUBuffer
     (
         gpu_device,
@@ -692,15 +792,17 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
         return false;
     }
 
-    Uint8* transfer_buffer_mapped = SDL_MapGPUTransferBuffer(gpu_device, transfer_buffer, false);
+    Vertex_BoneAnimated* transfer_buffer_mapped = SDL_MapGPUTransferBuffer(gpu_device, transfer_buffer, false);
     if (transfer_buffer_mapped == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to map vertex/index transfer buffer: %s", SDL_GetError());
         return false;
     }
-    Vertex_BoneAnimated* vertices_mapped = (Vertex_BoneAnimated*)transfer_buffer_mapped;
 
-    // using buffers directly myself because I was having problems with the cgltf_accessor_read_ functions
+    // using buffers directly myself because there is a bug which seems to stem from cgltf_accessor_read_uint,
+    // which is supposed to read (32 bit) unsigned ints. The joint IDs are stored as 8 bit uints
+    // You would think since there are conveniently 4 joint IDs per vertex, that reading them 
+    // as a single 32 bit uint would work, and yet for some reason it is broken.
     const uint8_t* pos_data_base = cgltf_buffer_view_data(position_accessor->buffer_view);
     if (pos_data_base == NULL) 
     {
@@ -708,6 +810,14 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
         return false;
     }
     pos_data_base += position_accessor->offset;
+
+    const uint8_t* normal_data_base = cgltf_buffer_view_data(normal_accessor->buffer_view);
+    if (normal_data_base == NULL) 
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to get normal data buffer view.");
+        return false; 
+    }
+    normal_data_base += normal_accessor->offset;
 
     const uint8_t* texcoord_data_base = cgltf_buffer_view_data(texcoord_accessor->buffer_view);
     if (texcoord_data_base == NULL) 
@@ -735,10 +845,13 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
 
     for (size_t i = 0; i < position_accessor->count; i++)
     {
-        Vertex_BoneAnimated* dest_vertex = &vertices_mapped[i];
+        Vertex_BoneAnimated* dest_vertex = &transfer_buffer_mapped[i];
 
         const void* src_pos = pos_data_base + i * position_accessor->stride;
         memcpy(&dest_vertex->x, src_pos, sizeof(float) * 3);
+
+        const void* src_normal = normal_data_base + i * normal_accessor->stride;
+        memcpy(&dest_vertex->nx, src_normal, sizeof(float) * 3);
 
         const void* src_texcoord = texcoord_data_base + i * texcoord_accessor->stride;
         memcpy(&dest_vertex->u, src_texcoord, sizeof(float) * 2);
@@ -750,7 +863,40 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
         memcpy(dest_vertex->weights, src_weights, sizeof(float) * MAX_JOINTS_PER_VERTEX);
     }
 
-    size_t unpacked_count = cgltf_accessor_unpack_indices(index_accessor, (transfer_buffer_mapped + vertex_data_size), sizeof(Uint16), model->index_count);
+    // for (size_t i = 0; i < position_accessor->count; ++i)
+    // {
+    //     if (!cgltf_accessor_read_float(position_accessor, i, &transfer_buffer_mapped[i].x, 3))
+    //     {
+    //         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read position for vertex %zu", i);
+    //         return false;
+    //     }
+
+    //     if (!cgltf_accessor_read_float(normal_accessor, i, &transfer_buffer_mapped[i].nx, 3))
+    //     {
+    //         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read normal for vertex %zu", i);
+    //         return false;
+    //     }
+
+    //     if (!cgltf_accessor_read_float(texcoord_accessor, i, &transfer_buffer_mapped[i].u, 2))
+    //     {
+    //         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read texcoord for vertex %zu", i);
+    //         return false;
+    //     }
+
+    //     if (!cgltf_accessor_read_uint(joint_ids_accessor, i, (cgltf_uint*)&transfer_buffer_mapped[i].joint_ids, 4))
+    //     {
+    //         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read joint IDs for vertex %zu", i);
+    //         return false;
+    //     }
+
+    //     if (!cgltf_accessor_read_float(joint_weights_accessor, i, &transfer_buffer_mapped[i].weights, 4))
+    //     {
+    //         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to read joint weights for vertex %zu", i);
+    //         return false;
+    //     }
+    // }
+
+    size_t unpacked_count = cgltf_accessor_unpack_indices(index_accessor, (transfer_buffer_mapped + position_accessor->count), sizeof(Uint16), model->index_count);
     if (unpacked_count != model->index_count)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error unpacking gltf primitive indices: unexpected index_count (unpacked %zu, expected %u).", unpacked_count, model->index_count);
@@ -894,105 +1040,6 @@ static bool Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bon
     SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Successfully loaded bone animated model: %s", node->name);
 
     return true;
-}
-
-bool Model_Load(const char* filename)
-{
-    char model_path[MAXIMUM_URI_LENGTH];
-    SDL_snprintf(model_path, sizeof(model_path), "%smodels/%s", base_path, filename);
-    size_t gltf_file_buffer_size = 0;
-    void* gltf_file_buffer = SDL_LoadFile(model_path, &gltf_file_buffer_size);
-    if (!gltf_file_buffer)
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load glTF model file: %s", SDL_GetError());
-        return false;
-    }
-    
-    cgltf_options options = {0};
-    cgltf_data* gltf_data = NULL;
-    cgltf_result result = cgltf_parse(&options, gltf_file_buffer, gltf_file_buffer_size, &gltf_data);
-    if (result != cgltf_result_success)
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "cgltf_parse_file failed: %d for %s", result, model_path);
-        return false;
-    }
-
-    result = cgltf_load_buffers(&options, gltf_data, model_path);
-    if (result != cgltf_result_success)
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "cgltf_load_buffers failed: %d", result);
-        cgltf_free(gltf_data);
-        return false;
-    }
-
-    result = cgltf_validate(gltf_data);
-    if (result != cgltf_result_success)
-    {
-        // Continue even if validation fails? might still work
-        SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "cgltf_validate failed: %d (continuing anyway)", result);
-    }
-
-	// assume we only have the single default scene
-    #define root_nodes gltf_data->scene->nodes
-    if (!gltf_data->scene || !root_nodes)
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "No root nodes found in the glTF scene.");
-        cgltf_free(gltf_data);
-        return false;
-    }
-	for (size_t i = 0; i < gltf_data->scene->nodes_count; i++)
-	{
-		if (root_nodes[i]->name == NULL)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Root Node %zu has no name; nodes MUST be named and prefixed with numerical Model_Type", i);
-            cgltf_free(gltf_data);
-            return false;
-        }
-        switch (SDL_atoi(root_nodes[i]->name))
-        {
-            case MODEL_TYPE_UNRENDERED:
-                break;
-            case MODEL_TYPE_UNANIMATED:
-            {
-                Model new_model = {0};
-                if (!Load_Unanimated(gltf_data, root_nodes[i], &new_model))
-                {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load unanimated model of node %s", root_nodes[i]->name);
-                    Model_Free(&new_model);
-                    cgltf_free(gltf_data);
-                    return false;
-                }
-                Array_Append(&models_unanimated, new_model);
-                break;
-            }
-            case MODEL_TYPE_BONE_ANIMATED:
-            {
-                Model_BoneAnimated model_bone_animated = {0};
-                if (!Load_BoneAnimated(gltf_data, root_nodes[i], &model_bone_animated))
-                {
-                    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load unanimated model of node %s", root_nodes[i]->name);
-                    Model_BoneAnimated_Free(&model_bone_animated);
-                    cgltf_free(gltf_data);
-                    return false;
-                }
-                Array_Append(&models_bone_animated, model_bone_animated);
-                break;
-            }
-            case MODEL_TYPE_RIGID_ANIMATED:
-                break;
-            case MODEL_TYPE_INSTANCED:
-                break;
-            default:
-                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Node %s has unsupported model type", root_nodes[i]->name);
-                cgltf_free(gltf_data);
-                return false;
-        }
-	}
-
-    cgltf_free(gltf_data); // maps to SDL_free
-
-    return true;
-    #undef root_nodes
 }
 
 void Model_Free(Model* model)

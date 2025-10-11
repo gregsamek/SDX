@@ -6,6 +6,7 @@
 #define CGLM_FORCE_DEPTH_ZERO_TO_ONE
 #define CGLM_FORCE_LEFT_HANDED
 #include "../external/cglm/cglm.h"
+#include "../external/cgltf.h"
 
 typedef Uint8 Model_Type; enum
 {
@@ -55,6 +56,7 @@ typedef struct Vertex_PositionNormalTexture
 typedef struct Vertex_BoneAnimated
 {
 	float x, y, z;
+	float nx, ny, nz;
 	float u, v;
 	Uint8 joint_ids[MAX_JOINTS_PER_VERTEX]; 
 	float weights[MAX_JOINTS_PER_VERTEX];
@@ -188,6 +190,8 @@ typedef struct Array_Model_BoneAnimated
 
 bool Model_LoadAllModels(void);
 bool Model_Load(const char* filename);
+bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model);
+bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_BoneAnimated* model);
 void Model_Free(Model* model);
 void Model_BoneAnimated_Free(Model_BoneAnimated* model);
 bool Model_JointMat_UpdateAndUpload();

@@ -306,11 +306,11 @@ bool Pipeline_BoneAnimated_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "unlit_alphatest.frag", // Base filename
-        1, // num_samplers (for the single texture)
+        "blinnphong_alphatest.frag", // Base filename
+        2, // num_samplers (for the single texture)
         0, // num_storage_textures
-        0, // num_storage_buffers
-        0  // num_uniform_buffers
+        1, // num_storage_buffers
+        1  // num_uniform_buffers
     );
     if (fragment_shader == NULL)
     {
@@ -366,7 +366,7 @@ bool Pipeline_BoneAnimated_Init()
                     .pitch = sizeof(Vertex_BoneAnimated) // MUST MATCH LOADED VERTEX DATA
                 }
             },  
-            .num_vertex_attributes = 4,
+            .num_vertex_attributes = 5,
             .vertex_attributes = (SDL_GPUVertexAttribute[])
             {
                 {   // position
@@ -375,22 +375,28 @@ bool Pipeline_BoneAnimated_Init()
                     .location = 0, // TEXCOORD0 in HLSL
                     .offset = offsetof(Vertex_BoneAnimated, x)
                 },
+                {   // normal
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                    .location = 1, // TEXCOORD1 in HLSL
+                    .offset = offsetof(Vertex_BoneAnimated, nx)
+                },
                 {   // texture coordinate
                     .buffer_slot = 0,
                     .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
-                    .location = 1, // TEXCOORD1 in HLSL
+                    .location = 2, // TEXCOORD2 in HLSL
                     .offset = offsetof(Vertex_BoneAnimated, u)
                 },
                 {   // joint IDs
                     .buffer_slot = 0,
                     .format = SDL_GPU_VERTEXELEMENTFORMAT_UINT, // in the shader this is interpreted as Uint8[4]
-                    .location = 2, // TEXCOORD2 in HLSL
+                    .location = 3, // TEXCOORD3 in HLSL
                     .offset = offsetof(Vertex_BoneAnimated, joint_ids)
                 },
                 {   // joint weights
                     .buffer_slot = 0,
                     .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, // vec4 Float32
-                    .location = 3, // TEXCOORD3 in HLSL
+                    .location = 4, // TEXCOORD4 in HLSL
                     .offset = offsetof(Vertex_BoneAnimated, weights)
                 }
             }
