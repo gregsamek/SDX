@@ -33,5 +33,7 @@ typedef struct
     float padding[3]; // pad to vec4 size
 } Light_Spotlight;
 
+bool Lights_StorageBuffer_UpdateAndUpload();
+
 
 #endif // LIGHTS_H

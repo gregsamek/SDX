@@ -20,20 +20,37 @@ bool Lights_StorageBuffer_UpdateAndUpload()
 
         Light_Spotlight* lights_mapped = (Light_Spotlight*)mapped;
 
+        vec3 light_position_world = {10.0f, 0.0f, 0.0f};
+        vec3 light_target_world   = {0.0f, 0.0f, 0.0f};
+
+        vec3 light_direction_world;
+        glm_vec3_sub(light_target_world, light_position_world, light_direction_world);
+        
+        vec4 light_position_world_4 = { light_position_world[0], light_position_world[1], light_position_world[2], 1.0f };
+        vec4 light_position_viewspace_4;
+        glm_mat4_mulv(camera.view_matrix, light_position_world_4, light_position_viewspace_4);
+        vec3 light_position_viewspace = { light_position_viewspace_4[0], light_position_viewspace_4[1], light_position_viewspace_4[2] };
+        
+        vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
+        vec4 light_direction_viewspace_4;
+        glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
+        vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
+        glm_vec3_normalize(light_direction_viewspace);
+        
         // Spotlight
-        lights_mapped[0].position[0] = 0.0f;
-        lights_mapped[0].position[1] = 5.0f;
-        lights_mapped[0].position[2] = 0.0f;
+        lights_mapped[0].position[0] = light_position_viewspace[0];
+        lights_mapped[0].position[1] = light_position_viewspace[1];
+        lights_mapped[0].position[2] = light_position_viewspace[2];
         lights_mapped[0].attenuation_constant_linear = 0.09f;
-        lights_mapped[0].color[0] = 1.0f;
+        lights_mapped[0].color[0] = 0.0f;
         lights_mapped[0].color[1] = 1.0f;
-        lights_mapped[0].color[2] = 1.0f;
+        lights_mapped[0].color[2] = 0.0f;
         lights_mapped[0].attenuation_constant_quadratic = 0.032f;
-        lights_mapped[0].direction[0] = 0.0f;
-        lights_mapped[0].direction[1] = -1.0f;
-        lights_mapped[0].direction[2] = 0.0f;
-        lights_mapped[0].cutoff_inner = SDL_cosf(glm_rad(12.5f)); // inner cone angle
-        lights_mapped[0].cutoff_outer = SDL_cosf(glm_rad(17.5f)); // outer cone angle
+        lights_mapped[0].direction[0] = light_direction_viewspace[0];
+        lights_mapped[0].direction[1] = light_direction_viewspace[1];
+        lights_mapped[0].direction[2] = light_direction_viewspace[2];
+        lights_mapped[0].cutoff_inner = SDL_cosf(glm_rad(0.0f)); // inner cone angle
+        lights_mapped[0].cutoff_outer = SDL_cosf(glm_rad(30.0f)); // outer cone angle
 
         SDL_GPUTransferBufferLocation source = 
         {

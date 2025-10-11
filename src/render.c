@@ -241,14 +241,6 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
 
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_unanimated);
 
-    SDL_BindGPUVertexStorageBuffers
-    (
-        render_pass,
-        0, // storage buffer slot
-        &lights_storage_buffer,
-        1 // storage buffer count
-    );
-
     for (size_t i = 0; i < models_unanimated.len; i++)
     {
         // TODO implement model matrix per model
@@ -277,22 +269,24 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
 
         SDL_PushGPUVertexUniformData(command_buffer, 0, &transforms, sizeof(transforms));
 
-        vec3 light_position_world = {0.0f, 5.0f, 0.0f};
-        vec3 light_color = {1.0f, 1.0f, 1.0f};
-        float ambient_strength = 0.1f;
+        vec3 light_direction_world = {10.0f, 0.0f, 0.0f};
+        vec3 light_color = {1.0f, 0.0f, 0.0f};
+        float ambient_strength = 0.0f;
         
-        vec4 lp_world4 = { light_position_world[0], light_position_world[1], light_position_world[2], 1.0f };
-        vec4 lp_view4;
-        glm_mat4_mulv(camera.view_matrix, lp_world4, lp_view4);
-        vec3 light_pos_vs = { lp_view4[0], lp_view4[1], lp_view4[2] };
+        vec4 l_d_world4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
+        vec4 l_d_view4;
+        glm_mat4_mulv(camera.view_matrix, l_d_world4, l_d_view4);
+        vec3 light_direction_vs = { l_d_view4[0], l_d_view4[1], l_d_view4[2] };
+        glm_vec3_normalize(light_direction_vs);
 
-        Light_Point lighting = {0};
-        lighting.position[0] = light_pos_vs[0];
-        lighting.position[1] = light_pos_vs[1];
-        lighting.position[2] = light_pos_vs[2];
+        Light_Directional lighting = {0};
+        lighting.direction[0] = light_direction_vs[0];
+        lighting.direction[1] = light_direction_vs[1];
+        lighting.direction[2] = light_direction_vs[2];
         lighting.color[0] = light_color[0];
         lighting.color[1] = light_color[1];
         lighting.color[2] = light_color[2];
+        lighting.strength = ambient_strength;
 
         SDL_PushGPUFragmentUniformData(command_buffer, 0, &lighting, sizeof(lighting));
         
@@ -585,7 +579,9 @@ bool Render()
         renderer_needs_to_be_reinitialized = false;
     }
 
+    // can these be compined into one copy pass? (also text update)
     if (models_bone_animated.len) Model_JointMat_UpdateAndUpload();
+    if (lights_storage_buffer) Lights_StorageBuffer_UpdateAndUpload();
 
     SDL_GPUCommandBuffer* command_buffer_draw = SDL_AcquireGPUCommandBuffer(gpu_device);
     if (command_buffer_draw == NULL)
@@ -650,6 +646,14 @@ bool Render()
             .min_depth = 0.0f, 
             .max_depth = 1.0f
         }
+    );
+
+    SDL_BindGPUFragmentStorageBuffers
+    (
+        virtual_render_pass,
+        0, // storage buffer slot
+        &lights_storage_buffer,
+        1 // storage buffer count
     );
     
     Render_Unanimated(virtual_render_pass, command_buffer_draw);

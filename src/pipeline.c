@@ -183,7 +183,7 @@ bool Pipeline_Unanimated_Phong_Init()
         "blinnphong_alphatest.frag", // Base filename
         2, // num_samplers (for the single texture)
         0, // num_storage_textures
-        0, // num_storage_buffers
+        1, // num_storage_buffers
         1  // num_uniform_buffers
     );
     if (fragment_shader == NULL)
