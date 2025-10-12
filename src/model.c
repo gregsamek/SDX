@@ -803,6 +803,8 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
     // which is supposed to read (32 bit) unsigned ints. The joint IDs are stored as 8 bit uints
     // You would think since there are conveniently 4 joint IDs per vertex, that reading them 
     // as a single 32 bit uint would work, and yet for some reason it is broken.
+    // that approach is comment out below
+    
     const uint8_t* pos_data_base = cgltf_buffer_view_data(position_accessor->buffer_view);
     if (pos_data_base == NULL) 
     {
@@ -1093,14 +1095,14 @@ bool Model_JointMat_UpdateAndUpload()
 {
     SDL_GPUCommandBuffer* command_buffer_joint_matrix = SDL_AcquireGPUCommandBuffer(gpu_device);
     {
-        void* mapped = SDL_MapGPUTransferBuffer(gpu_device, joint_matrix_transfer_buffer, true);
-        if (!mapped) 
+        void* transfer_buffer_mapped = SDL_MapGPUTransferBuffer(gpu_device, joint_matrix_transfer_buffer, true);
+        if (!transfer_buffer_mapped) 
         {
             SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "SDL_MapGPUTransferBuffer failed: %s", SDL_GetError());
             return false;
         }
         
-        SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(command_buffer_joint_matrix);
+        SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer_joint_matrix);
         size_t current_offset_bytes = 0;
 
         for (size_t i = 0; i < models_bone_animated.len; i++)
@@ -1175,7 +1177,7 @@ bool Model_JointMat_UpdateAndUpload()
             (
                 models_bone_animated.arr[i].joints, 
                 models_bone_animated.arr[i].armature_correction_matrix, // parent transform
-                (Uint8*)mapped + current_offset_bytes, models_bone_animated.arr[i].joints // root joint
+                (Uint8*)transfer_buffer_mapped + current_offset_bytes, models_bone_animated.arr[i].joints // root joint
             );
 
             current_offset_bytes += models_bone_animated.arr[i].num_joints * sizeof(mat4);
@@ -1194,10 +1196,10 @@ bool Model_JointMat_UpdateAndUpload()
             .size = current_offset_bytes
         };
             
-        SDL_UploadToGPUBuffer(copyPass, &source, &destination, true);
+        SDL_UploadToGPUBuffer(copy_pass, &source, &destination, true);
         
         SDL_UnmapGPUTransferBuffer(gpu_device, joint_matrix_transfer_buffer);
-        SDL_EndGPUCopyPass(copyPass);
+        SDL_EndGPUCopyPass(copy_pass);
         
     }
     SDL_SubmitGPUCommandBuffer(command_buffer_joint_matrix);

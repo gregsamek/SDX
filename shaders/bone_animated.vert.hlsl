@@ -1,87 +1,73 @@
-cbuffer TransformUBO : register(b0, space1)
+cbuffer Transforms : register(b0, space1)
 {
-    float4x4 mvp; // VP * M
-    float4x4 mv;  // V * M
+    float4x4 mvp;
+    float4x4 mv;
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
-    float4x4 normalMat4; // upper-left 3x3 = inverse-transpose of (V*M).xyz
+    float4x4 mv_inverse_transpose; // upper-left 3x3 = inverse-transpose of (V*M).xyz
 #endif
 };
 
-cbuffer SkinningUBO : register(b1, space1)
+cbuffer Skinning : register(b1, space1)
 {
-    uint baseJointOffsetBytes; // The offset into the global joint matrix buffer
+    uint base_joint_offset_bytes; // offset into the joint matrix storage buffer
 };
 
 // Storage buffer containing all joint matrices for all models for this frame.
-// This is a read-only resource.
-// Bound at vertex shader storage buffer slot 0.
-StructuredBuffer<float4x4> JointMatrixBuffer : register(t0, space0);
+StructuredBuffer<float4x4> joint_matrix_buffer : register(t0, space0);
 
-// Input vertex structure from the application
-// Matches SDL_GPUVertexAttribute layout
-struct VertexInput
+struct Vertex_Input
 {
-    float3 Position : TEXCOORD0;
-    float3 Normal : TEXCOORD1;
-    float2 TexCoord : TEXCOORD2;
-    uint BoneIndices : TEXCOORD3; // 4 bone indices packed into a single uint
-    float4 BoneWeights : TEXCOORD4;
+    float3 position : TEXCOORD0;
+    float3 normal : TEXCOORD1;
+    float2 texture_coordinate : TEXCOORD2;
+    uint bone_indices : TEXCOORD3; // 4 8-bit bone indices packed into a single 32-bit uint
+    float4 bone_weights : TEXCOORD4;
 };
 
-struct VertexOutput
+struct Vertex_Output
 {
-    float4 PositionCS : SV_Position; // clip-space position
-    float3 PositionVS : TEXCOORD0;   // view-space position
-    float3 NormalVS   : TEXCOORD1;   // view-space normal
-    float2 TexCoord   : TEXCOORD2;
+    float4 skinned_position_clipspace : SV_Position;
+    float3 skinned_position_viewspace : TEXCOORD0;
+    float3 normal_viewspace   : TEXCOORD1;
+    float2 texture_coordinate   : TEXCOORD2;
 };
 
-// Vertex Shader Main Function
-VertexOutput main(VertexInput input)
+Vertex_Output main(Vertex_Input vertex)
 {
-    VertexOutput output;
+    Vertex_Output output;
 
-    // --- 1. Unpack Bone Indices ---
-    // The 4 bone indices (8-bit each) are packed into a single 32-bit uint.
-    // We unpack them using bitwise shifts and masks.
-    uint index0 = (input.BoneIndices >> 0) & 0xFF;
-    uint index1 = (input.BoneIndices >> 8) & 0xFF;
-    uint index2 = (input.BoneIndices >> 16) & 0xFF;
-    uint index3 = (input.BoneIndices >> 24) & 0xFF;
+    // 4 8-bit bone indices packed into a single 32-bit uint
+    uint index0 = (vertex.bone_indices >> 0) & 0xFF;
+    uint index1 = (vertex.bone_indices >> 8) & 0xFF;
+    uint index2 = (vertex.bone_indices >> 16) & 0xFF;
+    uint index3 = (vertex.bone_indices >> 24) & 0xFF;
 
-    // --- 2. Calculate the Skinning Matrix ---
-    // Initialize a matrix to accumulate the bone influences.
-    float4x4 skinMatrix = (float4x4)0;
+    float4x4 skin_matrix = (float4x4)0;
+    uint base_offset = base_joint_offset_bytes / sizeof(float4x4); // Convert byte offset to matrix index
+    index0 += base_offset;
+    index1 += base_offset;
+    index2 += base_offset;
+    index3 += base_offset;
+    skin_matrix += joint_matrix_buffer[index0] * vertex.bone_weights.x;
+    skin_matrix += joint_matrix_buffer[index1] * vertex.bone_weights.y;
+    skin_matrix += joint_matrix_buffer[index2] * vertex.bone_weights.z;
+    skin_matrix += joint_matrix_buffer[index3] * vertex.bone_weights.w;
 
-    // Add the influence of each bone, weighted by its corresponding weight.
-    // The final index is calculated by adding the model's base offset to the vertex's bone index.
-    uint baseOffset = baseJointOffsetBytes / sizeof(float4x4); // Convert byte offset to matrix index
-    index0 += baseOffset;
-    index1 += baseOffset;
-    index2 += baseOffset;
-    index3 += baseOffset;
-    skinMatrix += JointMatrixBuffer[index0] * input.BoneWeights.x;
-    skinMatrix += JointMatrixBuffer[index1] * input.BoneWeights.y;
-    skinMatrix += JointMatrixBuffer[index2] * input.BoneWeights.z;
-    skinMatrix += JointMatrixBuffer[index3] * input.BoneWeights.w;
+    float4 skinned_position_worldspace = mul(skin_matrix, float4(vertex.position, 1.0f));
 
-    // apply the skinning matrix to the local-space vertex position.
-    float4 skinnedPosition = mul(skinMatrix, float4(input.Position, 1.0f));
+    output.skinned_position_clipspace = mul(mvp, skinned_position_worldspace);
 
-    // transform the skinned position to clip space using the MVP matrix.
-    output.PositionCS = mul(mvp, skinnedPosition);
-
-    float4 position_viewspace = mul(mv, skinnedPosition);
-    output.PositionVS = position_viewspace.xyz;
+    float4 skinned_position_viewspace = mul(mv, skinned_position_worldspace);
+    output.skinned_position_viewspace = skinned_position_viewspace.xyz;
     
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
-    float3x3 normalMat = (float3x3)normalMat4;
-    output.NormalVS = normalize(mul(normalMat, input.Normal));
+    float3x3 normalMat = (float3x3)mv_inverse_transpose;
+    output.normal_viewspace = normalize(mul(normalMat, vertex.normal));
 #else
-    output.NormalVS = normalize(mul((float3x3)mv, input.Normal));
+    output.normal_viewspace = normalize(mul((float3x3)mv, vertex.normal));
 #endif
 
-    output.TexCoord = input.TexCoord;
+    output.texture_coordinate = vertex.texture_coordinate;
 
     return output;
 }

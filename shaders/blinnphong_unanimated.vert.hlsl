@@ -1,45 +1,45 @@
 cbuffer TransformUBO : register(b0, space1)
 {
-    float4x4 mvp; // VP * M
-    float4x4 mv;  // V * M
+    float4x4 mvp;
+    float4x4 mv;
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
-    float4x4 normalMat4; // upper-left 3x3 = inverse-transpose of (V*M).xyz
+    float4x4 mv_inverse_transpose; // upper-left 3x3 = inverse-transpose of (V*M).xyz
 #endif
 };
 
-struct VertexInput
+struct Vertex_Input
 {
-    float3 Position : TEXCOORD0;
-    float3 Normal   : TEXCOORD1;
-    float2 TexCoord : TEXCOORD2;
+    float3 position : TEXCOORD0;
+    float3 normal   : TEXCOORD1;
+    float2 texture_coordinate : TEXCOORD2;
 };
 
-struct VertexOutput
+struct Vertex_Output
 {
-    float4 PositionCS : SV_Position; // clip-space position
-    float3 PositionVS : TEXCOORD0;   // view-space position
-    float3 NormalVS   : TEXCOORD1;   // view-space normal
-    float2 TexCoord   : TEXCOORD2;
+    float4 position_clipspace : SV_Position;
+    float3 position_viewspace : TEXCOORD0;
+    float3 normal_viewspace   : TEXCOORD1;
+    float2 texture_coordinate   : TEXCOORD2;
 };
 
-VertexOutput main(VertexInput input)
+Vertex_Output main(Vertex_Input vertex)
 {
-    VertexOutput output;
+    Vertex_Output output;
 
-    float4 position_worldspace = float4(input.Position, 1.0f);
-    output.PositionCS = mul(mvp, position_worldspace);
+    float4 position_worldspace = float4(vertex.position, 1.0f);
+    output.position_clipspace = mul(mvp, position_worldspace);
 
     float4 position_viewspace = mul(mv, position_worldspace);
-    output.PositionVS = position_viewspace.xyz;
+    output.position_viewspace = position_viewspace.xyz;
     
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
-    float3x3 normalMat = (float3x3)normalMat4;
-    output.NormalVS = normalize(mul(normalMat, input.Normal));
+    float3x3 normalMat = (float3x3)mv_inverse_transpose;
+    output.normal_viewspace = normalize(mul(normalMat, vertex.normal));
 #else
-    output.NormalVS = normalize(mul((float3x3)mv, input.Normal));
+    output.normal_viewspace = normalize(mul((float3x3)mv, vertex.normal));
 #endif
 
-    output.TexCoord = input.TexCoord;
+    output.texture_coordinate = vertex.texture_coordinate;
 
     return output;
 }

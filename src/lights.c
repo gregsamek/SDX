@@ -43,7 +43,7 @@ bool Lights_StorageBuffer_UpdateAndUpload()
         lights_mapped[0].position[2] = light_position_viewspace[2];
         lights_mapped[0].attenuation_constant_linear = 0.09f;
         lights_mapped[0].color[0] = 0.0f;
-        lights_mapped[0].color[1] = 1.0f;
+        lights_mapped[0].color[1] = 0.0f;
         lights_mapped[0].color[2] = 0.0f;
         lights_mapped[0].attenuation_constant_quadratic = 0.032f;
         lights_mapped[0].direction[0] = light_direction_viewspace[0];

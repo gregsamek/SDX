@@ -8,9 +8,9 @@
     #define CLIP_TEST(v)  if (any((v) < 0)) discard
 #endif
 
-Texture2D DiffuseTex  : register(t0, space2);
-Texture2D SpecularTex : register(t1, space2);
-SamplerState Sampler  : register(s0, space2);
+Texture2D texture_diffuse  : register(t0, space2);
+Texture2D texture_specular : register(t1, space2);
+SamplerState sampler_texture  : register(s0, space2);
 
 struct Light_Spotlight
 {
@@ -24,7 +24,7 @@ struct Light_Spotlight
     float padding[3]; // pad to float4 size
 };
 
-StructuredBuffer<Light_Spotlight> LightBuffer : register(t2, space2);
+StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t2, space2);
 
 cbuffer Light_Directional_Uniform : register(b0, space3)
 {
@@ -32,35 +32,35 @@ cbuffer Light_Directional_Uniform : register(b0, space3)
     float3 light_directional_color; float padding1;
 };
 
-struct FragmentInput
+struct Fragment_Input
 {
-    float4 PositionCS : SV_Position;
-    float3 PositionVS : TEXCOORD0;
-    float3 NormalVS   : TEXCOORD1;
-    float2 TexCoord   : TEXCOORD2;
+    float4 position_clipspace : SV_Position;
+    float3 position_viewspace : TEXCOORD0;
+    float3 normal_viewspace   : TEXCOORD1;
+    float2 texture_coordinate   : TEXCOORD2;
 };
 
-struct FragmentOutput
+struct Fragment_Output
 {
-    float4 Color : SV_Target0;
+    float4 color : SV_Target0;
 };
 
-FragmentOutput main(FragmentInput input)
+Fragment_Output main(Fragment_Input fragment)
 {
-    FragmentOutput output;
+    Fragment_Output output;
 
-    float4 albedo = DiffuseTex.Sample(Sampler, input.TexCoord);
+    float4 albedo = texture_diffuse.Sample(sampler_texture, fragment.texture_coordinate);
     CLIP_TEST(albedo.a - 0.5);
 
     float3 ambient_color = float3(1.0f, 1.0f, 1.0f);
     float3 color_out = ambientStrength * ambient_color * albedo.rgb;
 
     float shininess = 32.0f; // adjustable parameter; technically supposed to be per-material
-    float3 specSample = SpecularTex.Sample(Sampler, input.TexCoord).rgb;
+    float3 specSample = texture_specular.Sample(sampler_texture, fragment.texture_coordinate).rgb;
 
-    float3 N = normalize(input.NormalVS);
+    float3 N = normalize(fragment.normal_viewspace);
 
-    float3 V = normalize(-input.PositionVS); // in view space, camera is at origin; (0,0,0 - posVS) = -posVS
+    float3 V = normalize(-fragment.position_viewspace); // in view space, camera is at origin; (0,0,0 - posVS) = -posVS
 
     // directional light uniform
 
@@ -81,9 +81,9 @@ FragmentOutput main(FragmentInput input)
     
     for (int i = 0; i < 1; i++) // TODO replace 1 with actual number of active lights; pass as uniform?
     {
-        Light_Spotlight light = LightBuffer[i];
+        Light_Spotlight light = buffer_spotlights[i];
 
-        float3 L_unnormalized = light.position - input.PositionVS;
+        float3 L_unnormalized = light.position - fragment.position_viewspace;
         float distance_to_light = length(L_unnormalized);
         float attenuation = 1.0f / (1.0f + light.attenuation_constant_linear * distance_to_light + light.attenuation_constant_quadratic * (distance_to_light * distance_to_light));
 
@@ -103,7 +103,7 @@ FragmentOutput main(FragmentInput input)
         color_out += intensity * attenuation * light.color * spec * specSample;
     }
     
-    output.Color = float4(color_out, albedo.a);
+    output.color = float4(color_out, albedo.a);
     return output;
 }
 

@@ -82,9 +82,11 @@ typedef struct Mesh
 
 typedef struct Node
 {
-	Mesh mesh;
 	mat4 local_transform;
+	Mesh mesh;
 	struct Node* children; // array of child nodes
+	Uint8 num_children;
+	Uint8 _padding[7];
 } Node;
 
 typedef struct Entity
@@ -100,6 +102,7 @@ typedef struct Model
 	SDL_GPUBuffer* index_buffer;
 	SDL_GPUTexture* texture;
 	Uint32 index_count;
+	Uint8 _padding[4];
 } Model;
 
 typedef struct Array_Model
