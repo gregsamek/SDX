@@ -60,11 +60,16 @@ Vertex_Output main(Vertex_Input vertex)
     float4 skinned_position_viewspace = mul(mv, skinned_position_worldspace);
     output.skinned_position_viewspace = skinned_position_viewspace.xyz;
     
+    // assumes the skin matrix does not have non-uniform scaling
+    float3x3 skin_matrix_3x3 = (float3x3)skin_matrix;
+    float3 normal_worldspace = mul(skin_matrix_3x3, vertex.normal);
+    normal_worldspace = normalize(normal_worldspace);
+
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
     float3x3 normalMat = (float3x3)mv_inverse_transpose;
-    output.normal_viewspace = normalize(mul(normalMat, vertex.normal));
+    output.normal_viewspace = normalize(mul(normalMat, normal_worldspace));
 #else
-    output.normal_viewspace = normalize(mul((float3x3)mv, vertex.normal));
+    output.normal_viewspace = normalize(mul((float3x3)mv, normal_worldspace));
 #endif
 
     output.texture_coordinate = vertex.texture_coordinate;
