@@ -112,7 +112,7 @@ bool Render_InitRenderTargets()
             .layer_count_or_depth = 1,
             .num_levels = 1,
             .sample_count = SDL_GPU_SAMPLECOUNT_1,
-            .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
+            .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
             .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
         }
     );
@@ -162,7 +162,7 @@ bool Render_InitRenderTargets()
             .layer_count_or_depth = 1,
             .num_levels = 1,
             .sample_count = msaa_level, // MSAA
-            .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
+            .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
             .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET
         }
     );
@@ -179,6 +179,8 @@ bool Render_Init()
 {
     SDL_WaitForGPUIdle(gpu_device);
 
+    // TODO: try for SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR, if not supported, fall back to SDL_GPU_SWAPCHAINCOMPOSITION_SDR
+    // adjust final swapchain shader to match the respective format
     if (!SDL_WindowSupportsGPUSwapchainComposition(gpu_device, window, swapchain_composition))
     {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Window does not support GPU swapchain composition! SDL Error: %s\n", SDL_GetError());

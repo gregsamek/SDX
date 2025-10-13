@@ -199,7 +199,7 @@ bool Pipeline_Unanimated_Phong_Init()
             .num_color_targets = 1,
             .color_target_descriptions = (SDL_GPUColorTargetDescription[])
             {{
-                .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
+                .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
                 .blend_state = (SDL_GPUColorTargetBlendState)
                 {
                     .enable_blend = true,
@@ -325,7 +325,7 @@ bool Pipeline_BoneAnimated_Init()
             .num_color_targets = 1,
             .color_target_descriptions = (SDL_GPUColorTargetDescription[])
             {{
-                .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
+                .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
                 .blend_state = (SDL_GPUColorTargetBlendState)
                 {
                     .enable_blend = true,
@@ -475,7 +475,7 @@ bool Pipeline_Text_Init()
             .num_color_targets = 1,
             .color_target_descriptions = (SDL_GPUColorTargetDescription[])
             {{
-                .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
+                .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
                 .blend_state = (SDL_GPUColorTargetBlendState)
                 {
                     .enable_blend = true,
@@ -576,7 +576,7 @@ bool Pipeline_FullscreenQuad_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "unlit_alphatest.frag", // Base filename
+        "swapchain.frag", // Base filename
         1, // num_samplers (for the single texture)
         0, // num_storage_textures
         0, // num_storage_buffers
@@ -679,7 +679,7 @@ bool Pipeline_Sprite_Init()
             .num_color_targets = 1,
             .color_target_descriptions = (SDL_GPUColorTargetDescription[])
             {{
-                .format = SDL_GetGPUSwapchainTextureFormat(gpu_device, window),
+                .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
                 .blend_state = (SDL_GPUColorTargetBlendState)
                 {
                     .enable_blend = true,

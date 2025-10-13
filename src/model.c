@@ -319,6 +319,11 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
 
     SDL_UnmapGPUTransferBuffer(gpu_device, transfer_buffer);
 
+    // Load Textures
+
+    // TODO normal maps, metallic-roughness maps, emissive maps
+    // (use SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM for non-color maps)
+
     char* texture_uri = NULL;
     if (primitive->material && primitive->material->has_pbr_metallic_roughness)
     {
@@ -337,7 +342,7 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
     model->texture = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
     {
         .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, // Assuming ABGR8888 surface
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB, // Assuming ABGR8888 surface
         .width = (Uint32)texture_surface->w,
         .height = (Uint32)texture_surface->h,
         .layer_count_or_depth = 1,
@@ -804,7 +809,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
     // You would think since there are conveniently 4 joint IDs per vertex, that reading them 
     // as a single 32 bit uint would work, and yet for some reason it is broken.
     // that approach is comment out below
-    
+
     const uint8_t* pos_data_base = cgltf_buffer_view_data(position_accessor->buffer_view);
     if (pos_data_base == NULL) 
     {
@@ -925,7 +930,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
     model->texture = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
     {
         .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM, // Assuming ABGR8888 surface
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB, // Assuming ABGR8888 surface
         .width = (Uint32)texture_surface->w,
         .height = (Uint32)texture_surface->h,
         .layer_count_or_depth = 1,

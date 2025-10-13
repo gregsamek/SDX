@@ -8,6 +8,8 @@ set -e
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/unanimated.vert.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/blinnphong_unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_unanimated.vert.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/blinnphong_unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_unanimated.vert.json
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/swapchain.frag.hlsl -o MyApp.app/Contents/Resources/shaders/swapchain.frag.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/swapchain.frag.hlsl -o MyApp.app/Contents/Resources/shaders/swapchain.frag.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unlit_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/unlit_alphatest.frag.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unlit_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/unlit_alphatest.frag.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/blinnphong_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_alphatest.frag.msl
