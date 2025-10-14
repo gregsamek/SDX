@@ -1,72 +1,68 @@
 #include "camera.h"
 #include "globals.h"
 
-static float camera_pitch_adjust_speed = 80.0f;
+static float camera_angle_adjust_speed = 80.0f;
 
 void Camera_Update()
 {
-    vec3 move_direction = {0.0f, 0.0f, 0.0f};
-    if (keyboard_state[SDL_SCANCODE_W])
-    {
-        move_direction[2] += 1.0f;
-    }
-    if (keyboard_state[SDL_SCANCODE_S])
-    {
-        move_direction[2] -= 1.0f;
-    }
-    if (keyboard_state[SDL_SCANCODE_A])
-    {
-        move_direction[0] -= 1.0f;
-    }
-    if (keyboard_state[SDL_SCANCODE_D])
-    {
-        move_direction[0] += 1.0f;
-    }
-    if (keyboard_state[SDL_SCANCODE_Q])
-    {
-        camera.pitch += 1.0f * camera_pitch_adjust_speed * delta_time; // Rotate up
-    }
-    if (keyboard_state[SDL_SCANCODE_E])
-    {
-        camera.pitch -= 1.0f * camera_pitch_adjust_speed * delta_time; // Rotate down
-    }
-    if (keyboard_state[SDL_SCANCODE_SPACE])
-    {
-        move_direction[1] += 1.0f; // Move along world up
-    }
-    if (keyboard_state[SDL_SCANCODE_LCTRL] || keyboard_state[SDL_SCANCODE_RCTRL])
-    {
-        move_direction[1] -= 1.0f; // Move along world down
-    }
-
-    // Clamp pitch
-    if (camera.pitch > 89.0f)
-        camera.pitch = 89.0f;
-    if (camera.pitch < -89.0f)
-        camera.pitch = -89.0f;
-
-    // Normalize move_direction if it's not zero to prevent faster diagonal movement
-    float move_len_sq = glm_vec3_dot(move_direction, move_direction);
-    if (move_len_sq > input_deadzone_squared)
-    {
-        vec3 normMoveDir;
-        glm_vec3_normalize_to(move_direction, normMoveDir);
-        camera.position[0] += normMoveDir[0] * movement_speed * delta_time;
-        camera.position[1] += normMoveDir[1] * movement_speed * delta_time;
-        camera.position[2] += normMoveDir[2] * movement_speed * delta_time;
-    }
+    camera.yaw += keyboard_state[SDL_SCANCODE_Q] * camera_angle_adjust_speed * delta_time;
+    camera.yaw -= keyboard_state[SDL_SCANCODE_E] * camera_angle_adjust_speed * delta_time;
+    if (camera.yaw > 360.0f) camera.yaw -= 360.0f;
+    if (camera.yaw < 0.0f)   camera.yaw += 360.0f;
     
-    vec3 forward;
-    forward[0] = SDL_cosf(glm_rad(camera.yaw)) * SDL_cosf(glm_rad(camera.pitch));
-    forward[1] = SDL_sinf(glm_rad(camera.pitch));
-    forward[2] = SDL_sinf(glm_rad(camera.yaw)) * SDL_cosf(glm_rad(camera.pitch));
-    glm_vec3_normalize_to(forward, camera.forward);
-    
+    camera.pitch += keyboard_state[SDL_SCANCODE_RIGHT] * camera_angle_adjust_speed * delta_time;
+    camera.pitch -= keyboard_state[SDL_SCANCODE_LEFT] * camera_angle_adjust_speed * delta_time;
+    if (camera.pitch > 89.0f)  camera.pitch = 89.0f;
+    if (camera.pitch < -89.0f) camera.pitch = -89.0f;
+
+    vec3 camera_forward_new;
+    camera_forward_new[0] = SDL_cosf(glm_rad(camera.yaw)) * SDL_cosf(glm_rad(camera.pitch));
+    camera_forward_new[1] = SDL_sinf(glm_rad(camera.pitch));
+    camera_forward_new[2] = SDL_sinf(glm_rad(camera.yaw)) * SDL_cosf(glm_rad(camera.pitch));
+    glm_vec3_normalize_to(camera_forward_new, camera.forward);
+
+    // Right is perpendicular to forward and world up
     glm_vec3_crossn(camera.forward, WORLD_UP_VECTOR, camera.right);
+    // Up is perpendicular to right and forward
     glm_vec3_crossn(camera.right, camera.forward, camera.up);
 
-    vec3 camera_target = { camera.position[0] + camera.forward[0], camera.position[1] + camera.forward[1], camera.position[2] + camera.forward[2] };
+    float input_forward = (int)keyboard_state[SDL_SCANCODE_W]  - (int)keyboard_state[SDL_SCANCODE_S];
+    float input_right   = (int)keyboard_state[SDL_SCANCODE_A]  - (int)keyboard_state[SDL_SCANCODE_D];
+    float input_up      = (int)keyboard_state[SDL_SCANCODE_UP] - (int)keyboard_state[SDL_SCANCODE_DOWN];
+    
+    vec3 forward_no_z; glm_vec3_copy(camera.forward, forward_no_z); 
+    forward_no_z[1] = 0.0f; 
+    glm_vec3_normalize(forward_no_z);
+    
+    vec3 movement_direction = {0.0f, 0.0f, 0.0f};
+    if (input_forward != 0.0f) 
+    { 
+        vec3 v; glm_vec3_scale(forward_no_z, input_forward, v); 
+        glm_vec3_add(movement_direction, v, movement_direction); 
+    }
+    if (input_right != 0.0f) 
+    { 
+        vec3 v; glm_vec3_scale(camera.right,input_right, v); 
+        glm_vec3_add(movement_direction, v, movement_direction); 
+    }
+    if (input_up != 0.0f) 
+    { 
+        vec3 v; glm_vec3_scale(WORLD_UP_VECTOR,input_up,v); 
+        glm_vec3_add(movement_direction, v, movement_direction); 
+    }
 
+    // Normalize to avoid faster diagonal speed
+    float move_len_sq = glm_vec3_dot(movement_direction, movement_direction);
+    if (move_len_sq > input_deadzone_squared)
+    {
+        vec3 movement_direction_normalized, delta;
+        glm_vec3_normalize_to(movement_direction, movement_direction_normalized);
+        glm_vec3_scale(movement_direction_normalized, movement_speed * delta_time, delta);
+        glm_vec3_add(camera.position, delta, camera.position);
+    }
+
+    vec3 camera_target;
+    glm_vec3_add(camera.position, camera.forward, camera_target);
     glm_lookat(camera.position, camera_target, camera.up, camera.view_matrix);
 
     mat4 projection_matrix;

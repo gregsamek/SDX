@@ -342,7 +342,7 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
     model->texture = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
     {
         .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB, // Assuming ABGR8888 surface
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB,
         .width = (Uint32)texture_surface->w,
         .height = (Uint32)texture_surface->h,
         .layer_count_or_depth = 1,
@@ -930,7 +930,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
     model->texture = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
     {
         .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB, // Assuming ABGR8888 surface
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB,
         .width = (Uint32)texture_surface->w,
         .height = (Uint32)texture_surface->h,
         .layer_count_or_depth = 1,

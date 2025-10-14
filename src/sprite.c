@@ -18,7 +18,7 @@ static bool Sprite_Load(const char* sprite_name, Sprite* sprite)
     sprite->texture = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
     {
         .type = SDL_GPU_TEXTURETYPE_2D,
-        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB, // Assuming ABGR8888 surface
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB,
         .width = (Uint32)texture_surface->w,
         .height = (Uint32)texture_surface->h,
         .layer_count_or_depth = 1,
