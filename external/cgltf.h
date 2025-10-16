@@ -974,8 +974,10 @@ typedef struct {
 	unsigned int toknext; /* next token to allocate */
 	int toksuper; /* superior token node, e.g parent object or array */
 } jsmn_parser;
+#ifndef __INTELLISENSE__
 static void jsmn_init(jsmn_parser *parser);
 static int jsmn_parse(jsmn_parser *parser, const char *js, size_t len, jsmntok_t *tokens, size_t num_tokens);
+#endif
 /*
  * -- jsmn.h end --
  */
