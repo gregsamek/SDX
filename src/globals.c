@@ -24,10 +24,10 @@ bool* keyboard_state = NULL;
 bool is_mouse_captured = false;
 InputState input_state = InputState_DEFAULT;
 
-Array_Model models_unanimated = {0};
-Array_Model_BoneAnimated models_bone_animated = {0};
+Model Array models_unanimated = NULL;
+Model_BoneAnimated Array models_bone_animated = NULL;
 
-Array_Sprite sprites = {0};
+Sprite Array sprites = NULL;
 
 float input_deadzone_squared = 0.001f;
 Camera camera =

@@ -105,13 +105,6 @@ typedef struct Model
 	Uint8 _padding[4];
 } Model;
 
-typedef struct Array_Model
-{
-    Model* arr;
-    Uint32 len;
-    Uint32 cap;
-} Array_Model;
-
 #define MAX_CHILDREN_PER_JOINT 3
 
 typedef struct Joint
@@ -183,13 +176,6 @@ typedef struct Model_BoneAnimated
 	Uint8 active_animation_index;
 	Uint8 _padding[9];
 } Model_BoneAnimated;
-
-typedef struct Array_Model_BoneAnimated
-{
-    Model_BoneAnimated* arr;
-    Uint32 len;
-    Uint32 cap;
-} Array_Model_BoneAnimated;
 
 bool Model_LoadAllModels(void);
 bool Model_Load(const char* filename);

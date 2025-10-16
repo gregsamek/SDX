@@ -24,6 +24,10 @@ struct Light_Spotlight
     float padding[3]; // pad to float4 size
 };
 
+// WARNING: StructuredBuffers are not natively supported by SDL's GPU API.
+// They will work with SDL_shadercross because it does special processing to
+// support them, but not with direct compilation via dxc.
+// See https://github.com/libsdl-org/SDL/issues/12200 for details.
 StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t2, space2);
 
 cbuffer Light_Directional_Uniform : register(b0, space3)

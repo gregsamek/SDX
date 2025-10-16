@@ -98,15 +98,15 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     // if (pipeline_instanced) SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_instanced);
     if (msaa_texture) SDL_ReleaseGPUTexture(gpu_device, msaa_texture);
     if (depth_texture) SDL_ReleaseGPUTexture(gpu_device, depth_texture);
-    if (models_unanimated.arr) 
-    {
-        for (Uint32 i = 0; i < models_unanimated.len; i++)
-        {
-            Model_Free(models_unanimated.arr + i);
-        }
-        SDL_free(models_unanimated.arr);
-        SDL_memset(&models_unanimated, 0, sizeof(Array_Model));
-    }
+    // if (models_unanimated) 
+    // {
+    //     for (Uint32 i = 0; i < models_unanimated.len; i++)
+    //     {
+    //         Model_Free(models_unanimated + i);
+    //     }
+    //     SDL_free(models_unanimated);
+    //     SDL_memset(&models_unanimated, 0, sizeof(Array_Model));
+    // }
     if (default_texture_sampler) SDL_ReleaseGPUSampler(gpu_device, default_texture_sampler);
     if (window && gpu_device) SDL_ReleaseWindowFromGPUDevice(gpu_device, window);
     if (gpu_device) SDL_DestroyGPUDevice(gpu_device);

@@ -116,8 +116,8 @@ static bool Sprite_Load(const char* sprite_name, Sprite* sprite)
 
 bool Sprite_LoadSprites(void)
 {
-    Array_Initialize(&sprites);
-    if (!sprites.arr)
+    Array_Init(sprites, 0);
+    if (!sprites)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize sprites array");
         return false;
@@ -158,7 +158,7 @@ bool Sprite_LoadSprites(void)
                 return false;
             }
             sprite.height = SDL_atof(sprite_height_str);
-            Array_Append(&sprites, sprite);
+            Array_Append(sprites, sprite);
         }
         
         line = SDL_strtok_r(NULL, "\r\n", &saveptr);

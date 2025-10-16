@@ -18,54 +18,43 @@ const char* Code_Type_Strings[] = {
 #undef X
 };
 
-/* dynamic arrays */
+/* strings */
 
-typedef struct My_Struct
-{
-    int a;
-    float b;
-} My_Struct;
+//////////////////////////////////////////////////
+Array_Char out = {0};
+Array_Initialize(&out, 16384);
+memset(out.arr, 0, out.cap);
 
-#define ARRAY_TYPES \
-    X(My_Struct)        \
-    X(char)
+#define Append_fmt(fmt, ...) \
+    do { \
+        int needed = snprintf(NULL, 0, fmt, ##__VA_ARGS__); \
+        if (needed < 0) \
+        { \
+            fprintf(stderr, "snprintf encoding error!\n"); \
+            break; \
+        } \
+        while (out.len + needed + 1 > out.cap) \
+        { \
+            int new_cap = out.cap * 2; \
+            if (new_cap < out.len + needed + 1) { \
+                new_cap = out.len + needed + 1; \
+            } \
+            void* temp_ptr = realloc(out.arr, new_cap); \
+            if (temp_ptr == NULL) \
+            { \
+                fprintf(stderr, "Failed to reallocate array memory!\n"); \
+                break;\
+            } \
+            out.arr = temp_ptr; \
+            out.cap = new_cap; \
+        } \
+        int written = snprintf(out.arr + out.len, out.cap - out.len, fmt, ##__VA_ARGS__); \
+        if (written > 0) out.len += written; \
+    } while (0) 
 
-#define X(Type) \
-     struct Array_##Type Array_##Type;
-ARRAY_TYPES
-#undef X
-
-#define X(Type)                 \
-    typedef struct Array_##Type \
-    {                           \
-        Type *arr;      \
-        Sint32 len;        \
-        Sint32 cap;        \
-    } Array_##Type;
-ARRAY_TYPES
-#undef X
-
-#define append(ARRAY, ELEMENT)                                                           \
-    do                                                                                   \
-    {                                                                                    \
-        if ((ARRAY).len == (ARRAY).cap)                                                  \
-        {                                                                                \
-            u32 new_cap = (ARRAY).cap ? 2 * (ARRAY).cap : 4096 / sizeof((ARRAY).arr[0]); \
-            (ARRAY).arr = realloc((ARRAY).arr, new_cap * sizeof((ARRAY).arr[0]));        \
-            (ARRAY).cap = new_cap;                                                       \
-        }                                                                                \
-        (ARRAY).arr[(ARRAY).len] = ELEMENT;                                              \
-        (ARRAY).len += 1;                                                                \
-    } while (0)
-
-#define POP(ARRAY)          \
-    do                      \
-    {                       \
-        if (ARRAY.len)      \
-        {                   \
-            ARRAY.len -= 1; \
-        }                   \
-    } while (0)
+Append_fmt("%s", header_guard);
+Append_fmt("%s", cpp_compatibility);
+//////////////////////////////////////////////////
 
 void append_string(char_Array* ca, bool null_term, char* s, u32 len)
 {
@@ -119,3 +108,10 @@ void append_fstring(char_Array* ca, bool null_term, char* format, ...)
 
     ca->len += len + null_term;
 }
+
+/* defer */
+
+#define macro_var(name) concat(name, __LINE__)
+#define defer(start, end) \
+    for (int macro_var(_i_) = ((start), 0); !macro_var(_i_); ++macro_var(_i_), (end))
+

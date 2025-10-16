@@ -40,10 +40,10 @@ extern bool* keyboard_state;
 extern bool is_mouse_captured;
 extern InputState input_state;
 
-extern Array_Model models_unanimated;
-extern Array_Model_BoneAnimated models_bone_animated;
+extern Model Array models_unanimated;
+extern Model_BoneAnimated Array models_bone_animated;
 
-extern Array_Sprite sprites;
+extern Sprite Array sprites;
 
 extern float input_deadzone_squared;
 extern Camera camera;

@@ -13,15 +13,15 @@
 
 bool Model_LoadAllModels(void)
 {
-    Array_Initialize(&models_unanimated);
-    if (!models_unanimated.arr)
+    Array_Init(models_unanimated, 0);
+    if (!models_unanimated)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize models array");
         return false;
     }
 
-    Array_Initialize(&models_bone_animated);
-    if (!models_bone_animated.arr)
+    Array_Init(models_bone_animated, 0);
+    if (!models_bone_animated)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize models_bone_animated array");
         return false;
@@ -130,7 +130,7 @@ bool Model_Load(const char* filename)
                     cgltf_free(gltf_data);
                     return false;
                 }
-                Array_Append(&models_unanimated, new_model);
+                Array_Append(models_unanimated, new_model);
                 break;
             }
             case MODEL_TYPE_BONE_ANIMATED:
@@ -143,7 +143,7 @@ bool Model_Load(const char* filename)
                     cgltf_free(gltf_data);
                     return false;
                 }
-                Array_Append(&models_bone_animated, model_bone_animated);
+                Array_Append(models_bone_animated, model_bone_animated);
                 break;
             }
             case MODEL_TYPE_RIGID_ANIMATED:
@@ -1110,11 +1110,11 @@ bool Model_JointMat_UpdateAndUpload()
         SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer_joint_matrix);
         size_t current_offset_bytes = 0;
 
-        for (size_t i = 0; i < models_bone_animated.len; i++)
+        for (size_t i = 0; i < Array_Len(models_bone_animated); i++)
         {
             // update animations
 
-            Model_BoneAnimated* model = &models_bone_animated.arr[i];
+            Model_BoneAnimated* model = &models_bone_animated[i];
 
             model->animation_progress += delta_time;
             
@@ -1173,19 +1173,19 @@ bool Model_JointMat_UpdateAndUpload()
 
             // update joint matrices
 
-            models_bone_animated.arr[i].storage_buffer_offset_bytes = current_offset_bytes;
+            models_bone_animated[i].storage_buffer_offset_bytes = current_offset_bytes;
 
             // for mixamo models, the first joint should also be the root node 
             // in the future this may need to be determined by checking the joint hierarchy
             
             Model_CalculateJointMatrices
             (
-                models_bone_animated.arr[i].joints, 
-                models_bone_animated.arr[i].armature_correction_matrix, // parent transform
-                (Uint8*)transfer_buffer_mapped + current_offset_bytes, models_bone_animated.arr[i].joints // root joint
+                models_bone_animated[i].joints, 
+                models_bone_animated[i].armature_correction_matrix, // parent transform
+                (Uint8*)transfer_buffer_mapped + current_offset_bytes, models_bone_animated[i].joints // root joint
             );
 
-            current_offset_bytes += models_bone_animated.arr[i].num_joints * sizeof(mat4);
+            current_offset_bytes += models_bone_animated[i].num_joints * sizeof(mat4);
         }
 
         SDL_GPUTransferBufferLocation source = 

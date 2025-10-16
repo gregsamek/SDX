@@ -25,13 +25,6 @@ typedef struct
 	Uint32 index_count;
 } Text_Renderable;
 
-typedef struct Array_Text_Renderable
-{
-    Text_Renderable* arr;
-    Uint32 len;
-    Uint32 cap;
-} Array_Text_Renderable;
-
 bool Text_Init();
 bool Text_UpdateAndUpload(const char* new_text);
 

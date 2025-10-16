@@ -12,6 +12,11 @@ cbuffer Skinning : register(b1, space1)
     uint base_joint_offset_bytes; // offset into the joint matrix storage buffer
 };
 
+// WARNING: StructuredBuffers are not natively supported by SDL's GPU API.
+// They will work with SDL_shadercross because it does special processing to
+// support them, but not with direct compilation via dxc.
+// See https://github.com/libsdl-org/SDL/issues/12200 for details.
+
 // Storage buffer containing all joint matrices for all models for this frame.
 StructuredBuffer<float4x4> joint_matrix_buffer : register(t0, space0);
 

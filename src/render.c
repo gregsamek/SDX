@@ -239,11 +239,11 @@ bool Render_Init()
 
 static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
 {
-    if (!models_unanimated.len) return;
+    if (!Array_Len(models_unanimated)) return;
 
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_unanimated);
 
-    for (size_t i = 0; i < models_unanimated.len; i++)
+    for (size_t i = 0; i < Array_Len(models_unanimated); i++)
     {
         // TODO implement model matrix per model
         mat4 model_matrix;
@@ -284,7 +284,7 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
             (SDL_GPUBufferBinding[])
             {
                 { 
-                    .buffer = models_unanimated.arr[i].vertex_buffer, 
+                    .buffer = models_unanimated[i].vertex_buffer, 
                     .offset = 0 
                 },
             }, 
@@ -296,14 +296,14 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
             render_pass, 
             &(SDL_GPUBufferBinding)
             { 
-                .buffer = models_unanimated.arr[i].index_buffer, 
+                .buffer = models_unanimated[i].index_buffer, 
                 .offset = 0 
             }, 
             SDL_GPU_INDEXELEMENTSIZE_16BIT
         );
 
-        SDL_GPUTexture* diffuse_tex = models_unanimated.arr[i].texture;    
-        SDL_GPUTexture* specular_tex = models_unanimated.arr[i].texture;
+        SDL_GPUTexture* diffuse_tex = models_unanimated[i].texture;    
+        SDL_GPUTexture* specular_tex = models_unanimated[i].texture;
         
         SDL_BindGPUFragmentSamplers
         (
@@ -320,7 +320,7 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         SDL_DrawGPUIndexedPrimitives
         (
             render_pass,
-            (Uint32)models_unanimated.arr[i].index_count, // num_indices
+            (Uint32)models_unanimated[i].index_count, // num_indices
             1,  // num_instances
             0,  // first_index
             0,  // vertex_offset
@@ -331,7 +331,7 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
 
 static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
 {
-    if (!models_bone_animated.len) return;
+    if (!Array_Len(models_bone_animated)) return;
 
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_bone_animated);
     SDL_BindGPUVertexStorageBuffers
@@ -342,7 +342,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
         1 // storage buffer count
     );
 
-    for (size_t i = 0; i < models_bone_animated.len; i++)
+    for (size_t i = 0; i < Array_Len(models_bone_animated); i++)
     {
         // TODO implement model matrix per model
         mat4 model_matrix;
@@ -380,7 +380,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
         (
             command_buffer, 
             1, 
-            &models_bone_animated.arr[i].storage_buffer_offset_bytes, 
+            &models_bone_animated[i].storage_buffer_offset_bytes, 
             sizeof(Uint32)
         );
 
@@ -391,7 +391,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
             (SDL_GPUBufferBinding[])
             {
                 { 
-                    .buffer = models_bone_animated.arr[i].vertex_buffer, 
+                    .buffer = models_bone_animated[i].vertex_buffer, 
                     .offset = 0 
                 },
             }, 
@@ -403,7 +403,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
             render_pass, 
             &(SDL_GPUBufferBinding)
             { 
-                .buffer = models_bone_animated.arr[i].index_buffer, 
+                .buffer = models_bone_animated[i].index_buffer, 
                 .offset = 0 
             }, 
             SDL_GPU_INDEXELEMENTSIZE_16BIT
@@ -415,7 +415,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
             0, // fragment sampler slot
             &(SDL_GPUTextureSamplerBinding)
             { 
-                .texture = models_bone_animated.arr[i].texture, 
+                .texture = models_bone_animated[i].texture, 
                 .sampler = default_texture_sampler 
             }, 
             1 // num_bindings
@@ -424,7 +424,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
         SDL_DrawGPUIndexedPrimitives
         (
             render_pass,
-            (Uint32)models_bone_animated.arr[i].index_count, // num_indices
+            (Uint32)models_bone_animated[i].index_count, // num_indices
             1,  // num_instances
             0,  // first_index
             0,  // vertex_offset
@@ -531,14 +531,14 @@ static bool Render_Text(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* co
 
 static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
 {
-    if (!sprites.len) return;
+    if (!Array_Len(sprites)) return;
 
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_sprite);
 
-    for (size_t i = 0; i < sprites.len; i++)
+    for (size_t i = 0; i < Array_Len(sprites); i++)
     {
-        float sprite_height = sprites.arr[i].height;
-        float sprite_width = sprite_height * sprites.arr[i].aspect_ratio * virtual_screen_texture_height / (float)virtual_screen_texture_width;
+        float sprite_height = sprites[i].height;
+        float sprite_width = sprite_height * sprites[i].aspect_ratio * virtual_screen_texture_height / (float)virtual_screen_texture_width;
         float sprite_depth = 0.01f; // TODO depth should be a property of the sprite
         float vertex_pos[4][4] = 
         {
@@ -556,7 +556,7 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
             0, // fragment sampler slot
             &(SDL_GPUTextureSamplerBinding)
             { 
-                .texture = sprites.arr[i].texture, 
+                .texture = sprites[i].texture, 
                 .sampler = default_texture_sampler 
             }, 
             1 // num_bindings
@@ -594,7 +594,7 @@ bool Render()
     }
 
     // can these be compined into one copy pass? (also text update)
-    if (models_bone_animated.len) Model_JointMat_UpdateAndUpload();
+    if (Array_Len(models_bone_animated)) Model_JointMat_UpdateAndUpload();
     if (lights_storage_buffer) Lights_StorageBuffer_UpdateAndUpload();
 
     SDL_GPUCommandBuffer* command_buffer_draw = SDL_AcquireGPUCommandBuffer(gpu_device);

@@ -15,13 +15,6 @@ typedef struct
     Uint8 _padding[4];
 } Sprite;
 
-typedef struct
-{
-    Sprite* arr;
-    Uint32 len;
-    Uint32 cap;
-} Array_Sprite;
-
 bool Sprite_LoadSprites(void);
 
 #endif // SPRITE_H
