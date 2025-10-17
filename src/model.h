@@ -62,22 +62,22 @@ typedef struct Vertex_BoneAnimated
 	float weights[MAX_JOINTS_PER_VERTEX];
 } Vertex_BoneAnimated;
 
+// in the future may add emission, masks and blends
 typedef struct Material
 {
-	SDL_GPUTexture* diffuse_texture;
-	SDL_GPUSampler* sampler;
-	// no pbr for now
+	SDL_GPUTexture* texture_diffuse;
+	SDL_GPUTexture* texture_normal;
+	SDL_GPUTexture* texture_metallic_roughness;
 } Material;
-
-// TODO morph targets, weights, skins
 
 // Mesh is equivalent to a GLTF "Primitive"
 // aka geometry that can be rendered with a single draw call
 typedef struct Mesh
 {
-	SDL_GPUBuffer* vertex_buffer; // positions, texcoords
+	SDL_GPUBuffer* vertex_buffer;
 	SDL_GPUBuffer* index_buffer;
 	Material material;
+	Uint32 index_count;
 } Mesh;
 
 typedef struct Node
@@ -98,12 +98,12 @@ typedef struct Entity
 
 typedef struct Model
 {
-	SDL_GPUBuffer* vertex_buffer;
-	SDL_GPUBuffer* index_buffer;
-	SDL_GPUTexture* texture;
-	Uint32 index_count;
-	Uint8 _padding[4];
+	mat4 model_matrix;
+	Material material;
+	Mesh mesh;
 } Model;
+
+// TODO morph targets?
 
 #define MAX_CHILDREN_PER_JOINT 3
 
@@ -159,28 +159,28 @@ typedef struct Animation_Skeletal
 	Uint8 _padding[2];
 } Animation_Skeletal;
 
-typedef struct Model_BoneAnimated
+typedef struct
 {
-	mat4 model_matrix;
 	mat4 armature_correction_matrix;
-	SDL_GPUBuffer* vertex_buffer;
-	SDL_GPUBuffer* index_buffer;
-	SDL_GPUTexture* texture;
 	Joint* joints;
 	Animation_Skeletal* skeletal_animations;
-	Uint32 index_count;
 	Uint32 storage_buffer_offset_bytes;
 	float animation_progress;
 	Uint8 num_joints;
 	Uint8 num_skeletal_animations;
 	Uint8 active_animation_index;
-	Uint8 _padding[9];
+} Animation_Rig;
+
+typedef struct Model_BoneAnimated
+{
+	Model model;
+	Animation_Rig animation_rig;
 } Model_BoneAnimated;
 
-bool Model_LoadAllModels(void);
-bool Model_Load(const char* filename);
-bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model);
-bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_BoneAnimated* model);
+bool Model_Load_AllScenes(void);
+bool Model_Load_Scene(const char* filename);
+bool Model_Load_Model(cgltf_data* gltf_data, cgltf_node* node);
+bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node);
 void Model_Free(Model* model);
 void Model_BoneAnimated_Free(Model_BoneAnimated* model);
 bool Model_JointMat_UpdateAndUpload();

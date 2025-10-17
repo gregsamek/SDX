@@ -284,7 +284,7 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
             (SDL_GPUBufferBinding[])
             {
                 { 
-                    .buffer = models_unanimated[i].vertex_buffer, 
+                    .buffer = models_unanimated[i].mesh.vertex_buffer, 
                     .offset = 0 
                 },
             }, 
@@ -296,14 +296,14 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
             render_pass, 
             &(SDL_GPUBufferBinding)
             { 
-                .buffer = models_unanimated[i].index_buffer, 
+                .buffer = models_unanimated[i].mesh.index_buffer, 
                 .offset = 0 
             }, 
             SDL_GPU_INDEXELEMENTSIZE_16BIT
         );
 
-        SDL_GPUTexture* diffuse_tex = models_unanimated[i].texture;    
-        SDL_GPUTexture* specular_tex = models_unanimated[i].texture;
+        SDL_GPUTexture* diffuse_tex = models_unanimated[i].mesh.material.texture_diffuse;    
+        SDL_GPUTexture* specular_tex = models_unanimated[i].mesh.material.texture_diffuse;
         
         SDL_BindGPUFragmentSamplers
         (
@@ -320,7 +320,7 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         SDL_DrawGPUIndexedPrimitives
         (
             render_pass,
-            (Uint32)models_unanimated[i].index_count, // num_indices
+            (Uint32)models_unanimated[i].mesh.index_count, // num_indices
             1,  // num_instances
             0,  // first_index
             0,  // vertex_offset
@@ -380,7 +380,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
         (
             command_buffer, 
             1, 
-            &models_bone_animated[i].storage_buffer_offset_bytes, 
+            &models_bone_animated[i].animation_rig.storage_buffer_offset_bytes, 
             sizeof(Uint32)
         );
 
@@ -391,7 +391,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
             (SDL_GPUBufferBinding[])
             {
                 { 
-                    .buffer = models_bone_animated[i].vertex_buffer, 
+                    .buffer = models_bone_animated[i].model.mesh.vertex_buffer, 
                     .offset = 0 
                 },
             }, 
@@ -403,7 +403,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
             render_pass, 
             &(SDL_GPUBufferBinding)
             { 
-                .buffer = models_bone_animated[i].index_buffer, 
+                .buffer = models_bone_animated[i].model.mesh.index_buffer, 
                 .offset = 0 
             }, 
             SDL_GPU_INDEXELEMENTSIZE_16BIT
@@ -415,7 +415,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
             0, // fragment sampler slot
             &(SDL_GPUTextureSamplerBinding)
             { 
-                .texture = models_bone_animated[i].texture, 
+                .texture = models_bone_animated[i].model.material.texture_diffuse, 
                 .sampler = default_texture_sampler 
             }, 
             1 // num_bindings
@@ -424,7 +424,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
         SDL_DrawGPUIndexedPrimitives
         (
             render_pass,
-            (Uint32)models_bone_animated[i].index_count, // num_indices
+            (Uint32)models_bone_animated[i].model.mesh.index_count, // num_indices
             1,  // num_instances
             0,  // first_index
             0,  // vertex_offset
@@ -576,7 +576,7 @@ bool Render()
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load render settings");
             return false;
         }
-        if (!Model_LoadAllModels())
+        if (!Model_Load_AllScenes())
         {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload models");
             return false;

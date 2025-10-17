@@ -94,7 +94,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    if (!Model_LoadAllModels())
+    if (!Model_Load_AllScenes())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to load models");
         return SDL_APP_FAILURE;

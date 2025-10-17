@@ -11,7 +11,7 @@
 #define CGLTF_ATOLL(str) SDL_strtoll(str, NULL, 10)
 #include "../external/cgltf.h"
 
-bool Model_LoadAllModels(void)
+bool Model_Load_AllScenes(void)
 {
     Array_Init(models_unanimated, 0);
     if (!models_unanimated)
@@ -49,7 +49,7 @@ bool Model_LoadAllModels(void)
         // Skip empty lines
         if (*line != '\0')
         {
-            if (!Model_Load(line))
+            if (!Model_Load_Scene(line))
             {
                 SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load model: %s", line);
                 SDL_free(models_list_txt);
@@ -64,7 +64,7 @@ bool Model_LoadAllModels(void)
     return true;
 }
 
-bool Model_Load(const char* filename)
+bool Model_Load_Scene(const char* filename)
 {
     char model_path[MAXIMUM_URI_LENGTH];
     SDL_snprintf(model_path, sizeof(model_path), "%smodels/%s", base_path, filename);
@@ -122,28 +122,22 @@ bool Model_Load(const char* filename)
                 break;
             case MODEL_TYPE_UNANIMATED:
             {
-                Model new_model = {0};
-                if (!Model_Load_Unanimated(gltf_data, root_nodes[i], &new_model))
+                if (!Model_Load_Model(gltf_data, root_nodes[i]))
                 {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load unanimated model of node %s", root_nodes[i]->name);
-                    Model_Free(&new_model);
                     cgltf_free(gltf_data);
                     return false;
                 }
-                Array_Append(models_unanimated, new_model);
                 break;
             }
             case MODEL_TYPE_BONE_ANIMATED:
             {
-                Model_BoneAnimated model_bone_animated = {0};
-                if (!Model_Load_BoneAnimated(gltf_data, root_nodes[i], &model_bone_animated))
+                if (!Model_Load_BoneAnimated(gltf_data, root_nodes[i]))
                 {
                     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load unanimated model of node %s", root_nodes[i]->name);
-                    Model_BoneAnimated_Free(&model_bone_animated);
                     cgltf_free(gltf_data);
                     return false;
                 }
-                Array_Append(models_bone_animated, model_bone_animated);
                 break;
             }
             case MODEL_TYPE_RIGID_ANIMATED:
@@ -163,29 +157,27 @@ bool Model_Load(const char* filename)
     #undef root_nodes
 }
 
-bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model)
+bool Model_Load_Model(cgltf_data* gltf_data, cgltf_node* node)
 {
-    if (!gltf_data || !node)
+    if (!node)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "NULL glTF data or node for unanimated model.");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "NULL model node.");
         return false;
     }
 
-    cgltf_mesh* mesh = node->mesh;
-    if (!mesh || mesh->primitives_count == 0)
+    if (!node->mesh || node->mesh->primitives_count == 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Node has no mesh or primitives.");
         return false;
     }
 
-    if (mesh->primitives_count > 1)
+    if (node->mesh->primitives_count > 1)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Rendering models with multiple primitives is not supported. Found %zu primitives in node %s.", mesh->primitives_count, node->name);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Rendering models with multiple primitives is not supported. Found %zu primitives in node %s.", node->mesh->primitives_count, node->name);
         return false;
     }
 
-    cgltf_primitive* primitive = mesh->primitives;
-
+    cgltf_primitive* primitive = node->mesh->primitives;
     if (primitive->type != cgltf_primitive_type_triangles)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error: gltf primitive has type %d, expected type %d (triangles).", primitive->type, cgltf_primitive_type_triangles);
@@ -220,7 +212,8 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
     }
 
     Uint32 vertex_data_size = (Uint32)(sizeof(Vertex_PositionNormalTexture) * position_accessor->count);
-    model->vertex_buffer = SDL_CreateGPUBuffer
+    Mesh mesh = {0};
+    mesh.vertex_buffer = SDL_CreateGPUBuffer
     (
         gpu_device,
         &(SDL_GPUBufferCreateInfo)
@@ -229,7 +222,7 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
             .size = vertex_data_size
         }
     );
-    if (model->vertex_buffer == NULL)
+    if (mesh.vertex_buffer == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create vertex buffer: %s", SDL_GetError());
         return false;
@@ -247,10 +240,10 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
         return false;
     }
 
-    model->index_count = index_accessor->count;
+    mesh.index_count = index_accessor->count;
 
-    Uint32 index_data_size = (Uint32)(sizeof(Uint16) * model->index_count);
-    model->index_buffer = SDL_CreateGPUBuffer
+    Uint32 index_data_size = (Uint32)(sizeof(Uint16) * mesh.index_count);
+    mesh.index_buffer = SDL_CreateGPUBuffer
     (
         gpu_device,
         &(SDL_GPUBufferCreateInfo)
@@ -259,7 +252,7 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
             .size = index_data_size
         }
     );
-    if (model->index_buffer == NULL)
+    if (mesh.index_buffer == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create index buffer: %s", SDL_GetError());
         return false;
@@ -310,10 +303,10 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
         }
     }
 
-    size_t unpacked_count = cgltf_accessor_unpack_indices(index_accessor, (transfer_buffer_mapped + position_accessor->count), sizeof(Uint16), model->index_count);
-    if (unpacked_count != model->index_count)
+    size_t unpacked_count = cgltf_accessor_unpack_indices(index_accessor, (transfer_buffer_mapped + position_accessor->count), sizeof(Uint16), mesh.index_count);
+    if (unpacked_count != mesh.index_count)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error unpacking gltf primitive indices: unexpected index_count (unpacked %zu, expected %u).", unpacked_count, model->index_count);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error unpacking gltf primitive indices: unexpected index_count (unpacked %zu, expected %u).", unpacked_count, mesh.index_count);
         return false;
     }
 
@@ -339,7 +332,8 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load texture from URI: %s", texture_uri);
         return false;
     }
-    model->texture = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
+    Material material = {0};
+    mesh.material.texture_diffuse = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
     {
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB,
@@ -349,7 +343,7 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
         .num_levels = n_mipmap_levels, 
         .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET // COLOR_TARGET is needed for mipmap generation
     });
-    if (model->texture == NULL)
+    if (mesh.material.texture_diffuse == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create main texture: %s", SDL_GetError());
         return false;
@@ -399,7 +393,7 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
         },
         &(SDL_GPUBufferRegion)
         { 
-            .buffer = model->vertex_buffer, 
+            .buffer = mesh.vertex_buffer, 
             .offset = 0, 
             .size = vertex_data_size 
         },
@@ -416,7 +410,7 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
         },
         &(SDL_GPUBufferRegion)
         {
-            .buffer = model->index_buffer,
+            .buffer = mesh.index_buffer,
             .offset = 0,
             .size = index_data_size
         },
@@ -435,7 +429,7 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
         },
         &(SDL_GPUTextureRegion)
         {
-            .texture = model->texture,
+            .texture = mesh.material.texture_diffuse,
             .mip_level = 0,
             .layer = 0,
             .x = 0, .y = 0, .z = 0,
@@ -448,7 +442,7 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
 
     SDL_EndGPUCopyPass(copy_pass);
 
-    if (n_mipmap_levels > 1) SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, model->texture);
+    if (n_mipmap_levels > 1) SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, mesh.material.texture_diffuse);
 
     SDL_SubmitGPUCommandBuffer(upload_command_buffer);
 
@@ -457,12 +451,18 @@ bool Model_Load_Unanimated(cgltf_data* gltf_data, cgltf_node* node, Model* model
     SDL_ReleaseGPUTransferBuffer(gpu_device, texture_transfer_buffer);
     SDL_DestroySurface(texture_surface);
 
+    Model new_model = {0};
+    glm_mat4_identity(new_model.model_matrix);
+    new_model.mesh = mesh;
+    new_model.material = material;
+    Array_Append(models_unanimated, new_model);
+
     SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Successfully loaded unanimated model: %s", node->name);
 
     return true;
 }
 
-bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_BoneAnimated* model)
+bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node)
 {
     /*
         If this is a mixamo model...
@@ -501,10 +501,9 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
     {
         glm_mat4_identity(s_matrix);
     }
-    glm_mat4_mul(t_matrix, r_matrix, model->armature_correction_matrix);
-    glm_mat4_mul(model->armature_correction_matrix, s_matrix, model->armature_correction_matrix);
-
-    glm_mat4_identity(model->model_matrix);
+    Animation_Rig animation_rig = {0};
+    glm_mat4_mul(t_matrix, r_matrix, animation_rig.armature_correction_matrix);
+    glm_mat4_mul(animation_rig.armature_correction_matrix, s_matrix, animation_rig.armature_correction_matrix);
 
     cgltf_skin* skin = node->skin;
     
@@ -514,7 +513,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
         return false;
     }
     
-    // we don't know the order of the children,
+    // we don't assume the order of the children,
     // we just know one of them should have the skin
     for (size_t i = 0; i < node->children_count; ++i)
     {
@@ -533,11 +532,9 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
         return false;
     }
 
-    cgltf_mesh* mesh = node->mesh;
-
-    model->num_joints = (Uint8)node->skin->joints_count;
-    model->joints = (Joint*)SDL_malloc(sizeof(Joint) * model->num_joints);
-    if (model->joints == NULL)
+    animation_rig.num_joints = (Uint8)node->skin->joints_count;
+    animation_rig.joints = (Joint*)SDL_malloc(sizeof(Joint) * animation_rig.num_joints);
+    if (animation_rig.joints == NULL)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for joints for skin: %s", node->name);
         return false;
@@ -557,82 +554,82 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
 
     #define gltf_joint_node skin->joints[i]
 
-    for (size_t i = 0; i < model->num_joints; i++)
+    for (size_t i = 0; i < animation_rig.num_joints; i++)
     {
         gltf_index_to_joint_mat_index[(Uint8)cgltf_node_index(gltf_data, gltf_joint_node)] = i;
     }
 
-    for (size_t i = 0; i < model->num_joints; i++)
+    for (size_t i = 0; i < animation_rig.num_joints; i++)
     {
-        model->joints[i].num_children = gltf_joint_node->children_count;
+        animation_rig.joints[i].num_children = gltf_joint_node->children_count;
 
         for (size_t ii = 0; ii < gltf_joint_node->children_count && ii < MAX_CHILDREN_PER_JOINT; ii++)
         {
-            model->joints[i].children[ii] = gltf_index_to_joint_mat_index[(Uint8)cgltf_node_index(gltf_data, gltf_joint_node->children[ii])];
+            animation_rig.joints[i].children[ii] = gltf_index_to_joint_mat_index[(Uint8)cgltf_node_index(gltf_data, gltf_joint_node->children[ii])];
         }
 
         // these vectors should put the skeleton in the default A/T Pose
         
         if (gltf_joint_node->has_translation)
         {
-            glm_vec3_copy(gltf_joint_node->translation, model->joints[i].translation);
+            glm_vec3_copy(gltf_joint_node->translation, animation_rig.joints[i].translation);
         }
         else
         {
-            glm_vec3_zero(model->joints[i].translation);
+            glm_vec3_zero(animation_rig.joints[i].translation);
         }
         if (gltf_joint_node->has_rotation)
         {
-            glm_quat_copy(gltf_joint_node->rotation, model->joints[i].rotation);
+            glm_quat_copy(gltf_joint_node->rotation, animation_rig.joints[i].rotation);
         }
         else
         {
-            glm_quat_identity(model->joints[i].rotation);
+            glm_quat_identity(animation_rig.joints[i].rotation);
         }
         if (gltf_joint_node->has_scale)
         {
-            glm_vec3_copy(gltf_joint_node->scale, model->joints[i].scale);
+            glm_vec3_copy(gltf_joint_node->scale, animation_rig.joints[i].scale);
         }
         else
         {
-            glm_vec3_one(model->joints[i].scale);
+            glm_vec3_one(animation_rig.joints[i].scale);
         }
     }
 
     #undef gltf_joint_node
 
-    mat4 inverse_bind_matrices[model->num_joints];
+    mat4 inverse_bind_matrices[animation_rig.num_joints];
 
-    cgltf_accessor_unpack_floats(skin->inverse_bind_matrices, (float*)inverse_bind_matrices, 16 * model->num_joints); 
+    cgltf_accessor_unpack_floats(skin->inverse_bind_matrices, (float*)inverse_bind_matrices, 16 * animation_rig.num_joints); 
     
     // populate the joints with inverse bind matrices
-    for (size_t i = 0; i < model->num_joints; ++i)
+    for (size_t i = 0; i < animation_rig.num_joints; ++i)
     {
-        SDL_memcpy(model->joints[i].inverse_bind_matrix, inverse_bind_matrices[i], sizeof(mat4));        
+        SDL_memcpy(animation_rig.joints[i].inverse_bind_matrix, inverse_bind_matrices[i], sizeof(mat4));        
     }
 
     // load animations
 
-    model->num_skeletal_animations = (Uint8)gltf_data->animations_count;
-    model->skeletal_animations = (Animation_Skeletal*)SDL_malloc(sizeof(Animation_Skeletal) * model->num_skeletal_animations);
-    if (model->skeletal_animations == NULL)
+    animation_rig.num_skeletal_animations = (Uint8)gltf_data->animations_count;
+    animation_rig.skeletal_animations = (Animation_Skeletal*)SDL_malloc(sizeof(Animation_Skeletal) * animation_rig.num_skeletal_animations);
+    if (animation_rig.skeletal_animations == NULL)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for skeletal animations for skin: %s", node->name);
         return false;
     }
 
-    for (size_t i = 0; i < model->num_skeletal_animations; ++i)
+    for (size_t i = 0; i < animation_rig.num_skeletal_animations; ++i)
     {
-        model->skeletal_animations[i].animation_id = (Animation_Skeletal_ID)SDL_atoi(gltf_data->animations[i].name);
-        model->skeletal_animations[i].num_key_frames = (Uint16)gltf_data->animations[i].samplers[0].input->count;
-        model->skeletal_animations[i].num_joint_updates_per_frame = (Uint16)gltf_data->animations[i].channels_count;
-        model->skeletal_animations[i].key_frame_times = (float*)SDL_malloc(sizeof(float) * model->skeletal_animations[i].num_key_frames);
-        model->skeletal_animations[i].joint_updates = (Joint_Update*)SDL_malloc(sizeof(Joint_Update) * model->skeletal_animations[i].num_joint_updates_per_frame * model->skeletal_animations[i].num_key_frames);
-        if (model->skeletal_animations[i].key_frame_times == NULL || model->skeletal_animations[i].joint_updates == NULL)
+        animation_rig.skeletal_animations[i].animation_id = (Animation_Skeletal_ID)SDL_atoi(gltf_data->animations[i].name);
+        animation_rig.skeletal_animations[i].num_key_frames = (Uint16)gltf_data->animations[i].samplers[0].input->count;
+        animation_rig.skeletal_animations[i].num_joint_updates_per_frame = (Uint16)gltf_data->animations[i].channels_count;
+        animation_rig.skeletal_animations[i].key_frame_times = (float*)SDL_malloc(sizeof(float) * animation_rig.skeletal_animations[i].num_key_frames);
+        animation_rig.skeletal_animations[i].joint_updates = (Joint_Update*)SDL_malloc(sizeof(Joint_Update) * animation_rig.skeletal_animations[i].num_joint_updates_per_frame * animation_rig.skeletal_animations[i].num_key_frames);
+        if (animation_rig.skeletal_animations[i].key_frame_times == NULL || animation_rig.skeletal_animations[i].joint_updates == NULL)
         {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for key frame times or joint updates for skeletal animation %zu in skin: %s", i, node->name);
-            SDL_free(model->skeletal_animations[i].key_frame_times);
-            SDL_free(model->skeletal_animations[i].joint_updates);
+            SDL_free(animation_rig.skeletal_animations[i].key_frame_times);
+            SDL_free(animation_rig.skeletal_animations[i].joint_updates);
             return false;
         }
         cgltf_animation* animation = &gltf_data->animations[i];
@@ -640,16 +637,16 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
         // Copy key frame times
         // we assume each channel uses the same input accessor for the key frame times
         cgltf_accessor* input_accessor = animation->samplers[0].input;
-        cgltf_accessor_unpack_floats(input_accessor, model->skeletal_animations[i].key_frame_times, model->skeletal_animations[i].num_key_frames);
+        cgltf_accessor_unpack_floats(input_accessor, animation_rig.skeletal_animations[i].key_frame_times, animation_rig.skeletal_animations[i].num_key_frames);
 
         // Copy joint updates
         // gltf is structured such that each channel tracks how a single joint is updated over time
         // I want to invert this so that each key frame has all joint updates for that frame adjacent in memory
-        for (size_t j = 0; j < model->skeletal_animations[i].num_key_frames; ++j)
+        for (size_t j = 0; j < animation_rig.skeletal_animations[i].num_key_frames; ++j)
         {
-            for (size_t k = 0; k < model->skeletal_animations[i].num_joint_updates_per_frame; ++k)
+            for (size_t k = 0; k < animation_rig.skeletal_animations[i].num_joint_updates_per_frame; ++k)
             {
-                Joint_Update* joint_update = &model->skeletal_animations[i].joint_updates[j * model->skeletal_animations[i].num_joint_updates_per_frame + k];
+                Joint_Update* joint_update = &animation_rig.skeletal_animations[i].joint_updates[j * animation_rig.skeletal_animations[i].num_joint_updates_per_frame + k];
                 cgltf_animation_channel* channel = &animation->channels[k];
                 cgltf_accessor* output_accessor = channel->sampler->output;
                 joint_update->joint_index = gltf_index_to_joint_mat_index[(Uint8)cgltf_node_index(gltf_data, channel->target_node)];
@@ -679,14 +676,13 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
 
     // load vertex attributes
 
-    if (mesh->primitives_count != 1)
+    if (node->mesh->primitives_count != 1)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error: Expected mesh with one primitive. Found %zu primitives in node: %s.", mesh->primitives_count, node->name);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error: Expected mesh with one primitive. Found %zu primitives in node: %s.", node->mesh->primitives_count, node->name);
         return false;
     }
 
-    cgltf_primitive* primitive = mesh->primitives;
-
+    cgltf_primitive* primitive = node->mesh->primitives;
     if (primitive->type != cgltf_primitive_type_triangles)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error: gltf primitive has type %d, expected type %d (triangles).", primitive->type, cgltf_primitive_type_triangles);
@@ -735,7 +731,8 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
     }
 
     Uint32 vertex_data_size = (Uint32)(sizeof(Vertex_BoneAnimated) * position_accessor->count);
-    model->vertex_buffer = SDL_CreateGPUBuffer
+    Mesh mesh = {0};
+    mesh.vertex_buffer = SDL_CreateGPUBuffer
     (
         gpu_device,
         &(SDL_GPUBufferCreateInfo)
@@ -744,7 +741,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
             .size = vertex_data_size
         }
     );
-    if (model->vertex_buffer == NULL)
+    if (mesh.vertex_buffer == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create vertex buffer: %s", SDL_GetError());
         return false;
@@ -762,10 +759,10 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
         return false;
     }
 
-    model->index_count = index_accessor->count;
+    mesh.index_count = index_accessor->count;
 
-    Uint32 index_data_size = (Uint32)(sizeof(Uint16) * model->index_count);
-    model->index_buffer = SDL_CreateGPUBuffer
+    Uint32 index_data_size = (Uint32)(sizeof(Uint16) * mesh.index_count);
+    mesh.index_buffer = SDL_CreateGPUBuffer
     (
         gpu_device,
         &(SDL_GPUBufferCreateInfo)
@@ -774,7 +771,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
             .size = index_data_size
         }
     );
-    if (model->index_buffer == NULL)
+    if (mesh.index_buffer == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create index buffer: %s", SDL_GetError());
         return false;
@@ -903,10 +900,10 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
     //     }
     // }
 
-    size_t unpacked_count = cgltf_accessor_unpack_indices(index_accessor, (transfer_buffer_mapped + position_accessor->count), sizeof(Uint16), model->index_count);
-    if (unpacked_count != model->index_count)
+    size_t unpacked_count = cgltf_accessor_unpack_indices(index_accessor, (transfer_buffer_mapped + position_accessor->count), sizeof(Uint16), mesh.index_count);
+    if (unpacked_count != mesh.index_count)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error unpacking gltf primitive indices: unexpected index_count (unpacked %zu, expected %u).", unpacked_count, model->index_count);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error unpacking gltf primitive indices: unexpected index_count (unpacked %zu, expected %u).", unpacked_count, mesh.index_count);
         return false;
     }
 
@@ -927,7 +924,8 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load texture from URI: %s", texture_uri);
         return false;
     }
-    model->texture = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
+    Material material = {0};
+    material.texture_diffuse = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
     {
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB,
@@ -937,7 +935,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
         .num_levels = n_mipmap_levels, 
         .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET // COLOR_TARGET is needed for mipmap generation
     });
-    if (model->texture == NULL)
+    if (material.texture_diffuse == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create main texture: %s", SDL_GetError());
         return false;
@@ -987,7 +985,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
         },
         &(SDL_GPUBufferRegion)
         { 
-            .buffer = model->vertex_buffer, 
+            .buffer = mesh.vertex_buffer, 
             .offset = 0, 
             .size = vertex_data_size 
         },
@@ -1004,7 +1002,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
         },
         &(SDL_GPUBufferRegion)
         {
-            .buffer = model->index_buffer,
+            .buffer = mesh.index_buffer,
             .offset = 0,
             .size = index_data_size
         },
@@ -1023,7 +1021,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
         },
         &(SDL_GPUTextureRegion)
         {
-            .texture = model->texture,
+            .texture = material.texture_diffuse,
             .mip_level = 0,
             .layer = 0,
             .x = 0, .y = 0, .z = 0,
@@ -1036,7 +1034,7 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
 
     SDL_EndGPUCopyPass(copy_pass);
     
-    if (n_mipmap_levels > 1) SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, model->texture);
+    if (n_mipmap_levels > 1) SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, material.texture_diffuse);
     
     SDL_SubmitGPUCommandBuffer(upload_command_buffer);
 
@@ -1044,6 +1042,12 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
     SDL_ReleaseGPUTransferBuffer(gpu_device, texture_transfer_buffer);
     SDL_DestroySurface(texture_surface);
 
+    Model_BoneAnimated model_bone_animated = {0};
+    glm_mat4_identity(model_bone_animated.model.model_matrix);
+    model_bone_animated.model.mesh = mesh;
+    model_bone_animated.model.material = material;
+    model_bone_animated.animation_rig = animation_rig;
+    Array_Append(models_bone_animated, model_bone_animated);
     SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Successfully loaded bone animated model: %s", node->name);
 
     return true;
@@ -1051,18 +1055,18 @@ bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node, Model_Bone
 
 void Model_Free(Model* model)
 {
-    SDL_ReleaseGPUBuffer(gpu_device, model->vertex_buffer);
-    SDL_ReleaseGPUBuffer(gpu_device, model->index_buffer);
-    SDL_ReleaseGPUTexture(gpu_device, model->texture);
+    SDL_ReleaseGPUBuffer(gpu_device, model->mesh.vertex_buffer);
+    SDL_ReleaseGPUBuffer(gpu_device, model->mesh.index_buffer);
+    SDL_ReleaseGPUTexture(gpu_device, model->mesh.material.texture_diffuse);
     SDL_memset(model, 0, sizeof(Model));
 }
 
 void Model_BoneAnimated_Free(Model_BoneAnimated* model)
 {
-    SDL_ReleaseGPUBuffer(gpu_device, model->vertex_buffer);
-    SDL_ReleaseGPUBuffer(gpu_device, model->index_buffer);
-    SDL_ReleaseGPUTexture(gpu_device, model->texture);
-    SDL_free(model->joints);
+    SDL_ReleaseGPUBuffer(gpu_device, model->model.mesh.vertex_buffer);
+    SDL_ReleaseGPUBuffer(gpu_device, model->model.mesh.index_buffer);
+    SDL_ReleaseGPUTexture(gpu_device, model->model.material.texture_diffuse);
+    SDL_free(model->animation_rig.joints);
     SDL_memset(model, 0, sizeof(Model_BoneAnimated));
 }
 
@@ -1116,16 +1120,16 @@ bool Model_JointMat_UpdateAndUpload()
 
             Model_BoneAnimated* model = &models_bone_animated[i];
 
-            model->animation_progress += delta_time;
+            model->animation_rig.animation_progress += delta_time;
             
-            Animation_Skeletal* animation = &model->skeletal_animations[model->active_animation_index];
+            Animation_Skeletal* animation = &model->animation_rig.skeletal_animations[model->animation_rig.active_animation_index];
             
             Uint16 frame_index = 0;
             bool animation_finished = true;
 
             for (size_t ii = 0; ii < animation->num_key_frames; ii++)
             {
-                if (animation->key_frame_times[ii] > model->animation_progress)
+                if (animation->key_frame_times[ii] > model->animation_rig.animation_progress)
                 {
                     animation_finished = false;
                     break;
@@ -1135,20 +1139,20 @@ bool Model_JointMat_UpdateAndUpload()
 
             if (animation_finished && animation->is_looping)
             {
-                model->animation_progress = 0.0f;
+                model->animation_rig.animation_progress = 0.0f;
                 frame_index = 0;
             }
             else if (animation_finished)
             {
                 // TODO this needs some kind of state machine to determine what animation to play next
                 // for now, just reset to the first frame of the first animation
-                model->active_animation_index = 0;
-                animation = &model->skeletal_animations[model->active_animation_index];
-                model->animation_progress = 0.0f;
+                model->animation_rig.active_animation_index = 0;
+                animation = &model->animation_rig.skeletal_animations[model->animation_rig.active_animation_index];
+                model->animation_rig.animation_progress = 0.0f;
                 frame_index = 0;
             }
             
-            float interpolant = (model->animation_progress - animation->key_frame_times[frame_index]) / 
+            float interpolant = (model->animation_rig.animation_progress - animation->key_frame_times[frame_index]) / 
                 (animation->key_frame_times[frame_index + 1] - animation->key_frame_times[frame_index]);
 
             for (size_t ii = 0; ii < animation->num_joint_updates_per_frame; ii++)
@@ -1158,13 +1162,13 @@ bool Model_JointMat_UpdateAndUpload()
                 switch (prev_joint_update->joint_update_type)
                 {
                     case JOINT_UPDATE_TYPE_TRANSLATION:
-                        glm_vec3_lerp(prev_joint_update->translation, next_joint_update->translation, interpolant, model->joints[prev_joint_update->joint_index].translation);
+                        glm_vec3_lerp(prev_joint_update->translation, next_joint_update->translation, interpolant, model->animation_rig.joints[prev_joint_update->joint_index].translation);
                         break;
                     case JOINT_UPDATE_TYPE_ROTATION:
-                        glm_quat_slerp(prev_joint_update->rotation, next_joint_update->rotation, interpolant, model->joints[prev_joint_update->joint_index].rotation);
+                        glm_quat_slerp(prev_joint_update->rotation, next_joint_update->rotation, interpolant, model->animation_rig.joints[prev_joint_update->joint_index].rotation);
                         break;
                     case JOINT_UPDATE_TYPE_SCALE:
-                        glm_vec3_lerp(prev_joint_update->scale, next_joint_update->scale, interpolant, model->joints[prev_joint_update->joint_index].scale);
+                        glm_vec3_lerp(prev_joint_update->scale, next_joint_update->scale, interpolant, model->animation_rig.joints[prev_joint_update->joint_index].scale);
                         break;
                     default:
                         SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Unknown joint update type: %d", prev_joint_update->joint_update_type);
@@ -1173,19 +1177,19 @@ bool Model_JointMat_UpdateAndUpload()
 
             // update joint matrices
 
-            models_bone_animated[i].storage_buffer_offset_bytes = current_offset_bytes;
+            models_bone_animated[i].animation_rig.storage_buffer_offset_bytes = current_offset_bytes;
 
             // for mixamo models, the first joint should also be the root node 
             // in the future this may need to be determined by checking the joint hierarchy
             
             Model_CalculateJointMatrices
             (
-                models_bone_animated[i].joints, 
-                models_bone_animated[i].armature_correction_matrix, // parent transform
-                (Uint8*)transfer_buffer_mapped + current_offset_bytes, models_bone_animated[i].joints // root joint
+                models_bone_animated[i].animation_rig.joints, // root joint
+                models_bone_animated[i].animation_rig.armature_correction_matrix, // parent transform
+                (Uint8*)transfer_buffer_mapped + current_offset_bytes, models_bone_animated[i].animation_rig.joints // root joint
             );
 
-            current_offset_bytes += models_bone_animated[i].num_joints * sizeof(mat4);
+            current_offset_bytes += models_bone_animated[i].animation_rig.num_joints * sizeof(mat4);
         }
 
         SDL_GPUTransferBufferLocation source = 
