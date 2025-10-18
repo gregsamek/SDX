@@ -13,6 +13,7 @@ typedef Uint8 Model_Type; enum
     MODEL_TYPE_UNKNOWN = 0,
 	MODEL_TYPE_UNRENDERED,
 	MODEL_TYPE_UNANIMATED,
+	MODEL_TYPE_BONE_ANIMATED_MIXAMO, // TODO how to handle some of these not being mutually exclusive?
 	MODEL_TYPE_BONE_ANIMATED,
 	MODEL_TYPE_RIGID_ANIMATED,
 	MODEL_TYPE_INSTANCED,
@@ -99,7 +100,6 @@ typedef struct Entity
 typedef struct Model
 {
 	mat4 model_matrix;
-	Material material;
 	Mesh mesh;
 } Model;
 
@@ -179,8 +179,7 @@ typedef struct Model_BoneAnimated
 
 bool Model_Load_AllScenes(void);
 bool Model_Load_Scene(const char* filename);
-bool Model_Load_Model(cgltf_data* gltf_data, cgltf_node* node);
-bool Model_Load_BoneAnimated(cgltf_data* gltf_data, cgltf_node* node);
+bool Model_Load(cgltf_data* gltf_data, cgltf_node* node);
 void Model_Free(Model* model);
 void Model_BoneAnimated_Free(Model_BoneAnimated* model);
 bool Model_JointMat_UpdateAndUpload();

@@ -68,6 +68,8 @@ dkms.conf
 *.ttf
 fonts/
 
+/notes
+
 # Build files
 SDL3_shadercross-3.0.0-darwin-arm64-x64/
 CMakeFiles/

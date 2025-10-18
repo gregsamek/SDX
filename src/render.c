@@ -415,7 +415,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
             0, // fragment sampler slot
             &(SDL_GPUTextureSamplerBinding)
             { 
-                .texture = models_bone_animated[i].model.material.texture_diffuse, 
+                .texture = models_bone_animated[i].model.mesh.material.texture_diffuse, 
                 .sampler = default_texture_sampler 
             }, 
             1 // num_bindings
