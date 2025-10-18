@@ -576,11 +576,26 @@ bool Render()
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load render settings");
             return false;
         }
+        foreach(model, models_unanimated)
+        {
+            Model_Free(&model);
+        }
+        Array_Len(models_unanimated) = 0;
+        foreach(model_bone_animated, models_bone_animated)
+        {
+            Model_BoneAnimated_Free(&model_bone_animated);
+        }
+        Array_Len(models_bone_animated) = 0;
         if (!Model_Load_AllScenes())
         {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload models");
             return false;
         }
+        foreach(sprite, sprites)
+        {
+            SDL_ReleaseGPUTexture(gpu_device, sprite.texture);
+        }
+        Array_Len(sprites) = 0;
         if (!Sprite_LoadSprites())
         {
             SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload sprites");

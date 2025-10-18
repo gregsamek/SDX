@@ -67,8 +67,6 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             }
             else if (event->key.scancode == SDL_SCANCODE_R)
             {
-                // Reset Rendering (reload assets, reinitialize renderer, etc.)
-                SDL_Log("WARNING: ASSET RELOADING CURRENTLY LEAKS MEMORY"); // TODO free old assets first
                 SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Event: request to reload assets and reinitialize renderer");
                 renderer_needs_to_be_reinitialized = true;
             }
