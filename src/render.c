@@ -686,25 +686,20 @@ bool Render()
     );
 
     // constant directional light
-    {
+    {        
         vec3 light_direction_world = {0.0f, -10.0f, 10.0f};
-        vec3 directional_light_color = {0.5f, 0.5f, 0.5f};
-        float ambient_strength = 0.5f;
-        
         vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
         vec4 light_direction_viewspace_4;
         glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
         vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
         glm_vec3_normalize(light_direction_viewspace);
 
-        Light_Directional light_directional = {0};
-        light_directional.direction[0] = light_direction_viewspace[0];
-        light_directional.direction[1] = light_direction_viewspace[1];
-        light_directional.direction[2] = light_direction_viewspace[2];
-        light_directional.color[0] = directional_light_color[0];
-        light_directional.color[1] = directional_light_color[1];
-        light_directional.color[2] = directional_light_color[2];
-        light_directional.strength = ambient_strength;
+        Light_Directional light_directional = 
+        {
+            .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
+            .strength = 0.5f,
+            .color = {0.5f, 0.5f, 0.5f},
+        };
 
         SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &light_directional, sizeof(light_directional));
     }

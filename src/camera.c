@@ -5,13 +5,13 @@ static float camera_angle_adjust_speed = 80.0f;
 
 void Camera_Update()
 {
-    camera.yaw += keyboard_state[SDL_SCANCODE_Q] * camera_angle_adjust_speed * delta_time;
-    camera.yaw -= keyboard_state[SDL_SCANCODE_E] * camera_angle_adjust_speed * delta_time;
+    camera.yaw += keyboard_state[SDL_SCANCODE_LEFT] * camera_angle_adjust_speed * delta_time;
+    camera.yaw -= keyboard_state[SDL_SCANCODE_RIGHT] * camera_angle_adjust_speed * delta_time;
     if (camera.yaw > 360.0f) camera.yaw -= 360.0f;
     if (camera.yaw < 0.0f)   camera.yaw += 360.0f;
     
-    camera.pitch += keyboard_state[SDL_SCANCODE_RIGHT] * camera_angle_adjust_speed * delta_time;
-    camera.pitch -= keyboard_state[SDL_SCANCODE_LEFT] * camera_angle_adjust_speed * delta_time;
+    camera.pitch += keyboard_state[SDL_SCANCODE_UP] * camera_angle_adjust_speed * delta_time;
+    camera.pitch -= keyboard_state[SDL_SCANCODE_DOWN] * camera_angle_adjust_speed * delta_time;
     if (camera.pitch > 89.0f)  camera.pitch = 89.0f;
     if (camera.pitch < -89.0f) camera.pitch = -89.0f;
 
@@ -28,7 +28,7 @@ void Camera_Update()
 
     float input_forward = (int)keyboard_state[SDL_SCANCODE_W]  - (int)keyboard_state[SDL_SCANCODE_S];
     float input_right   = (int)keyboard_state[SDL_SCANCODE_A]  - (int)keyboard_state[SDL_SCANCODE_D];
-    float input_up      = (int)keyboard_state[SDL_SCANCODE_UP] - (int)keyboard_state[SDL_SCANCODE_DOWN];
+    float input_up      = (int)keyboard_state[SDL_SCANCODE_E] - (int)keyboard_state[SDL_SCANCODE_Q];
     
     vec3 forward_no_z; glm_vec3_copy(camera.forward, forward_no_z); 
     forward_no_z[1] = 0.0f; 
