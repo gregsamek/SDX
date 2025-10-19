@@ -1,10 +1,11 @@
 #ifndef HELPER_H
 #define HELPER_H
 
-#include <SDL3/SDL.h>
+// #include <SDL3/SDL.h>
 
-Uint64 hash(char* s, Uint32 len);
-Uint64 hash_c_string(char* s);
+#define Struct(name) typedef struct name name; struct name
+#define Enum(type, name) typedef type name; enum
+#define Union(name) typedef union name name; union name
 
 // #define offsetof(_STRUCT, _MEMBER) ((size_t)((char *)&((_STRUCT *)0)->_MEMBER - (char *)0))
 

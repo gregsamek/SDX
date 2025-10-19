@@ -4,8 +4,9 @@
 #include <SDL3/SDL.h>
 
 #include "array.h"
+#include "helper.h"
 
-typedef struct 
+Struct (Sprite)
 {
     SDL_GPUTexture* texture;
     float aspect_ratio;
@@ -13,7 +14,7 @@ typedef struct
     Sint16 x;
     Sint16 y;
     Uint8 _padding[4];
-} Sprite;
+};
 
 bool Sprite_LoadSprites(void);
 

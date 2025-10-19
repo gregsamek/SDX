@@ -1,11 +1,13 @@
 #ifndef CAMERA_H
 #define CAMERA_H
 
+#include "helper.h"
+
 #define CGLM_FORCE_DEPTH_ZERO_TO_ONE
 #define CGLM_FORCE_LEFT_HANDED
 #include "../external/cglm/cglm.h"
 
-typedef struct Camera
+Struct (Camera)
 {
     mat4 view_projection_matrix;
     mat4 view_matrix;
@@ -19,7 +21,7 @@ typedef struct Camera
     float near_plane;
     float far_plane;
     float _padding[3];
-} Camera;
+};
 
 void Camera_Update();
 void Camera_Log();

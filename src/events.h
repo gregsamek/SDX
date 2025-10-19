@@ -2,8 +2,9 @@
 #define EVENTS_H
 
 #include <SDL3/SDL.h>
+#include "helper.h"
 
-typedef Uint8 InputState; enum
+Enum (Uint8, InputState)
 {
     InputState_DEFAULT,
     InputState_COUNT,

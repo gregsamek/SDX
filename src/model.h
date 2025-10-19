@@ -8,7 +8,9 @@
 #include "../external/cglm/cglm.h"
 #include "../external/cgltf.h"
 
-typedef Uint8 Model_Type; enum
+#include "helper.h"
+
+Enum (Uint8, Model_Type)
 {
     MODEL_TYPE_UNKNOWN = 0,
 	MODEL_TYPE_UNRENDERED,
@@ -19,67 +21,67 @@ typedef Uint8 Model_Type; enum
 	MODEL_TYPE_INSTANCED,
 };
 
-typedef struct TransformsUBO
+Struct (TransformsUBO)
 {
     mat4 mvp; // VP * M
     mat4 mv;  // V * M
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
 	mat4 normal; // upper-left 3x3 is the normal matrix, rest identity
 #endif
-} TransformsUBO;
+};
 
-typedef struct Vertex_Position
+Struct (Vertex_Position)
 {
 	float x, y, z;
-} Vertex_Position;
+};
 
-typedef struct Vertex_PositionNormal
+Struct (Vertex_PositionNormal)
 {
 	float x, y, z;  // position
 	float nx, ny, nz; // normal
-} Vertex_PositionNormal;
+};
 
-typedef struct Vertex_PositionTexture
+Struct (Vertex_PositionTexture)
 {
 	float x, y, z;
 	float u, v;
-} Vertex_PositionTexture;
+};
 
-typedef struct Vertex_PositionNormalTexture
+Struct (Vertex_PositionNormalTexture)
 {
     float x, y, z;  // position
     float nx, ny, nz; // normal
     float u, v;     // texcoord
-} Vertex_PositionNormalTexture;
+};
 
 #define MAX_JOINTS_PER_VERTEX 4
 
-typedef struct Vertex_BoneAnimated
+Struct (Vertex_BoneAnimated)
 {
 	float x, y, z;
 	float nx, ny, nz;
 	float u, v;
 	Uint8 joint_ids[MAX_JOINTS_PER_VERTEX]; 
 	float weights[MAX_JOINTS_PER_VERTEX];
-} Vertex_BoneAnimated;
+};
 
 // in the future may add emission, masks and blends
-typedef struct Material
+Struct (Material)
 {
 	SDL_GPUTexture* texture_diffuse;
 	SDL_GPUTexture* texture_normal;
 	SDL_GPUTexture* texture_metallic_roughness;
-} Material;
+};
 
 // Mesh is equivalent to a GLTF "Primitive"
 // aka geometry that can be rendered with a single draw call
-typedef struct Mesh
+Struct (Mesh)
 {
 	SDL_GPUBuffer* vertex_buffer;
 	SDL_GPUBuffer* index_buffer;
 	Material material;
 	Uint32 index_count;
-} Mesh;
+};
 
 typedef struct Node
 {
@@ -90,24 +92,24 @@ typedef struct Node
 	Uint8 _padding[7];
 } Node;
 
-typedef struct Entity
+Struct (Entity)
 {
 	Uint32 id;
 	vec3 position;
 	versor rotation;
-} Entity;
+};
 
-typedef struct Model
+Struct (Model)
 {
 	mat4 model_matrix;
 	Mesh mesh;
-} Model;
+};
 
 // TODO morph targets?
 
 #define MAX_CHILDREN_PER_JOINT 3
 
-typedef struct Joint
+Struct (Joint)
 {
 	mat4 inverse_bind_matrix;
 	vec3 translation;
@@ -116,9 +118,9 @@ typedef struct Joint
 	Uint8 num_children;
 	Uint8 children[MAX_CHILDREN_PER_JOINT];
 	Uint8 _padding[4]; // mat4 is 16 byte aligned; this makes Joint 112 bytes
-} Joint;
+};
 
-typedef Uint8 Joint_Update_Type; enum
+Enum (Uint8, Joint_Update_Type)
 {
     JOINT_UPDATE_TYPE_UNKNOWN = 0,
 	JOINT_UPDATE_TYPE_TRANSLATION,
@@ -126,7 +128,7 @@ typedef Uint8 Joint_Update_Type; enum
 	JOINT_UPDATE_TYPE_SCALE,
 };
 
-typedef struct Joint_Update
+Struct (Joint_Update)
 {
 	// using float arrays here bc glm `versor` is 16 byte aligned, 
 	// which would make this struct way bigger than necessary
@@ -139,16 +141,16 @@ typedef struct Joint_Update
 	Joint_Update_Type joint_update_type;
 	Uint8 joint_index;
 	Uint8 _padding[2];
-} Joint_Update;
+};
 
-typedef Uint8 Animation_Skeletal_ID; enum
+Enum (Uint8, Animation_Skeletal_ID)
 {
 	ANIMATION_SKELETAL_ID_UNKNOWN = 0,
 	ANIMATION_SKELETAL_ID_IDLE,
 	ANIMATION_SKELETAL_ID_WALK,
 };
 
-typedef struct Animation_Skeletal
+Struct (Animation_Skeletal)
 {
 	float* key_frame_times;
     Joint_Update* joint_updates;
@@ -157,9 +159,9 @@ typedef struct Animation_Skeletal
 	Animation_Skeletal_ID animation_id;
 	bool is_looping;
 	Uint8 _padding[2];
-} Animation_Skeletal;
+};
 
-typedef struct
+Struct (Animation_Rig)
 {
 	mat4 armature_correction_matrix;
 	Joint* joints;
@@ -169,13 +171,13 @@ typedef struct
 	Uint8 num_joints;
 	Uint8 num_skeletal_animations;
 	Uint8 active_animation_index;
-} Animation_Rig;
+};
 
-typedef struct Model_BoneAnimated
+Struct (Model_BoneAnimated)
 {
 	Model model;
 	Animation_Rig animation_rig;
-} Model_BoneAnimated;
+};
 
 bool Model_Load_AllScenes(void);
 bool Model_Load_Scene(const char* filename);

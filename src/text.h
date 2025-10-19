@@ -4,18 +4,20 @@
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 
+#include "helper.h"
+
 // TODO what would be good defaults for these? should be enough for the longest string, right?
 // maybe just make them configurable
 #define MAX_TEXT_VERTEX_COUNT 4000
 #define MAX_TEXT_INDEX_COUNT  6000
 
-typedef struct Text_Vertex
+Struct (Text_Vertex)
 {
     SDL_FPoint xy;
     SDL_FPoint uv;
-} Text_Vertex;
+};
 
-typedef struct
+Struct (Text_Renderable)
 {
     TTF_Text *ttf_text;
     TTF_GPUAtlasDrawSequence* draw_sequence;
@@ -23,7 +25,7 @@ typedef struct
 	SDL_GPUBuffer* index_buffer;
     Uint32 vertex_count;
 	Uint32 index_count;
-} Text_Renderable;
+};
 
 bool Text_Init();
 bool Text_UpdateAndUpload(const char* new_text);
