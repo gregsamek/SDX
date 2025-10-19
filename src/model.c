@@ -624,27 +624,61 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
 
     SDL_UnmapGPUTransferBuffer(gpu_device, transfer_buffer);
 
-    char* texture_uri = NULL;
+    // TODO normal maps, metallic-roughness maps, emissive maps
+    // (use SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM for non-color maps)
+    char* texture_diffuse_uri = NULL;
+    char* texture_metallic_roughness_uri = NULL;
+    char* texture_normal_uri = NULL;
     if (primitive->material && primitive->material->has_pbr_metallic_roughness)
     {
         cgltf_texture* base_color_texture = primitive->material->pbr_metallic_roughness.base_color_texture.texture;
         if (base_color_texture && base_color_texture->image && base_color_texture->image->uri)
         {
-            texture_uri = base_color_texture->image->uri;
+            texture_diffuse_uri = base_color_texture->image->uri;
+        }
+        cgltf_texture* metallic_roughness_texture = primitive->material->pbr_metallic_roughness.metallic_roughness_texture.texture;
+        if (metallic_roughness_texture && metallic_roughness_texture->image && metallic_roughness_texture->image->uri)
+        {
+            texture_metallic_roughness_uri = metallic_roughness_texture->image->uri;
         }
     }
-    SDL_Surface* texture_surface = LoadImage(texture_uri);
-    if (!texture_surface)
+    if (primitive->material && primitive->material->normal_texture.texture)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load texture from URI: %s", texture_uri);
+        cgltf_texture* normal_texture = primitive->material->normal_texture.texture;
+        if (normal_texture && normal_texture->image && normal_texture->image->uri)
+        {
+            texture_normal_uri = normal_texture->image->uri;
+        }
+    }
+
+    SDL_Surface* texture_diffuse_surface = LoadImage(texture_diffuse_uri);
+    if (!texture_diffuse_surface)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load diffuse texture from URI: %s", texture_diffuse_uri);
         return false;
+    }
+    SDL_Surface* texture_metallic_roughness_surface = LoadImage(texture_metallic_roughness_uri);
+    if (!texture_metallic_roughness_surface)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load metallic roughness texture from URI: %s", texture_metallic_roughness_uri);
+        return false;
+    }
+    SDL_Surface* texture_normal_surface = NULL;
+    if (texture_normal_uri)
+    {
+        texture_normal_surface = LoadImage(texture_normal_uri);
+        if (!texture_normal_surface)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load normal texture from URI: %s", texture_normal_uri);
+            return false;
+        }
     }
     mesh.material.texture_diffuse = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
     {
         .type = SDL_GPU_TEXTURETYPE_2D,
         .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM_SRGB,
-        .width = (Uint32)texture_surface->w,
-        .height = (Uint32)texture_surface->h,
+        .width = (Uint32)texture_diffuse_surface->w,
+        .height = (Uint32)texture_diffuse_surface->h,
         .layer_count_or_depth = 1,
         .num_levels = n_mipmap_levels, 
         .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET // COLOR_TARGET is needed for mipmap generation
@@ -654,9 +688,46 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create main texture: %s", SDL_GetError());
         return false;
     }
+    mesh.material.texture_metallic_roughness = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
+    {
+        .type = SDL_GPU_TEXTURETYPE_2D,
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+        .width = (Uint32)texture_metallic_roughness_surface->w,
+        .height = (Uint32)texture_metallic_roughness_surface->h,
+        .layer_count_or_depth = 1,
+        .num_levels = n_mipmap_levels, 
+        .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET 
+    });
+    if (mesh.material.texture_metallic_roughness == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create metallic-roughness texture: %s", SDL_GetError());
+        return false;
+    }
+    mesh.material.texture_normal = SDL_CreateGPUTexture(gpu_device, &(SDL_GPUTextureCreateInfo)
+    {
+        .type = SDL_GPU_TEXTURETYPE_2D,
+        .format = SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM,
+        .width = (Uint32)texture_normal_surface->w,
+        .height = (Uint32)texture_normal_surface->h,
+        .layer_count_or_depth = 1,
+        .num_levels = n_mipmap_levels, 
+        .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COLOR_TARGET 
+    });
+    if (mesh.material.texture_normal == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create normal texture: %s", SDL_GetError());
+        return false;
+    }
 
     // LoadImage() guarantees the surface is SDL_PIXELFORMAT_RGBA32
-    Uint32 texture_data_size = (Uint32)texture_surface->w * texture_surface->h * 4;
+    Uint32 texture_diffuse_data_size = 
+        (Uint32)texture_diffuse_surface->w * texture_diffuse_surface->h * 4;
+    Uint32 texture_metallic_roughness_data_size = 
+        (Uint32)texture_metallic_roughness_surface->w * texture_metallic_roughness_surface->h * 4;
+    Uint32 texture_normal_data_size =
+        (Uint32)texture_normal_surface->w * texture_normal_surface->h * 4;
+    Uint32 texture_data_size = texture_diffuse_data_size + texture_metallic_roughness_data_size + texture_normal_data_size;
+    
     SDL_GPUTransferBuffer* texture_transfer_buffer = SDL_CreateGPUTransferBuffer
     (
         gpu_device,
@@ -679,7 +750,10 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
         return false;
     }
 
-    SDL_memcpy(texture_transfer_mapped, texture_surface->pixels, texture_data_size);
+    SDL_memcpy(texture_transfer_mapped, texture_diffuse_surface->pixels, texture_diffuse_data_size);
+    SDL_memcpy(texture_transfer_mapped + texture_diffuse_data_size, texture_metallic_roughness_surface->pixels, texture_metallic_roughness_data_size);
+    SDL_memcpy(texture_transfer_mapped + texture_diffuse_data_size + texture_metallic_roughness_data_size, texture_normal_surface->pixels, texture_normal_data_size);
+    
     SDL_UnmapGPUTransferBuffer(gpu_device, texture_transfer_buffer);
 
     SDL_GPUCommandBuffer* upload_command_buffer = SDL_AcquireGPUCommandBuffer(gpu_device);
@@ -732,8 +806,8 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
         {
             .transfer_buffer = texture_transfer_buffer,
             .offset = 0,
-            .pixels_per_row = (Uint32)texture_surface->w,
-            .rows_per_layer = (Uint32)texture_surface->h
+            .pixels_per_row = (Uint32)texture_diffuse_surface->w,
+            .rows_per_layer = (Uint32)texture_diffuse_surface->h
         },
         &(SDL_GPUTextureRegion)
         {
@@ -741,8 +815,52 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
             .mip_level = 0,
             .layer = 0,
             .x = 0, .y = 0, .z = 0,
-            .w = (Uint32)texture_surface->w,
-            .h = (Uint32)texture_surface->h,
+            .w = (Uint32)texture_diffuse_surface->w,
+            .h = (Uint32)texture_diffuse_surface->h,
+            .d = 1
+        },
+        false
+    );
+    SDL_UploadToGPUTexture
+    (
+        copy_pass,
+        &(SDL_GPUTextureTransferInfo)
+        {
+            .transfer_buffer = texture_transfer_buffer,
+            .offset = texture_diffuse_data_size,
+            .pixels_per_row = (Uint32)texture_metallic_roughness_surface->w,
+            .rows_per_layer = (Uint32)texture_metallic_roughness_surface->h
+        },
+        &(SDL_GPUTextureRegion)
+        {
+            .texture = mesh.material.texture_metallic_roughness,
+            .mip_level = 0,
+            .layer = 0,
+            .x = 0, .y = 0, .z = 0,
+            .w = (Uint32)texture_metallic_roughness_surface->w,
+            .h = (Uint32)texture_metallic_roughness_surface->h,
+            .d = 1
+        },
+        false
+    );
+    SDL_UploadToGPUTexture
+    (
+        copy_pass,
+        &(SDL_GPUTextureTransferInfo)
+        {
+            .transfer_buffer = texture_transfer_buffer,
+            .offset = texture_diffuse_data_size + texture_metallic_roughness_data_size,
+            .pixels_per_row = (Uint32)texture_normal_surface->w,
+            .rows_per_layer = (Uint32)texture_normal_surface->h
+        },
+        &(SDL_GPUTextureRegion)
+        {
+            .texture = mesh.material.texture_normal,
+            .mip_level = 0,
+            .layer = 0,
+            .x = 0, .y = 0, .z = 0,
+            .w = (Uint32)texture_normal_surface->w,
+            .h = (Uint32)texture_normal_surface->h,
             .d = 1
         },
         false
@@ -750,13 +868,20 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
 
     SDL_EndGPUCopyPass(copy_pass);
     
-    if (n_mipmap_levels > 1) SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, mesh.material.texture_diffuse);
+    if (n_mipmap_levels > 1) 
+    {
+        SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, mesh.material.texture_diffuse);
+        SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, mesh.material.texture_metallic_roughness);
+        SDL_GenerateMipmapsForGPUTexture(upload_command_buffer, mesh.material.texture_normal);
+    }
     
     SDL_SubmitGPUCommandBuffer(upload_command_buffer);
 
     SDL_ReleaseGPUTransferBuffer(gpu_device, transfer_buffer);
     SDL_ReleaseGPUTransferBuffer(gpu_device, texture_transfer_buffer);
-    SDL_DestroySurface(texture_surface);
+    SDL_DestroySurface(texture_diffuse_surface);
+    SDL_DestroySurface(texture_metallic_roughness_surface);
+    SDL_DestroySurface(texture_normal_surface);
 
     if (model_type == MODEL_TYPE_BONE_ANIMATED || model_type == MODEL_TYPE_BONE_ANIMATED_MIXAMO)
     {
@@ -777,6 +902,8 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
 
     return true;
 }
+
+// TODO modularize free funtions for mesh, material, animation rig, model, etc.
 
 void Model_Free(Model* model)
 {

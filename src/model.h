@@ -83,14 +83,14 @@ Struct (Mesh)
 	Uint32 index_count;
 };
 
-typedef struct Node
+Struct (Node)
 {
 	mat4 local_transform;
 	Mesh mesh;
 	struct Node* children; // array of child nodes
 	Uint8 num_children;
 	Uint8 _padding[7];
-} Node;
+};
 
 Struct (Entity)
 {
