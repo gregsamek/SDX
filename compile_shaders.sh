@@ -12,10 +12,14 @@ set -e
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/swapchain.frag.hlsl -o MyApp.app/Contents/Resources/shaders/swapchain.frag.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unlit_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/unlit_alphatest.frag.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/unlit_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/unlit_alphatest.frag.json
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/pbr_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/pbr_alphatest.frag.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/pbr_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/pbr_alphatest.frag.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/blinnphong_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_alphatest.frag.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/blinnphong_alphatest.frag.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_alphatest.frag.json
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/bone_animated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/bone_animated.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/bone_animated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/bone_animated.vert.json
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/pbr_unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/pbr_unanimated.vert.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/pbr_unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/pbr_unanimated.vert.json
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/pbr_animated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/pbr_animated.vert.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/pbr_animated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/pbr_animated.vert.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/text.vert.hlsl -o MyApp.app/Contents/Resources/shaders/text.vert.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/text.vert.hlsl -o MyApp.app/Contents/Resources/shaders/text.vert.json
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross          shaders/text.frag.hlsl -o MyApp.app/Contents/Resources/shaders/text.frag.msl

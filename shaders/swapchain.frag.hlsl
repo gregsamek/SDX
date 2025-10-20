@@ -41,7 +41,7 @@ float4 main(FragmentInput input): SV_Target0
     const float exposure = 1.0; // Adjust exposure as needed
     float3 hdr = hdrTex.Sample(Sampler, input.TexCoord).rgb;
     float3 color = hdr * exposure;
-    // color = tonemapACES(color);
+    // color = reinhardTonemap(color);
     color = saturate(color);
     color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR
     return float4(color, 1.0);

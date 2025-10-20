@@ -47,11 +47,12 @@ Struct (Vertex_PositionTexture)
 	float u, v;
 };
 
-Struct (Vertex_PositionNormalTexture)
+Struct (Vertex_PBR)
 {
     float x, y, z;  // position
     float nx, ny, nz; // normal
     float u, v;     // texcoord
+	float tx, ty, tz, tw; // for normal mapping
 };
 
 #define MAX_JOINTS_PER_VERTEX 4
@@ -61,6 +62,7 @@ Struct (Vertex_BoneAnimated)
 	float x, y, z;
 	float nx, ny, nz;
 	float u, v;
+	float tx, ty, tz, tw;
 	Uint8 joint_ids[MAX_JOINTS_PER_VERTEX]; 
 	float weights[MAX_JOINTS_PER_VERTEX];
 };

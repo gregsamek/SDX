@@ -302,8 +302,9 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
             SDL_GPU_INDEXELEMENTSIZE_16BIT
         );
 
-        SDL_GPUTexture* diffuse_tex = models_unanimated[i].mesh.material.texture_diffuse;    
-        SDL_GPUTexture* specular_tex = models_unanimated[i].mesh.material.texture_diffuse;
+        SDL_GPUTexture* texture_diffuse = models_unanimated[i].mesh.material.texture_diffuse;    
+        SDL_GPUTexture* texture_metallic_roughness = models_unanimated[i].mesh.material.texture_metallic_roughness;
+        SDL_GPUTexture* texture_normal = models_unanimated[i].mesh.material.texture_normal;
         
         SDL_BindGPUFragmentSamplers
         (
@@ -311,10 +312,11 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
             0, // first slot
             (SDL_GPUTextureSamplerBinding[])
             {
-                { .texture = diffuse_tex,  .sampler = default_texture_sampler },
-                { .texture = specular_tex, .sampler = default_texture_sampler }
+                { .texture = texture_diffuse,  .sampler = default_texture_sampler },
+                { .texture = texture_metallic_roughness, .sampler = default_texture_sampler },
+                { .texture = texture_normal, .sampler = default_texture_sampler },
             },
-            2 // num_bindings
+            3 // num_bindings
         );
 
         SDL_DrawGPUIndexedPrimitives
@@ -687,7 +689,7 @@ bool Render()
 
     // constant directional light
     {        
-        vec3 light_direction_world = {0.0f, -10.0f, 10.0f};
+        vec3 light_direction_world = {10.0f, -10.0f, 10.0f};
         vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
         vec4 light_direction_viewspace_4;
         glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);

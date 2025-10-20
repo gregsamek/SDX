@@ -59,6 +59,18 @@ Fragment_Output main(Fragment_Input fragment)
     float3 ambient_color = float3(1.0f, 1.0f, 1.0f);
     float3 color_out = ambientStrength * ambient_color * albedo.rgb;
 
+    /*
+    
+    float roughness = texture_specular.Sample(sampler_texture, fragment.texture_coordinate).g;
+    float shininess = 2 / (roughness * roughness * roughness * roughness + 0.001f) - 2;
+    shininess = clamp(shininess, 0.0f, 256.0f);
+
+    float metallic = texture_specular.Sample(sampler_texture, fragment.texture_coordinate).b;
+    float3 F0 = float3(0.04f, 0.04f, 0.04f); // base reflectivity at normal incidence for dielectrics
+    float3 specSample = lerp(F0, albedo.rgb, metallic); // if metallic, use albedo color as F0
+    
+    */
+
     float shininess = 32.0f; // adjustable parameter; technically supposed to be per-material
     float3 specSample = texture_specular.Sample(sampler_texture, fragment.texture_coordinate).rgb;
 

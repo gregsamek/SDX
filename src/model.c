@@ -370,6 +370,7 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
     cgltf_accessor* position_accessor = NULL;
     cgltf_accessor* normal_accessor = NULL;
     cgltf_accessor* texcoord_accessor = NULL;
+    cgltf_accessor* tangent_accessor = NULL;
     cgltf_accessor* joint_ids_accessor = NULL;
     cgltf_accessor* joint_weights_accessor = NULL;
     
@@ -388,6 +389,10 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
         {
             texcoord_accessor = attr->data;
         }
+        else if (attr->type == cgltf_attribute_type_tangent)
+        {
+            tangent_accessor = attr->data;
+        }
         else if (attr->type == cgltf_attribute_type_joints && attr->index == 0)
         {
             joint_ids_accessor = attr->data;
@@ -398,17 +403,18 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
         }
     }
 
-    if (!position_accessor || !normal_accessor || !texcoord_accessor)
+    if (!position_accessor || !normal_accessor || !texcoord_accessor || !tangent_accessor)
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing at least one attribute: POSITION, NORMAL, TEXCOORD.");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing at least one attribute: POSITION, NORMAL, TEXCOORD, TANGENT.");
         return false;
     }
 
     if (position_accessor->component_type != cgltf_component_type_r_32f ||
         normal_accessor->component_type   != cgltf_component_type_r_32f ||
-        texcoord_accessor->component_type != cgltf_component_type_r_32f) 
+        texcoord_accessor->component_type != cgltf_component_type_r_32f ||
+        tangent_accessor->component_type != cgltf_component_type_r_32f) 
     {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ERROR: Expected POSITION, NORMAL, TEXCOORD to be Float32. Current gltf loader does not support automatic conversion.");
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ERROR: Expected POSITION, NORMAL, TEXCOORD, TANGENT to be Float32. Current gltf loader does not support automatic conversion.");
         return false;
     }
 
@@ -430,7 +436,7 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
     if (model_type == MODEL_TYPE_BONE_ANIMATED_MIXAMO || model_type == MODEL_TYPE_BONE_ANIMATED)
         vertex_data_size = (Uint32)(sizeof(Vertex_BoneAnimated) * position_accessor->count);
     else
-        vertex_data_size = (Uint32)(sizeof(Vertex_PositionNormalTexture) * position_accessor->count);
+        vertex_data_size = (Uint32)(sizeof(Vertex_PBR) * position_accessor->count);
 
     Mesh mesh = {0};
     mesh.vertex_buffer = SDL_CreateGPUBuffer
@@ -532,6 +538,14 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
     }
     texcoord_data_base += texcoord_accessor->offset;
 
+    const uint8_t* tangent_data_base = cgltf_buffer_view_data(tangent_accessor->buffer_view);
+    if (tangent_data_base == NULL) 
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to get tangent data buffer view.");
+        return false; 
+    }
+    tangent_data_base += tangent_accessor->offset;
+
     if (model_type == MODEL_TYPE_BONE_ANIMATED_MIXAMO || model_type == MODEL_TYPE_BONE_ANIMATED)
     {
         const uint8_t* joint_ids_data_base= cgltf_buffer_view_data(joint_ids_accessor->buffer_view);
@@ -563,6 +577,9 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
             const void* src_texcoord = texcoord_data_base + i * texcoord_accessor->stride;
             memcpy(&dest_vertex->u, src_texcoord, sizeof(float) * 2);
 
+            const void* src_tangent = tangent_data_base + i * tangent_accessor->stride;
+            memcpy(&dest_vertex->tx, src_tangent, sizeof(float) * 4);
+
             const void* src_joint_ids = joint_ids_data_base + i * joint_ids_accessor->stride;
             memcpy(dest_vertex->joint_ids, src_joint_ids, sizeof(uint8_t) * MAX_JOINTS_PER_VERTEX);
 
@@ -574,7 +591,7 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
     {
         for (size_t i = 0; i < position_accessor->count; i++)
         {
-            Vertex_PositionNormalTexture* dest_vertex = &((Vertex_PositionNormalTexture*)transfer_buffer_mapped)[i];
+            Vertex_PBR* dest_vertex = &((Vertex_PBR*)transfer_buffer_mapped)[i];
 
             const void* src_pos = pos_data_base + i * position_accessor->stride;
             memcpy(&dest_vertex->x, src_pos, sizeof(float) * 3);
@@ -584,6 +601,9 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
 
             const void* src_texcoord = texcoord_data_base + i * texcoord_accessor->stride;
             memcpy(&dest_vertex->u, src_texcoord, sizeof(float) * 2);
+
+            const void* src_tangent = tangent_data_base + i * tangent_accessor->stride;
+            memcpy(&dest_vertex->tx, src_tangent, sizeof(float) * 4);
         }
     }
     // for (size_t i = 0; i < position_accessor->count; ++i)

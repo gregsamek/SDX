@@ -17,6 +17,11 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize unanimated phong pipeline!");
         return false;
     }
+    if (!Pipeline_Unanimated_PBR_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize unanimated PBR pipeline!");
+        return false;
+    }
     if (!Pipeline_BoneAnimated_Init())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bone animated pipeline!");
@@ -181,7 +186,7 @@ bool Pipeline_Unanimated_Phong_Init()
     (
         gpu_device,
         "blinnphong_alphatest.frag", // Base filename
-        2, // num_samplers (for the single texture)
+        2, // num_samplers
         0, // num_storage_textures
         1, // num_storage_buffers
         1  // num_uniform_buffers
@@ -237,7 +242,7 @@ bool Pipeline_Unanimated_Phong_Init()
                 {
                     .slot = 0,
                     .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
-                    .pitch = sizeof(Vertex_PositionNormalTexture) // MUST MATCH LOADED VERTEX DATA
+                    .pitch = sizeof(Vertex_PBR) // MUST MATCH LOADED VERTEX DATA
                 }
             },  
             .num_vertex_attributes = 3,
@@ -247,19 +252,152 @@ bool Pipeline_Unanimated_Phong_Init()
                     .buffer_slot = 0,
                     .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                     .location = 0,
-                    .offset = offsetof(Vertex_PositionNormalTexture, x)
+                    .offset = offsetof(Vertex_PBR, x)
                 },
                 {   // normal: TEXCOORD1
                     .buffer_slot = 0,
                     .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
                     .location = 1,
-                    .offset = offsetof(Vertex_PositionNormalTexture, nx)
+                    .offset = offsetof(Vertex_PBR, nx)
                 },
                 {   // texture coordinate: TEXCOORD2
                     .buffer_slot = 0,
                     .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
                     .location = 2,
-                    .offset = offsetof(Vertex_PositionNormalTexture, u)
+                    .offset = offsetof(Vertex_PBR, u)
+                }
+            }
+        },
+        .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        .vertex_shader = vertex_shader,
+        .fragment_shader = fragment_shader,
+        .multisample_state = (SDL_GPUMultisampleState) { .sample_count = msaa_level }
+    };
+    if (pipeline_unanimated)
+    {
+        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_unanimated);
+        pipeline_unanimated = NULL;
+    }
+    pipeline_unanimated = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
+    if (pipeline_unanimated == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create pipeline: %s", SDL_GetError());
+        return false;
+    }
+
+    SDL_ReleaseGPUShader(gpu_device, vertex_shader);
+    SDL_ReleaseGPUShader(gpu_device, fragment_shader);
+
+    return true;
+}
+
+bool Pipeline_Unanimated_PBR_Init()
+{
+    SDL_GPUShader* vertex_shader = Shader_Load
+    (
+        gpu_device,
+        "pbr_unanimated.vert", // Base filename
+        0, // num_samplers
+        0, // num_storage_textures
+        0, // num_storage_buffers
+        1  // num_uniform_buffers (transform matrices)
+    );
+    if (vertex_shader == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to load vertex shader!");
+        return false;
+    }
+
+    SDL_GPUShader* fragment_shader = Shader_Load
+    (
+        gpu_device,
+        "pbr_alphatest.frag", // Base filename
+        3, // num_samplers
+        0, // num_storage_textures
+        1, // num_storage_buffers
+        1  // num_uniform_buffers
+    );
+    if (fragment_shader == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to load fragment shader!");
+        return false;
+    }
+
+    SDL_GPUGraphicsPipelineCreateInfo pipeline_create_info =
+    {
+        .target_info =
+        {
+            .num_color_targets = 1,
+            .color_target_descriptions = (SDL_GPUColorTargetDescription[])
+            {{
+                .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+                .blend_state = (SDL_GPUColorTargetBlendState)
+                {
+                    .enable_blend = true,
+                    .color_blend_op = SDL_GPU_BLENDOP_ADD,
+                    .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                    .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                    .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
+                    .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                    .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                    .color_write_mask = SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A,
+                    .enable_color_write_mask = true
+                }
+            }},
+            .has_depth_stencil_target = true,
+            .depth_stencil_format = depth_texture_format
+        },
+        .depth_stencil_state = (SDL_GPUDepthStencilState)
+        {
+            .enable_depth_test = true,
+            .enable_depth_write = true,
+            .enable_stencil_test = false,
+            .compare_op = SDL_GPU_COMPAREOP_LESS,
+        },
+        .rasterizer_state = (SDL_GPURasterizerState)
+        {
+            .cull_mode = SDL_GPU_CULLMODE_BACK,
+            .fill_mode = SDL_GPU_FILLMODE_FILL,
+            .front_face = SDL_GPU_FRONTFACE_CLOCKWISE
+        },
+        .vertex_input_state = (SDL_GPUVertexInputState)
+        {
+            .num_vertex_buffers = 1,
+            .vertex_buffer_descriptions = (SDL_GPUVertexBufferDescription[])
+            {
+                {
+                    .slot = 0,
+                    .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+                    .pitch = sizeof(Vertex_PBR) // MUST MATCH LOADED VERTEX DATA
+                }
+            },  
+            .num_vertex_attributes = 4,
+            .vertex_attributes = (SDL_GPUVertexAttribute[])
+            {
+                {   // position: TEXCOORD0
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                    .location = 0,
+                    .offset = offsetof(Vertex_PBR, x)
+                },
+                {   // normal: TEXCOORD1
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                    .location = 1,
+                    .offset = offsetof(Vertex_PBR, nx)
+                },
+                {   // texture coordinate: TEXCOORD2
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+                    .location = 2,
+                    .offset = offsetof(Vertex_PBR, u)
+                },
+                {
+                    // tangent: TEXCOORD3
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+                    .location = 3,
+                    .offset = offsetof(Vertex_PBR, tx)
                 }
             }
         },
@@ -291,7 +429,7 @@ bool Pipeline_BoneAnimated_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "bone_animated.vert", // Base filename
+        "pbr_animated.vert", // Base filename
         0, // num_samplers
         0, // num_storage_textures
         1, // num_storage_buffers (joint matrices)
@@ -306,8 +444,8 @@ bool Pipeline_BoneAnimated_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "blinnphong_alphatest.frag", // Base filename
-        2, // num_samplers (for the single texture)
+        "pbr_alphatest.frag", // Base filename
+        3, // num_samplers (for the single texture)
         0, // num_storage_textures
         1, // num_storage_buffers
         1  // num_uniform_buffers
@@ -366,7 +504,7 @@ bool Pipeline_BoneAnimated_Init()
                     .pitch = sizeof(Vertex_BoneAnimated) // MUST MATCH LOADED VERTEX DATA
                 }
             },  
-            .num_vertex_attributes = 5,
+            .num_vertex_attributes = 6,
             .vertex_attributes = (SDL_GPUVertexAttribute[])
             {
                 {   // position
@@ -387,16 +525,23 @@ bool Pipeline_BoneAnimated_Init()
                     .location = 2, // TEXCOORD2 in HLSL
                     .offset = offsetof(Vertex_BoneAnimated, u)
                 },
+                {
+                    // tangent: TEXCOORD3
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+                    .location = 3,
+                    .offset = offsetof(Vertex_BoneAnimated, tx)
+                },
                 {   // joint IDs
                     .buffer_slot = 0,
                     .format = SDL_GPU_VERTEXELEMENTFORMAT_UINT, // in the shader this is interpreted as Uint8[4]
-                    .location = 3, // TEXCOORD3 in HLSL
+                    .location = 4, // TEXCOORD4 in HLSL
                     .offset = offsetof(Vertex_BoneAnimated, joint_ids)
                 },
                 {   // joint weights
                     .buffer_slot = 0,
                     .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4, // vec4 Float32
-                    .location = 4, // TEXCOORD4 in HLSL
+                    .location = 5, // TEXCOORD5 in HLSL
                     .offset = offsetof(Vertex_BoneAnimated, weights)
                 }
             }

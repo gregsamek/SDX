@@ -6,6 +6,7 @@
 bool Pipeline_Init();
 bool Pipeline_Unanimated_Init();
 bool Pipeline_Unanimated_Phong_Init();
+bool Pipeline_Unanimated_PBR_Init();
 bool Pipeline_BoneAnimated_Init();
 bool Pipeline_RigidAnimated_Init();
 bool Pipeline_Instanced_Init();

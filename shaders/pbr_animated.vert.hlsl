@@ -25,30 +25,34 @@ struct Vertex_Input
     float3 position : TEXCOORD0;
     float3 normal : TEXCOORD1;
     float2 texture_coordinate : TEXCOORD2;
-    uint bone_indices : TEXCOORD3; // 4 8-bit bone indices packed into a single 32-bit uint
-    float4 bone_weights : TEXCOORD4;
+    float4 tangent : TEXCOORD3; // .w = handedness
+    uint bone_indices : TEXCOORD4; // 4 8-bit bone indices packed into a single 32-bit uint
+    float4 bone_weights : TEXCOORD5;
 };
 
 struct Vertex_Output
 {
     float4 skinned_position_clipspace : SV_Position;
     float3 skinned_position_viewspace : TEXCOORD0;
-    float3 normal_viewspace   : TEXCOORD1;
-    float2 texture_coordinate   : TEXCOORD2;
+    float3 normal_viewspace           : TEXCOORD1;
+    float2 texture_coordinate         : TEXCOORD2;
+    float3 tangent_viewspace          : TEXCOORD3;
+    float3 bitangent_viewspace        : TEXCOORD4;
 };
 
 Vertex_Output main(Vertex_Input vertex)
 {
     Vertex_Output output;
 
-    // 4 8-bit bone indices packed into a single 32-bit uint
-    uint index0 = (vertex.bone_indices >> 0) & 0xFF;
-    uint index1 = (vertex.bone_indices >> 8) & 0xFF;
+    // Unpack 4 x 8-bit indices
+    uint index0 = (vertex.bone_indices >> 0)  & 0xFF;
+    uint index1 = (vertex.bone_indices >> 8)  & 0xFF;
     uint index2 = (vertex.bone_indices >> 16) & 0xFF;
     uint index3 = (vertex.bone_indices >> 24) & 0xFF;
 
+    // Accumulate skin matrix
     float4x4 skin_matrix = (float4x4)0;
-    uint base_offset = base_joint_offset_bytes / sizeof(float4x4); // Convert byte offset to matrix index
+    uint base_offset = base_joint_offset_bytes / sizeof(float4x4);
     index0 += base_offset;
     index1 += base_offset;
     index2 += base_offset;
@@ -58,24 +62,36 @@ Vertex_Output main(Vertex_Input vertex)
     skin_matrix += joint_matrix_buffer[index2] * vertex.bone_weights.z;
     skin_matrix += joint_matrix_buffer[index3] * vertex.bone_weights.w;
 
+    // Skin position
     float4 skinned_position_worldspace = mul(skin_matrix, float4(vertex.position, 1.0f));
-
     output.skinned_position_clipspace = mul(mvp, skinned_position_worldspace);
 
     float4 skinned_position_viewspace = mul(mv, skinned_position_worldspace);
     output.skinned_position_viewspace = skinned_position_viewspace.xyz;
-    
-    // assumes the skin matrix does not have non-uniform scaling
-    float3x3 skin_matrix_3x3 = (float3x3)skin_matrix;
-    float3 normal_worldspace = mul(skin_matrix_3x3, vertex.normal);
-    normal_worldspace = normalize(normal_worldspace);
 
+    // Assume skin matrix has no non-uniform scaling
+    float3x3 skin3x3 = (float3x3)skin_matrix;
+    float3 N_ws = normalize(mul(skin3x3, vertex.normal));
+    float3 T_ws = normalize(mul(skin3x3, vertex.tangent.xyz));
+
+    // Transform to view space
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
     float3x3 normalMat = (float3x3)mv_inverse_transpose;
-    output.normal_viewspace = normalize(mul(normalMat, normal_worldspace));
+    float3 N_vs = normalize(mul(normalMat, N_ws));
 #else
-    output.normal_viewspace = normalize(mul((float3x3)mv, normal_worldspace));
+    float3x3 mv3x3 = (float3x3)mv;
+    float3 N_vs = normalize(mul(mv3x3, N_ws));
 #endif
+
+    float3 T_vs = normalize(mul((float3x3)mv, T_ws));
+
+    // Orthonormalize T against N and build B using handedness
+    T_vs = normalize(T_vs - N_vs * dot(T_vs, N_vs));
+    float3 B_vs = normalize(cross(N_vs, T_vs)) * vertex.tangent.w;
+
+    output.normal_viewspace    = N_vs;
+    output.tangent_viewspace   = T_vs;
+    output.bitangent_viewspace = B_vs;
 
     output.texture_coordinate = vertex.texture_coordinate;
 
