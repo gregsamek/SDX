@@ -624,7 +624,7 @@ bool Render()
     SDL_GPUColorTargetInfo virtual_target_info = 
     {
         .texture = virtual_screen_texture,
-        .clear_color = (SDL_FColor){ 0.2f, 0.2f, 0.2f, 1.0f },
+        .clear_color = (SDL_FColor){ 0.5f, 0.5f, 0.5f, 1.0f },
         .load_op = SDL_GPU_LOADOP_CLEAR,
         .store_op = SDL_GPU_STOREOP_STORE,
         .cycle = true

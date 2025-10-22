@@ -192,36 +192,33 @@ Fragment_Output main(Fragment_Input fragment)
     }
     
     // Hemispheric diffuse (indirect diffuse)
-    float hemiN = dot(N, up_viewspace);
-    float hemiWeightN = saturate(0.5f * (hemiN + 1.0f));
-    float3 envDiffuseColor = lerp(color_ground, color_sky, hemiWeightN);
+    float NdotUP = dot(N, up_viewspace);
+    float N_weight = saturate(0.5f * (NdotUP + 1.0f));
+    float3 diffuse_environment_color = lerp(color_ground, color_sky, N_weight);
 
-    // Use energy-conserving kD for ambient as well
-    float3 kS_amb = Fresnel_Schlick_Roughness(NdotV, F0, roughness);
-    float3 kD_amb = (1.0f.xxx - kS_amb) * (1.0f - metallic);
+    // energy-conserving
+    float3 kS_ambient = Fresnel_Schlick_Roughness(NdotV, F0, roughness);
+    float3 kD_ambient = (1.0f.xxx - kS_ambient) * (1.0f - metallic);
 
-    // Lambert over hemisphere (you can keep or drop the 1/pi depending on how you author sky/ground colors)
-    float3 ambientDiffuse = kD_amb * (albedo.rgb / 3.14159265f) * envDiffuseColor * ao;
+    float3 diffuse_ambient = kD_ambient * (albedo.rgb / 3.14159265f) * diffuse_environment_color * ao;
 
     // Hemispheric specular (indirect specular)
     float3 R = reflect(-V, N);
-    float hemiR = dot(R, up_viewspace);
-    float hemiWeightR = saturate(0.5f * (hemiR + 1.0f));
-    float3 envSpecColor = lerp(color_ground, color_sky, hemiWeightR);
+    float RdotUP = dot(R, up_viewspace);
+    float R_weight = saturate(0.5f * (RdotUP + 1.0f));
+    float3 specular_environment_color = lerp(color_ground, color_sky, R_weight);
 
-    // Cheap specular IBL-ish term; scale by roughness if you want it dimmer for rough surfaces
-    float roughFade = 1.0f - roughness; // tweakable
-    float3 ambientSpec = envSpecColor * kS_amb * roughFade;
+    float3 specular_ambient = specular_environment_color * kS_ambient * (1.0f - roughness);
 
-    // float sunDot = saturate(dot(R, -light_directional_direction));
+    // float RdotSUN = saturate(dot(R, -light_directional_direction));
     // float shininess = lerp(16.0f, 1024.0f, (1.0f - roughness) * (1.0f - roughness));
-    // float sunLobe = pow(sunDot, shininess);
+    // float specular_sun = pow(RdotSUN, shininess);
     // // fade if sun is below horizon relative to N:
-    // sunLobe *= step(0.0f, dot(N, -light_directional_direction));
+    // specular_sun *= step(0.0f, dot(N, -light_directional_direction));
     // float3 sun_color = float3(1.0f, 1.0f, 1.0f); // tweak to taste
-    // ambientSpec += sun_color * kS_amb * sunLobe;
+    // specular_ambient += sun_color * kS_ambient * specular_sun;
     
-    Lo += ambientDiffuse + ambientSpec;
+    Lo += diffuse_ambient + specular_ambient;
 
     output.color = float4(Lo, albedo.a);
     return output;
@@ -229,16 +226,6 @@ Fragment_Output main(Fragment_Input fragment)
 
 /*
 NOTES
-
-Simple lambertian
-float NdotL = saturate(dot(N, L));
-
-Valve's Half Lambert
-less harsh; looks better than boosting the ambient term way up
-https://developer.valvesoftware.com/wiki/Half_Lambert
-float NdotL = pow(dot(N, L) * 0.5 + 0.5, 2);
-
-Specular uses Blinn-Phong model, hence H.N instead of R.V
 
 Light Attenuation Constants
 https://learnopengl.com/Lighting/Light-casters
