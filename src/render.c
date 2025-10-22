@@ -624,7 +624,7 @@ bool Render()
     SDL_GPUColorTargetInfo virtual_target_info = 
     {
         .texture = virtual_screen_texture,
-        .clear_color = (SDL_FColor){ 1.0f, 1.0f, 1.0f, 1.0f },
+        .clear_color = (SDL_FColor){ 0.2f, 0.2f, 0.2f, 1.0f },
         .load_op = SDL_GPU_LOADOP_CLEAR,
         .store_op = SDL_GPU_STOREOP_STORE,
         .cycle = true
@@ -699,11 +699,28 @@ bool Render()
         Light_Directional light_directional = 
         {
             .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
-            .strength = 0.5f,
-            .color = {0.5f, 0.5f, 0.5f},
+            .strength = 1.0f,
+            .color = {1.0f, 1.0f, 1.0f},
         };
 
         SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &light_directional, sizeof(light_directional));
+    }
+
+    {
+        vec4 world_up_4 = { 0.0f, 1.0f, 0.0f, 0.0f };
+        vec4 view_up_4;
+        glm_mat4_mulv(camera.view_matrix, world_up_4, view_up_4);
+        vec3 view_up = { view_up_4[0], view_up_4[1], view_up_4[2] };
+        glm_vec3_normalize(view_up);
+
+        Light_Hemisphere light_hemisphere = 
+        {
+            .up_viewspace = {view_up[0], view_up[1], view_up[2]},
+            .color_sky = {0.9f, 0.9f, 0.9f},
+            .color_ground = {0.1f, 0.1f, 0.1f},
+        };
+
+        SDL_PushGPUFragmentUniformData(command_buffer_draw, 1, &light_hemisphere, sizeof(light_hemisphere));
     }
     
     Render_Unanimated(virtual_render_pass, command_buffer_draw);

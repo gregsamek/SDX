@@ -644,7 +644,7 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
 
     SDL_UnmapGPUTransferBuffer(gpu_device, transfer_buffer);
 
-    // TODO normal maps, metallic-roughness maps, emissive maps
+    // TODO emissive maps
     // (use SDL_GPU_TEXTUREFORMAT_R8G8B8A8_UNORM for non-color maps)
     char* texture_diffuse_uri = NULL;
     char* texture_metallic_roughness_uri = NULL;

@@ -37,6 +37,16 @@ cbuffer Light_Directional_Uniform : register(b0, space3)
     float3 light_directional_color; float padding1;
 };
 
+cbuffer Light_Hemisphere_Uniform : register(b1, space3)
+{
+    float3 up_viewspace;
+    float _padding;
+    float3 color_sky;
+    float _padding2;
+    float3 color_ground;
+    float _padding3;
+};
+
 struct Fragment_Input
 {
     float4 position_clipspace : SV_Position;
@@ -78,6 +88,11 @@ float3 Fresnel_Schlick(float VdotH, float3 F0)
     return F0 + (1.0f - F0) * pow(1.0f - VdotH, 5.0f);
 }
 
+float3 Fresnel_Schlick_Roughness(float NdotV, float3 F0, float roughness)
+{
+    return F0 + (max(float3((1.0 - roughness).xxx), F0) - F0) * pow(saturate(1.0 - NdotV), 5.0);
+}
+
 Fragment_Output main(Fragment_Input fragment)
 {
     Fragment_Output output;
@@ -94,7 +109,7 @@ Fragment_Output main(Fragment_Input fragment)
 
     float3 N_ts = texture_normal.Sample(sampler_texture, fragment.texture_coordinate).xyz * 2.0f - 1.0f;
     // If normal map uses OpenGL convention (green down), uncomment:
-    // N_ts.y = -N_ts.y;
+    N_ts.y = -N_ts.y;
 
     float3 T = normalize(fragment.tangent_viewspace);
     float3 B = normalize(fragment.bitangent_viewspace);
@@ -103,12 +118,15 @@ Fragment_Output main(Fragment_Input fragment)
 
     float3 N = normalize(mul(N_ts, TBN));
 
+    // uncomment to override normal mapping
+    // N = normalize(fragment.normal_viewspace);
+
     float3 V = normalize(-fragment.position_viewspace); // view space camera at origin
 
     float3 F0 = float3(0.04f, 0.04f, 0.04f);
     F0 = lerp(F0, albedo.rgb, metallic);
 
-    float3 irradiance = float3(0.0f, 0.0f, 0.0f);
+    float3 Lo = float3(0.0f, 0.0f, 0.0f);
 
     // Directional light
     
@@ -133,11 +151,11 @@ Fragment_Output main(Fragment_Input fragment)
     float3 kS = F;
     float3 kD = (1.0f.xxx - kS) * (1.0f - metallic);
 
-    irradiance += (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
+    Lo += (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
 
     // Spotlights
 
-    for (int i = 0; i < 1; i++) // TODO: number of active lights as uniform
+    for (int i = 0; i < 3; i++) // TODO: number of active lights as uniform
     {
         Light_Spotlight light = buffer_spotlights[i];
 
@@ -170,13 +188,42 @@ Fragment_Output main(Fragment_Input fragment)
         float3 kS_spot = F_spot;
         float3 kD_spot = (1.0f.xxx - kS_spot) * (1.0f - metallic);
 
-        irradiance += (kD_spot * albedo.rgb / 3.14159265f + specular_spot) * radiance_spot * NdotL;
+        Lo += (kD_spot * albedo.rgb / 3.14159265f + specular_spot) * radiance_spot * NdotL;
     }
+    
+    // Hemispheric diffuse (indirect diffuse)
+    float hemiN = dot(N, up_viewspace);
+    float hemiWeightN = saturate(0.5f * (hemiN + 1.0f));
+    float3 envDiffuseColor = lerp(color_ground, color_sky, hemiWeightN);
 
-    float3 ambient = float3(0.4f, 0.4f, 0.4f) * albedo.rgb;
-    irradiance += ambient;
+    // Use energy-conserving kD for ambient as well
+    float3 kS_amb = Fresnel_Schlick_Roughness(NdotV, F0, roughness);
+    float3 kD_amb = (1.0f.xxx - kS_amb) * (1.0f - metallic);
 
-    output.color = float4(irradiance * ao, albedo.a);
+    // Lambert over hemisphere (you can keep or drop the 1/pi depending on how you author sky/ground colors)
+    float3 ambientDiffuse = kD_amb * (albedo.rgb / 3.14159265f) * envDiffuseColor * ao;
+
+    // Hemispheric specular (indirect specular)
+    float3 R = reflect(-V, N);
+    float hemiR = dot(R, up_viewspace);
+    float hemiWeightR = saturate(0.5f * (hemiR + 1.0f));
+    float3 envSpecColor = lerp(color_ground, color_sky, hemiWeightR);
+
+    // Cheap specular IBL-ish term; scale by roughness if you want it dimmer for rough surfaces
+    float roughFade = 1.0f - roughness; // tweakable
+    float3 ambientSpec = envSpecColor * kS_amb * roughFade;
+
+    // float sunDot = saturate(dot(R, -light_directional_direction));
+    // float shininess = lerp(16.0f, 1024.0f, (1.0f - roughness) * (1.0f - roughness));
+    // float sunLobe = pow(sunDot, shininess);
+    // // fade if sun is below horizon relative to N:
+    // sunLobe *= step(0.0f, dot(N, -light_directional_direction));
+    // float3 sun_color = float3(1.0f, 1.0f, 1.0f); // tweak to taste
+    // ambientSpec += sun_color * kS_amb * sunLobe;
+    
+    Lo += ambientDiffuse + ambientSpec;
+
+    output.color = float4(Lo, albedo.a);
     return output;
 }
 
