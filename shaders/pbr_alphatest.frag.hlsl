@@ -11,7 +11,10 @@
 Texture2D texture_diffuse  : register(t0, space2);
 Texture2D texture_metallic_roughness : register(t1, space2);
 Texture2D texture_normal : register(t2, space2);
+Texture2D<float> shadow_map : register(t3, space2);
+
 SamplerState sampler_texture  : register(s0, space2);
+SamplerState sampler_shadow : register(s1, space2);
 
 struct Light_Spotlight
 {
@@ -29,7 +32,7 @@ struct Light_Spotlight
 // They will work with SDL_shadercross because it does special processing to
 // support them, but not with direct compilation via dxc.
 // See https://github.com/libsdl-org/SDL/issues/12200 for details.
-StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t3, space2);
+StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t4, space2);
 
 cbuffer Light_Directional_Uniform : register(b0, space3)
 {
@@ -47,6 +50,13 @@ cbuffer Light_Hemisphere_Uniform : register(b1, space3)
     float _padding3;
 };
 
+cbuffer Shadow_Uniform : register(b2, space3)
+{
+    float2 shadow_texel_size;
+    float shadow_bias;
+    float shadow_pcf_radius; // in texels
+};
+
 struct Fragment_Input
 {
     float4 position_clipspace : SV_Position;
@@ -55,6 +65,7 @@ struct Fragment_Input
     float2 texture_coordinate : TEXCOORD2;
     float3 tangent_viewspace  : TEXCOORD3;
     float3 bitangent_viewspace: TEXCOORD4;
+    float4 shadow_position_clip : TEXCOORD5;
 };
 
 struct Fragment_Output
@@ -93,6 +104,39 @@ float3 Fresnel_Schlick_Roughness(float NdotV, float3 F0, float roughness)
     return F0 + (max(float3((1.0 - roughness).xxx), F0) - F0) * pow(saturate(1.0 - NdotV), 5.0);
 }
 
+float ShadowFactor(float4 shadow_pos_clip)
+{
+    // Project to NDC and then to UV (0..1), also map depth to 0..1
+    float3 ndc = shadow_pos_clip.xyz / max(shadow_pos_clip.w, 1e-7f);
+    float2 uv  = ndc.xy * 0.5f + 0.5f;
+    uv.y = 1.0f - uv.y;
+    float depth = ndc.z;
+
+    // If outside shadow map or behind far plane, consider fully lit
+    if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f || depth > 1.0f)
+        return 1.0f;
+
+    // 3x3 PCF
+    float sum = 0.0f;
+    int radius = (int)shadow_pcf_radius; // use floor
+    [unroll]
+    for (int y = -radius; y <= radius; y++)
+    {
+        [unroll]
+        for (int x = -radius; x <= radius; x++)
+        {
+            float2 offset = float2((float)x, (float)y) * shadow_texel_size;
+            float map_depth = shadow_map.Sample(sampler_shadow, uv + offset).r; // read depth
+            // sum += (depth + shadow_bias) >= map_depth ? 1.0f : 0.0f;
+            sum += depth <= (map_depth + shadow_bias) ? 1.0f : 0.0f;
+
+        }
+    }
+
+    float kernel = (2 * radius + 1);
+    return sum / (kernel * kernel);
+}
+
 Fragment_Output main(Fragment_Input fragment)
 {
     Fragment_Output output;
@@ -109,7 +153,7 @@ Fragment_Output main(Fragment_Input fragment)
 
     float3 N_ts = texture_normal.Sample(sampler_texture, fragment.texture_coordinate).xyz * 2.0f - 1.0f;
     // If normal map uses OpenGL convention (green down), uncomment:
-    N_ts.y = -N_ts.y;
+    // N_ts.y = -N_ts.y;
 
     float3 T = normalize(fragment.tangent_viewspace);
     float3 B = normalize(fragment.bitangent_viewspace);
@@ -151,11 +195,14 @@ Fragment_Output main(Fragment_Input fragment)
     float3 kS = F;
     float3 kD = (1.0f.xxx - kS) * (1.0f - metallic);
 
-    Lo += (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
+    float3 direct_dir = (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
+
+    float shadow = ShadowFactor(fragment.shadow_position_clip);
+    Lo += direct_dir * shadow;
 
     // Spotlights
 
-    for (int i = 0; i < 3; i++) // TODO: number of active lights as uniform
+    for (int i = 0; i < 0; i++) // TODO: number of active lights as uniform
     {
         Light_Spotlight light = buffer_spotlights[i];
 

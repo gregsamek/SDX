@@ -62,6 +62,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
+    // depth texture for main render pass
     if (SDL_GPUTextureSupportsFormat(gpu_device, SDL_GPU_TEXTUREFORMAT_D32_FLOAT, SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET))
     {
         depth_texture_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
@@ -74,6 +75,21 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     {
         SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "WARNING: Depth texture format fell back to D16_UNORM", NULL);
         depth_texture_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
+    }
+
+    // depth texture for shadow maps (we need to test this separately because we need sampler usage as well)
+    if (SDL_GPUTextureSupportsFormat(gpu_device, SDL_GPU_TEXTUREFORMAT_D32_FLOAT, SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER))
+    {
+        shadow_map_texture_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
+    }
+    else if (SDL_GPUTextureSupportsFormat(gpu_device, SDL_GPU_TEXTUREFORMAT_D24_UNORM, SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER))
+    {
+        shadow_map_texture_format = SDL_GPU_TEXTUREFORMAT_D24_UNORM;
+    }
+    else 
+    {
+        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "WARNING: Shadow map texture format fell back to D16_UNORM", NULL);
+        shadow_map_texture_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
     }
 
     if (!Render_LoadRenderSettings())

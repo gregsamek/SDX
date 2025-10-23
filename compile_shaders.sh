@@ -16,6 +16,8 @@ set -e
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/text.frag.hlsl                  -o MyApp.app/Contents/Resources/shaders/text.frag.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/fullscreen_quad.vert.hlsl       -o MyApp.app/Contents/Resources/shaders/fullscreen_quad.vert.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/sprite.vert.hlsl                -o MyApp.app/Contents/Resources/shaders/sprite.vert.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/shadow_unanimated.vert.hlsl     -o MyApp.app/Contents/Resources/shaders/shadow_unanimated.vert.msl
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/shadow.frag.hlsl                -o MyApp.app/Contents/Resources/shaders/shadow.frag.msl
 
     # if for some reason, you can't use shadercross, you *theoretically* can use the underlying tools
     # HOWEVER, they DO NOT work with structured buffers, so good luck with that!

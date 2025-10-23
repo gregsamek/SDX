@@ -62,7 +62,7 @@ Vertex_Output main(Vertex_Input vertex)
     skin_matrix += joint_matrix_buffer[index2] * vertex.bone_weights.z;
     skin_matrix += joint_matrix_buffer[index3] * vertex.bone_weights.w;
 
-    // Skin position
+    // Skinned position
     float4 skinned_position_worldspace = mul(skin_matrix, float4(vertex.position, 1.0f));
     output.skinned_position_clipspace = mul(mvp, skinned_position_worldspace);
 

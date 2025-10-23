@@ -22,11 +22,11 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize unanimated PBR pipeline!");
         return false;
     }
-    if (!Pipeline_PBR_Animated_Init())
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bone animated pipeline!");
-        return false;
-    }
+    // if (!Pipeline_PBR_Animated_Init())
+    // {
+    //     SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bone animated pipeline!");
+    //     return false;
+    // }
     if (!Pipeline_Text_Init())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize text pipeline!");
@@ -40,6 +40,11 @@ bool Pipeline_Init()
     if (!Pipeline_Sprite_Init())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize sprite pipeline!");
+        return false;
+    }
+    if (!Pipeline_ShadowDepth_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize shadow depth pipeline!");
         return false;
     }
     return true;
@@ -319,10 +324,10 @@ bool Pipeline_PBR_Unanimated_Init()
     (
         gpu_device,
         "pbr_alphatest.frag", // Base filename
-        3, // num_samplers
+        4, // num_samplers
         0, // num_storage_textures
         1, // num_storage_buffers
-        2  // num_uniform_buffers
+        3  // num_uniform_buffers
     );
     if (fragment_shader == NULL)
     {
@@ -881,6 +886,128 @@ bool Pipeline_Sprite_Init()
 
     SDL_ReleaseGPUShader(gpu_device, vertex_shader);
     SDL_ReleaseGPUShader(gpu_device, fragment_shader);
+
+    return true;
+}
+
+bool Pipeline_ShadowDepth_Init()
+{
+    SDL_GPUShader* vertex_shader = Shader_Load
+    (
+        gpu_device,
+        "shadow_unanimated.vert", // Base filename
+        0, // num_samplers
+        0, // num_storage_textures
+        0, // num_storage_buffers
+        1  // num_uniform_buffers
+    );
+    if (vertex_shader == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to load vertex shader!");
+        return false;
+    }
+
+    // TODO fragment shader cannot be NULL, need to create a minimal shader that matches the input of the vertex shader
+    SDL_GPUShader* fragment_shader = Shader_Load
+    (
+        gpu_device,
+        "shadow.frag", // Base filename
+        0, // num_samplers
+        0, // num_storage_textures
+        0, // num_storage_buffers
+        0  // num_uniform_buffers
+    );
+    if (fragment_shader == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to load fragment shader!");
+        return false;
+    }
+
+    SDL_GPUGraphicsPipelineCreateInfo pipeline_create_info =
+    {
+        .target_info =
+        {
+            .num_color_targets = 0,
+            .has_depth_stencil_target = true,
+            .depth_stencil_format = shadow_map_texture_format
+        },
+        .depth_stencil_state = (SDL_GPUDepthStencilState)
+        {
+            .enable_depth_test = true,
+            .enable_depth_write = true,
+            .enable_stencil_test = false,
+            .compare_op = SDL_GPU_COMPAREOP_LESS,
+        },
+        .rasterizer_state = (SDL_GPURasterizerState)
+        {
+            .cull_mode = SDL_GPU_CULLMODE_BACK,
+            .fill_mode = SDL_GPU_FILLMODE_FILL,
+            .front_face = SDL_GPU_FRONTFACE_CLOCKWISE,
+            .depth_bias_constant_factor = 1.25f,
+            .depth_bias_clamp = 0.0f,
+            .depth_bias_slope_factor = 1.75f,
+            .enable_depth_bias = true,
+            .enable_depth_clip = true
+        },
+        .vertex_input_state = (SDL_GPUVertexInputState)
+        {
+            .num_vertex_buffers = 1,
+            .vertex_buffer_descriptions = (SDL_GPUVertexBufferDescription[])
+            {
+                {
+                    .slot = 0,
+                    .input_rate = SDL_GPU_VERTEXINPUTRATE_VERTEX,
+                    .pitch = sizeof(Vertex_PBR) // MUST MATCH LOADED VERTEX DATA
+                }
+            },  
+            .num_vertex_attributes = 4,
+            .vertex_attributes = (SDL_GPUVertexAttribute[])
+            {
+                {   // position: TEXCOORD0
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                    .location = 0,
+                    .offset = offsetof(Vertex_PBR, x)
+                },
+                {   // normal: TEXCOORD1
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT3,
+                    .location = 1,
+                    .offset = offsetof(Vertex_PBR, nx)
+                },
+                {   // texture coordinate: TEXCOORD2
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT2,
+                    .location = 2,
+                    .offset = offsetof(Vertex_PBR, u)
+                },
+                {
+                    // tangent: TEXCOORD3
+                    .buffer_slot = 0,
+                    .format = SDL_GPU_VERTEXELEMENTFORMAT_FLOAT4,
+                    .location = 3,
+                    .offset = offsetof(Vertex_PBR, tx)
+                }
+            }
+        },
+        .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        .vertex_shader = vertex_shader,
+        .fragment_shader = fragment_shader,
+        .multisample_state = (SDL_GPUMultisampleState) { .sample_count = SDL_GPU_SAMPLECOUNT_1 }
+    };
+    if (pipeline_shadow_depth)
+    {
+        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_shadow_depth);
+        pipeline_shadow_depth = NULL;
+    }
+    pipeline_shadow_depth = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
+    if (pipeline_shadow_depth == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create pipeline: %s", SDL_GetError());
+        return false;
+    }
+
+    SDL_ReleaseGPUShader(gpu_device, vertex_shader);
 
     return true;
 }

@@ -1,6 +1,7 @@
 #include "events.h"
 #include "globals.h"
 #include "audio.h"
+#include "camera.h"
 
 
 SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
@@ -73,6 +74,15 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             else if (event->key.scancode == SDL_SCANCODE_TAB)
             {
                 SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
+            }
+            else if (event->key.scancode == SDL_SCANCODE_M)
+            {
+                magic_debug_mode = !magic_debug_mode;
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Magic Debug Mode %s", magic_debug_mode ? "Enabled" : "Disabled");
+            }
+            else if(event->key.scancode == SDL_SCANCODE_P)
+            {
+                Camera_Log();
             }
         } break;
     }

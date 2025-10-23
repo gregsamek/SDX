@@ -25,6 +25,7 @@ Struct (TransformsUBO)
 {
     mat4 mvp; // VP * M
     mat4 mv;  // V * M
+	mat4 mvp_light; // light VP * M
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
 	mat4 normal; // upper-left 3x3 is the normal matrix, rest identity
 #endif

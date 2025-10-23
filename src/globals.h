@@ -9,12 +9,15 @@
 #include "events.h"
 #include "text.h"
 #include "sprite.h"
+#include "lights.h"
 
 /*
     Maybe not the most logical place for this, 
     but globals.h is included in just about every .c file
 */
 #include "array.h"
+
+extern bool magic_debug_mode;
 
 extern float mouse_sensitivity;
 extern float movement_speed;
@@ -84,5 +87,20 @@ extern SDL_GPUBuffer* joint_matrix_storage_buffer;
 extern SDL_GPUTransferBuffer* joint_matrix_transfer_buffer;
 extern SDL_GPUBuffer* lights_storage_buffer;
 extern SDL_GPUTransferBuffer* lights_transfer_buffer;
+
+extern SDL_GPUTexture* shadow_map_texture;
+extern SDL_GPUSampler* shadow_sampler;
+extern SDL_GPUGraphicsPipeline* pipeline_shadow_depth;
+extern SDL_GPUTextureFormat shadow_map_texture_format;
+extern Uint32 SHADOW_MAP_SIZE;
+extern float SHADOW_ORTHO_HALF;       // covers +-30m around focus
+extern float SHADOW_NEAR;
+extern float SHADOW_FAR;
+extern float SHADOW_BIAS;           // constant bias in depth compare space
+extern float SHADOW_PCF_RADIUS;        // in texels
+extern mat4 light_view_matrix;
+extern mat4 light_proj_matrix;
+extern mat4 light_viewproj_matrix;
+extern ShadowUBO shadow_ubo;
 
 #endif // GLOBALS_H

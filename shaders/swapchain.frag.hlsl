@@ -45,4 +45,8 @@ float4 main(FragmentInput input): SV_Target0
     color = saturate(color);
     color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR
     return float4(color, 1.0);
+    
+    // // // render debug texture
+    // float3 color = hdrTex.Sample(Sampler, input.TexCoord).r;
+    // return float4(color, 1.0);
 }

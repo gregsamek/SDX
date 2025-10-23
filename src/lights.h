@@ -1,6 +1,8 @@
 #ifndef LIGHTS_H
 #define LIGHTS_H
 
+#define CGLM_FORCE_DEPTH_ZERO_TO_ONE
+#define CGLM_FORCE_LEFT_HANDED
 #include "../external/cglm/cglm.h"
 #include "helper.h"
 
@@ -34,6 +36,7 @@ Struct (Light_Spotlight)
     float _padding[3]; // pad to vec4 size
 };
 
+// used in hemispheric (pseudo-IBL) lighting
 Struct (Light_Hemisphere)
 {
     vec3 up_viewspace;
@@ -44,7 +47,14 @@ Struct (Light_Hemisphere)
     float _padding3;
 };
 
-bool Lights_StorageBuffer_UpdateAndUpload();
+Struct (ShadowUBO) 
+{
+    vec2 texel_size; // 1/width, 1/height
+    float bias;
+    float pcf_radius; // in texels
+};
 
+bool Lights_StorageBuffer_UpdateAndUpload();
+void ComputeDirectionalLightShadowMatrices(vec3 light_dir_world);
 
 #endif // LIGHTS_H

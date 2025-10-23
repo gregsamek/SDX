@@ -43,5 +43,37 @@ bool Sampler_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create sampler: %s", SDL_GetError());
         return false;
     }
+
+    if (shadow_sampler)
+    {
+        SDL_ReleaseGPUSampler(gpu_device, shadow_sampler);
+        shadow_sampler = NULL;
+    }
+    shadow_sampler = SDL_CreateGPUSampler
+    (
+        gpu_device,
+        &(SDL_GPUSamplerCreateInfo)
+        {
+            .min_filter = SDL_GPU_FILTER_NEAREST,//SDL_GPU_FILTER_LINEAR,
+            .mag_filter = SDL_GPU_FILTER_NEAREST,//SDL_GPU_FILTER_LINEAR,
+            .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
+            .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+            .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+            .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
+            .mip_lod_bias = 0.0f,
+            .max_anisotropy = 1.0f,
+            .compare_op = SDL_GPU_COMPAREOP_INVALID, // manual compare in shader
+            .min_lod = 0.0f,
+            .max_lod = 0.0f,
+            .enable_anisotropy = false,
+            .enable_compare = false,
+        }
+    );
+    if (!shadow_sampler)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create shadow sampler: %s", SDL_GetError());
+        return false;
+    }
+
     return true;
 }

@@ -2,6 +2,8 @@
 
 #include "globals.h"
 
+bool magic_debug_mode = false;
+
 float mouse_sensitivity = 0.1f;
 float movement_speed = 10.0f; // Units per second
 
@@ -32,12 +34,12 @@ Sprite Array sprites = NULL;
 float input_deadzone_squared = 0.001f;
 Camera camera =
 {
-    .position = {0.0f, 2.5f, -3.0f},
+    .position = {6.0f, 2.5f, 5.5f},
     .forward = {0},
     .up = {0},
     .right = {0},
-    .yaw = 90.0f,
-    .pitch = -30.0f,
+    .yaw = 222.0f,
+    .pitch = -15.0f,
     .fov = 75.0f,
     .near_plane = 0.1f,
     .far_plane = 1000.0f,
@@ -78,3 +80,18 @@ SDL_GPUBuffer* joint_matrix_storage_buffer = NULL;
 SDL_GPUTransferBuffer* joint_matrix_transfer_buffer = NULL;
 SDL_GPUBuffer* lights_storage_buffer = NULL;
 SDL_GPUTransferBuffer* lights_transfer_buffer = NULL;
+
+SDL_GPUTexture* shadow_map_texture = NULL;
+SDL_GPUSampler* shadow_sampler = NULL;
+SDL_GPUGraphicsPipeline* pipeline_shadow_depth = NULL;
+SDL_GPUTextureFormat shadow_map_texture_format = SDL_GPU_TEXTUREFORMAT_INVALID;
+Uint32 SHADOW_MAP_SIZE = 1024;         // 1024 or 2048 works well
+float SHADOW_ORTHO_HALF = 30.0f;       // covers +-30m around focus
+float SHADOW_NEAR = 0.001f;
+float SHADOW_FAR  = 150.0f;
+float SHADOW_BIAS = 0.0015f;           // constant bias in depth compare space
+float SHADOW_PCF_RADIUS = 1.5f;        // in texels
+mat4 light_view_matrix = {0};
+mat4 light_proj_matrix = {0};
+mat4 light_viewproj_matrix = {0};
+ShadowUBO shadow_ubo = {0};

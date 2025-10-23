@@ -143,9 +143,35 @@ bool Render_InitRenderTargets()
 	);
 	if (depth_texture == NULL)
 	{
-		SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to recreate depth texture: %s", SDL_GetError());
+		SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create depth texture: %s", SDL_GetError());
 		return false;
 	}
+
+    if (shadow_map_texture)
+    {
+        SDL_ReleaseGPUTexture(gpu_device, shadow_map_texture);
+    }
+    shadow_map_texture = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .format = shadow_map_texture_format,
+            .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
+            .width = SHADOW_MAP_SIZE,
+            .height = SHADOW_MAP_SIZE,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+        }
+    );
+    if (shadow_map_texture == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create shadow map texture: %s", SDL_GetError());
+        return false;
+    }
+    shadow_ubo = (ShadowUBO){.texel_size = {1.0f / (float)SHADOW_MAP_SIZE, 1.0f / (float)SHADOW_MAP_SIZE}, .bias = SHADOW_BIAS, .pcf_radius = SHADOW_PCF_RADIUS};
     
     if (msaa_texture)
     {
@@ -168,7 +194,7 @@ bool Render_InitRenderTargets()
     );
     if (msaa_texture == NULL)
     {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to recreate MSAA texture: %s", SDL_GetError());
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create MSAA texture: %s", SDL_GetError());
         return false;
     }
 
@@ -237,6 +263,66 @@ bool Render_Init()
 
 ////////// FRAME RENDERING /////////////
 
+static void Render_Unanimated_Shadow(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer, mat4 light_viewproj_matrix)
+{
+    if (!Array_Len(models_unanimated)) return;
+
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_shadow_depth);
+
+    for (size_t i = 0; i < Array_Len(models_unanimated); i++)
+    {
+        // TODO implement model matrix per model
+        mat4 model_matrix;
+        glm_mat4_identity(model_matrix);
+        
+        mat4 mvp_matrix;
+        glm_mat4_mul(light_viewproj_matrix, model_matrix, mvp_matrix);
+
+        SDL_PushGPUVertexUniformData
+        (
+            command_buffer, 
+            0, // uniform buffer slot
+            &mvp_matrix, 
+            sizeof(mat4)
+        );
+        
+        SDL_BindGPUVertexBuffers
+        (
+            render_pass, 
+            0, // vertex buffer slot
+            (SDL_GPUBufferBinding[])
+            {
+                { 
+                    .buffer = models_unanimated[i].mesh.vertex_buffer, 
+                    .offset = 0 
+                },
+            }, 
+            1 // vertex buffer count
+        );            
+        
+        SDL_BindGPUIndexBuffer
+        (
+            render_pass, 
+            &(SDL_GPUBufferBinding)
+            { 
+                .buffer = models_unanimated[i].mesh.index_buffer, 
+                .offset = 0 
+            }, 
+            SDL_GPU_INDEXELEMENTSIZE_16BIT
+        );
+
+        SDL_DrawGPUIndexedPrimitives
+        (
+            render_pass,
+            (Uint32)models_unanimated[i].mesh.index_count, // num_indices
+            1,  // num_instances
+            0,  // first_index
+            0,  // vertex_offset
+            0   // first_instance
+        );
+    }
+}
+
 static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
 {
     if (!Array_Len(models_unanimated)) return;
@@ -254,10 +340,14 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         
         mat4 mvp_matrix;
         glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
+
+        mat4 light_mvp_model;
+        glm_mat4_mul(light_viewproj_matrix, model_matrix, light_mvp_model);
         
         TransformsUBO transforms = {0};
         glm_mat4_copy(mvp_matrix, transforms.mvp);
         glm_mat4_copy(mv_matrix, transforms.mv);
+        glm_mat4_copy(light_mvp_model, transforms.mvp_light);
 
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
         // normal matrix = inverse-transpose of the upper-left 3x3 of mv
@@ -315,8 +405,9 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
                 { .texture = texture_diffuse,  .sampler = default_texture_sampler },
                 { .texture = texture_metallic_roughness, .sampler = default_texture_sampler },
                 { .texture = texture_normal, .sampler = default_texture_sampler },
+                { .texture = shadow_map_texture, .sampler = shadow_sampler },
             },
-            3 // num_bindings
+            4 // num_bindings
         );
 
         SDL_DrawGPUIndexedPrimitives
@@ -621,6 +712,62 @@ bool Render()
         return false;
     }
 
+    // Update Directional Light
+
+    vec3 light_direction_world = {-1.0f, -0.5f, 0.0f};
+    vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
+    vec4 light_direction_viewspace_4;
+    glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
+    vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
+    glm_vec3_normalize(light_direction_viewspace);
+
+    Light_Directional light_directional = 
+    {
+        .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
+        .strength = 1.0f,
+        .color = {1.0f, 1.0f, 1.0f},
+    };
+
+    if (!magic_debug_mode)
+        ComputeDirectionalLightShadowMatrices(light_direction_world);
+
+    // Shadow Pass
+
+    SDL_GPUDepthStencilTargetInfo shadow_target = 
+    {
+        .texture = shadow_map_texture,
+        .clear_depth = 1.0f,
+        .clear_stencil = 0,
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .store_op = SDL_GPU_STOREOP_STORE,
+        .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
+        .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
+        .cycle = true
+    };
+
+    SDL_GPURenderPass* shadow_pass = SDL_BeginGPURenderPass
+    (
+        command_buffer_draw,
+        NULL, 
+        0,
+        &shadow_target
+    );
+    if (shadow_pass)
+    {
+        SDL_SetGPUViewport(shadow_pass, &(SDL_GPUViewport)
+        {
+            .x = 0, .y = 0,
+            .w = (float)SHADOW_MAP_SIZE, .h = (float)SHADOW_MAP_SIZE,
+            .min_depth = 0.0f, .max_depth = 1.0f
+        });
+
+        Render_Unanimated_Shadow(shadow_pass, command_buffer_draw, light_viewproj_matrix);
+
+        SDL_EndGPURenderPass(shadow_pass);
+    }
+
+    // Main Pass
+
     SDL_GPUColorTargetInfo virtual_target_info = 
     {
         .texture = virtual_screen_texture,
@@ -687,24 +834,7 @@ bool Render()
         1 // storage buffer count
     );
 
-    // constant directional light
-    {        
-        vec3 light_direction_world = {10.0f, -10.0f, 10.0f};
-        vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
-        vec4 light_direction_viewspace_4;
-        glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
-        vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
-        glm_vec3_normalize(light_direction_viewspace);
-
-        Light_Directional light_directional = 
-        {
-            .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
-            .strength = 1.0f,
-            .color = {1.0f, 1.0f, 1.0f},
-        };
-
-        SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &light_directional, sizeof(light_directional));
-    }
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &light_directional, sizeof(light_directional));
 
     {
         vec4 world_up_4 = { 0.0f, 1.0f, 0.0f, 0.0f };
@@ -716,12 +846,14 @@ bool Render()
         Light_Hemisphere light_hemisphere = 
         {
             .up_viewspace = {view_up[0], view_up[1], view_up[2]},
-            .color_sky = {0.9f, 0.9f, 0.9f},
+            .color_sky = {0.2f, 0.2f, 0.2f},
             .color_ground = {0.1f, 0.1f, 0.1f},
         };
 
         SDL_PushGPUFragmentUniformData(command_buffer_draw, 1, &light_hemisphere, sizeof(light_hemisphere));
     }
+
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 2, &shadow_ubo, sizeof(shadow_ubo));
     
     Render_Unanimated(virtual_render_pass, command_buffer_draw);
 
@@ -806,7 +938,9 @@ bool Render()
         &(SDL_GPUTextureSamplerBinding)
         { 
             .texture = virtual_screen_texture, 
+            // .texture = shadow_map_texture,
             .sampler = default_texture_sampler 
+            // .sampler = shadow_sampler
         }, 
         1 // num_bindings
     );
