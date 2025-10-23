@@ -738,7 +738,7 @@ bool Pipeline_Swapchain_Init()
         1, // num_samplers (for the single texture)
         0, // num_storage_textures
         0, // num_storage_buffers
-        0  // num_uniform_buffers
+        1  // num_uniform_buffers
     );
     if (fragment_shader == NULL)
     {
@@ -940,7 +940,7 @@ bool Pipeline_ShadowDepth_Init()
         },
         .rasterizer_state = (SDL_GPURasterizerState)
         {
-            .cull_mode = SDL_GPU_CULLMODE_BACK,
+            .cull_mode = SDL_GPU_CULLMODE_BACK, // TODO consider front face culling for shadow maps if peter panning becomes an issue
             .fill_mode = SDL_GPU_FILLMODE_FILL,
             .front_face = SDL_GPU_FRONTFACE_CLOCKWISE,
             .depth_bias_constant_factor = 1.25f,

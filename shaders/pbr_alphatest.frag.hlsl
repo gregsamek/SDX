@@ -59,13 +59,13 @@ cbuffer Shadow_Uniform : register(b2, space3)
 
 struct Fragment_Input
 {
-    float4 position_clipspace : SV_Position;
+    float4 position_clipspace_camera : SV_Position;
     float3 position_viewspace : TEXCOORD0;
     float3 normal_viewspace   : TEXCOORD1;
     float2 texture_coordinate : TEXCOORD2;
     float3 tangent_viewspace  : TEXCOORD3;
     float3 bitangent_viewspace: TEXCOORD4;
-    float4 shadow_position_clip : TEXCOORD5;
+    float4 position_clipspace_light : TEXCOORD5;
 };
 
 struct Fragment_Output
@@ -104,16 +104,15 @@ float3 Fresnel_Schlick_Roughness(float NdotV, float3 F0, float roughness)
     return F0 + (max(float3((1.0 - roughness).xxx), F0) - F0) * pow(saturate(1.0 - NdotV), 5.0);
 }
 
-float ShadowFactor(float4 shadow_pos_clip)
+float ShadowFactor(float4 position_clipspace_light)
 {
-    // Project to NDC and then to UV (0..1), also map depth to 0..1
-    float3 ndc = shadow_pos_clip.xyz / max(shadow_pos_clip.w, 1e-7f);
+    float3 ndc = position_clipspace_light.xyz / max(position_clipspace_light.w, 1e-7f);
     float2 uv  = ndc.xy * 0.5f + 0.5f;
     uv.y = 1.0f - uv.y;
-    float depth = ndc.z;
+    float fragment_depth = ndc.z;
 
     // If outside shadow map or behind far plane, consider fully lit
-    if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f || depth > 1.0f)
+    if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f || fragment_depth > 1.0f)
         return 1.0f;
 
     // 3x3 PCF
@@ -127,9 +126,7 @@ float ShadowFactor(float4 shadow_pos_clip)
         {
             float2 offset = float2((float)x, (float)y) * shadow_texel_size;
             float map_depth = shadow_map.Sample(sampler_shadow, uv + offset).r; // read depth
-            // sum += (depth + shadow_bias) >= map_depth ? 1.0f : 0.0f;
-            sum += depth <= (map_depth + shadow_bias) ? 1.0f : 0.0f;
-
+            sum += (fragment_depth <= (map_depth + shadow_bias)) * 1.0f;
         }
     }
 
@@ -197,7 +194,7 @@ Fragment_Output main(Fragment_Input fragment)
 
     float3 direct_dir = (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
 
-    float shadow = ShadowFactor(fragment.shadow_position_clip);
+    float shadow = ShadowFactor(fragment.position_clipspace_light);
     Lo += direct_dir * shadow;
 
     // Spotlights

@@ -8,6 +8,12 @@
     #define CLIP_TEST(v)  if (any((v) < 0)) discard
 #endif
 
+#define MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE 1
+
+cbuffer Settings_Uniform : register(b0, space3)
+{
+    uint magic_debug;
+};
 
 Texture2D hdrTex : register(t0, space2);
 SamplerState Sampler : register(s0, space2);
@@ -38,15 +44,20 @@ float3 linear_to_srgb(float3 c)
 
 float4 main(FragmentInput input): SV_Target0
 {
-    const float exposure = 1.0; // Adjust exposure as needed
-    float3 hdr = hdrTex.Sample(Sampler, input.TexCoord).rgb;
-    float3 color = hdr * exposure;
-    // color = reinhardTonemap(color);
-    color = saturate(color);
-    color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR
-    return float4(color, 1.0);
+    if (magic_debug & MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE)
+    {
+        float3 color = hdrTex.Sample(Sampler, input.TexCoord).r;
+        return float4(color, 1.0);
+    }
+    else
+    {
+        const float exposure = 1.0; // Adjust exposure as needed
+        float3 hdr = hdrTex.Sample(Sampler, input.TexCoord).rgb;
+        float3 color = hdr * exposure;
+        // color = reinhardTonemap(color);
+        color = saturate(color);
+        color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR
+        return float4(color, 1.0);
+    }
     
-    // // // render debug texture
-    // float3 color = hdrTex.Sample(Sampler, input.TexCoord).r;
-    // return float4(color, 1.0);
 }

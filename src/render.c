@@ -275,14 +275,14 @@ static void Render_Unanimated_Shadow(SDL_GPURenderPass* render_pass, SDL_GPUComm
         mat4 model_matrix;
         glm_mat4_identity(model_matrix);
         
-        mat4 mvp_matrix;
-        glm_mat4_mul(light_viewproj_matrix, model_matrix, mvp_matrix);
+        mat4 light_mvp_matrix;
+        glm_mat4_mul(light_viewproj_matrix, model_matrix, light_mvp_matrix);
 
         SDL_PushGPUVertexUniformData
         (
             command_buffer, 
             0, // uniform buffer slot
-            &mvp_matrix, 
+            &light_mvp_matrix, 
             sizeof(mat4)
         );
         
@@ -341,6 +341,7 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         mat4 mvp_matrix;
         glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
 
+        // TODO we already calculated this in shadow pass; cache it
         mat4 light_mvp_model;
         glm_mat4_mul(light_viewproj_matrix, model_matrix, light_mvp_model);
         
@@ -714,7 +715,7 @@ bool Render()
 
     // Update Directional Light
 
-    vec3 light_direction_world = {-1.0f, -0.5f, 0.0f};
+    vec3 light_direction_world = {-1.0f, -0.0f, 0.0f};
     vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
     vec4 light_direction_viewspace_4;
     glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
@@ -728,8 +729,7 @@ bool Render()
         .color = {1.0f, 1.0f, 1.0f},
     };
 
-    if (!magic_debug_mode)
-        ComputeDirectionalLightShadowMatrices(light_direction_world);
+    Lights_UpdateShadowMatrices_Directional(light_direction_world);
 
     // Shadow Pass
 
@@ -752,19 +752,25 @@ bool Render()
         0,
         &shadow_target
     );
-    if (shadow_pass)
+    if (!shadow_pass)
     {
-        SDL_SetGPUViewport(shadow_pass, &(SDL_GPUViewport)
-        {
-            .x = 0, .y = 0,
-            .w = (float)SHADOW_MAP_SIZE, .h = (float)SHADOW_MAP_SIZE,
-            .min_depth = 0.0f, .max_depth = 1.0f
-        });
-
-        Render_Unanimated_Shadow(shadow_pass, command_buffer_draw, light_viewproj_matrix);
-
-        SDL_EndGPURenderPass(shadow_pass);
+        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin shadow pass: %s", SDL_GetError());
+        SDL_CancelGPUCommandBuffer(command_buffer_draw);
+        return true;
     }
+    
+    SDL_SetGPUViewport(shadow_pass, &(SDL_GPUViewport)
+    {
+        .x = 0, .y = 0,
+        .w = (float)SHADOW_MAP_SIZE, .h = (float)SHADOW_MAP_SIZE,
+        .min_depth = 0.0f, .max_depth = 1.0f
+    });
+
+    Render_Unanimated_Shadow(shadow_pass, command_buffer_draw, light_viewproj_matrix);
+
+    // TODO add bone animated shadow rendering (need a different vert shader)
+
+    SDL_EndGPURenderPass(shadow_pass);
 
     // Main Pass
 
@@ -807,24 +813,20 @@ bool Render()
 
     if (!virtual_render_pass)
     {
-        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin render pass: %s", SDL_GetError());
+        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin virtual render pass: %s", SDL_GetError());
         SDL_CancelGPUCommandBuffer(command_buffer_draw);
         return true;
     }
 
-    SDL_SetGPUViewport
-    (
-        virtual_render_pass, 
-        &(SDL_GPUViewport)
-        { 
-            .x = 0, 
-            .y = 0,
-            .w = (int)virtual_screen_texture_width, 
-            .h = (int)virtual_screen_texture_height,
-            .min_depth = 0.0f, 
-            .max_depth = 1.0f
-        }
-    );
+    SDL_SetGPUViewport(virtual_render_pass, &(SDL_GPUViewport)
+    { 
+        .x = 0, 
+        .y = 0,
+        .w = (int)virtual_screen_texture_width, 
+        .h = (int)virtual_screen_texture_height,
+        .min_depth = 0.0f, 
+        .max_depth = 1.0f
+    });
 
     SDL_BindGPUFragmentStorageBuffers
     (
@@ -859,6 +861,8 @@ bool Render()
 
     Render_BoneAnimated(virtual_render_pass, command_buffer_draw);
 
+    Render_Sprite(virtual_render_pass, command_buffer_draw);
+
     // TODO need to overhaul text rendering
     if (text_renderable.vertex_buffer && text_renderable.index_buffer)
     {
@@ -868,8 +872,6 @@ bool Render()
             return true;
         }
     }
-
-    Render_Sprite(virtual_render_pass, command_buffer_draw);
 
     SDL_EndGPURenderPass(virtual_render_pass);
 
@@ -920,7 +922,7 @@ bool Render()
 
     if (!swapchain_render_pass)
     {
-        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin render pass: %s", SDL_GetError());
+        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin swapchain render pass: %s", SDL_GetError());
         SDL_CancelGPUCommandBuffer(command_buffer_draw);
         return true;
     }
@@ -931,17 +933,25 @@ bool Render()
     glm_ortho(0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, projection_matrix_ortho);
     SDL_PushGPUVertexUniformData(command_buffer_draw, 0, &projection_matrix_ortho, sizeof(projection_matrix_ortho));
 
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &magic_debug, sizeof(magic_debug));
+
+    SDL_GPUTextureSamplerBinding fullscreen_texture_binding = 
+    { 
+        .texture = virtual_screen_texture, 
+        .sampler = default_texture_sampler 
+    };
+
+    if (magic_debug & MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE)
+    {
+        fullscreen_texture_binding.texture = shadow_map_texture;
+        fullscreen_texture_binding.sampler = shadow_sampler;
+    }
+
     SDL_BindGPUFragmentSamplers
     (
         swapchain_render_pass, 
         0, // fragment sampler slot
-        &(SDL_GPUTextureSamplerBinding)
-        { 
-            .texture = virtual_screen_texture, 
-            // .texture = shadow_map_texture,
-            .sampler = default_texture_sampler 
-            // .sampler = shadow_sampler
-        }, 
+        &fullscreen_texture_binding, 
         1 // num_bindings
     );
 

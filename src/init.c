@@ -155,7 +155,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         &(SDL_GPUBufferCreateInfo)
         {
             .usage = SDL_GPU_BUFFERUSAGE_GRAPHICS_STORAGE_READ,
-            .size = MAX_TOTAL_LIGHTS * sizeof(Light_Spotlight)
+            .size = MAX_TOTAL_LIGHTS * sizeof(Light_Spot)
         }
     );
     if (lights_storage_buffer == NULL)

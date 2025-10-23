@@ -2,7 +2,7 @@
 
 #include "globals.h"
 
-bool magic_debug_mode = false;
+Magic_Debug magic_debug = 0;
 
 float mouse_sensitivity = 0.1f;
 float movement_speed = 10.0f; // Units per second

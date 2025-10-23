@@ -54,8 +54,8 @@ bool Sampler_Init()
         gpu_device,
         &(SDL_GPUSamplerCreateInfo)
         {
-            .min_filter = SDL_GPU_FILTER_NEAREST,//SDL_GPU_FILTER_LINEAR,
-            .mag_filter = SDL_GPU_FILTER_NEAREST,//SDL_GPU_FILTER_LINEAR,
+            .min_filter = SDL_GPU_FILTER_NEAREST,
+            .mag_filter = SDL_GPU_FILTER_NEAREST,
             .mipmap_mode = SDL_GPU_SAMPLERMIPMAPMODE_NEAREST,
             .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,
             .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_CLAMP_TO_EDGE,

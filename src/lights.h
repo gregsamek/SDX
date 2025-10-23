@@ -24,7 +24,7 @@ Struct (Light_Point)
     float attenuation_constant_quadratic;
 };
 
-Struct (Light_Spotlight)
+Struct (Light_Spot)
 {
     vec3 position;
     float attenuation_constant_linear; 
@@ -55,6 +55,6 @@ Struct (ShadowUBO)
 };
 
 bool Lights_StorageBuffer_UpdateAndUpload();
-void ComputeDirectionalLightShadowMatrices(vec3 light_dir_world);
+void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world);
 
 #endif // LIGHTS_H

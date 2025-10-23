@@ -77,10 +77,10 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             }
             else if (event->key.scancode == SDL_SCANCODE_M)
             {
-                magic_debug_mode = !magic_debug_mode;
-                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Magic Debug Mode %s", magic_debug_mode ? "Enabled" : "Disabled");
+                magic_debug = !magic_debug;
+                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Magic Debug Mode %s", magic_debug ? "Enabled" : "Disabled");
             }
-            else if(event->key.scancode == SDL_SCANCODE_P)
+            else if(event->key.scancode == SDL_SCANCODE_C)
             {
                 Camera_Log();
             }

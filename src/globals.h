@@ -11,13 +11,15 @@
 #include "sprite.h"
 #include "lights.h"
 
-/*
-    Maybe not the most logical place for this, 
-    but globals.h is included in just about every .c file
-*/
 #include "array.h"
 
-extern bool magic_debug_mode;
+Enum (Uint32, Magic_Debug)
+{
+    MAGIC_DEBUG_NONE                 = 0,
+    MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE = 1 << 0,
+};
+
+extern Magic_Debug magic_debug;
 
 extern float mouse_sensitivity;
 extern float movement_speed;
