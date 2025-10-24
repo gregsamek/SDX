@@ -84,6 +84,14 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             {
                 Camera_Log();
             }
+            else if (event->key.scancode == SDL_SCANCODE_L)
+            {
+                SDL_Log("Light View-Projection Matrix:\n");
+                for (int i = 0; i < 4; i++)
+                {
+                    SDL_Log("%f %f %f %f\n", light_viewproj_matrix[i][0], light_viewproj_matrix[i][1], light_viewproj_matrix[i][2], light_viewproj_matrix[i][3]);
+                }
+            }
         } break;
     }
     return true;

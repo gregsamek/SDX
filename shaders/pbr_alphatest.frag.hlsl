@@ -125,7 +125,7 @@ float ShadowFactor(float4 position_clipspace_light)
         for (int x = -radius; x <= radius; x++)
         {
             float2 offset = float2((float)x, (float)y) * shadow_texel_size;
-            float map_depth = shadow_map.Sample(sampler_shadow, uv + offset).r; // read depth
+            float map_depth = shadow_map.SampleLevel(sampler_shadow, uv + offset, 0.0).r; // read depth
             sum += (fragment_depth <= (map_depth + shadow_bias)) * 1.0f;
         }
     }
@@ -194,12 +194,12 @@ Fragment_Output main(Fragment_Input fragment)
 
     float3 direct_dir = (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
 
-    float shadow = ShadowFactor(fragment.position_clipspace_light);
-    Lo += direct_dir * shadow;
+    // float shadow = ShadowFactor(fragment.position_clipspace_light);
+    Lo += direct_dir;// * shadow;
 
     // Spotlights
 
-    for (int i = 0; i < 0; i++) // TODO: number of active lights as uniform
+    for (int i = 0; i < 1; i++) // TODO: number of active lights as uniform
     {
         Light_Spotlight light = buffer_spotlights[i];
 
@@ -213,7 +213,7 @@ Fragment_Output main(Fragment_Input fragment)
         // assume we are given the normalized direction the light is coming FROM
         float theta = dot(L, -light.direction);
         float epsilon = light.cutoff_inner - light.cutoff_outer;
-        float intensity = saturate((theta - light.cutoff_outer) / epsilon);
+        float intensity = saturate((theta - light.cutoff_outer) / epsilon + 1e-7f);
 
         float3 radiance_spot = light.color * intensity * attenuation;
 
@@ -232,7 +232,8 @@ Fragment_Output main(Fragment_Input fragment)
         float3 kS_spot = F_spot;
         float3 kD_spot = (1.0f.xxx - kS_spot) * (1.0f - metallic);
 
-        Lo += (kD_spot * albedo.rgb / 3.14159265f + specular_spot) * radiance_spot * NdotL;
+        float3 light_spot = (kD_spot * albedo.rgb / 3.14159265f + specular_spot) * radiance_spot * NdotL;
+        Lo += light_spot * ShadowFactor(fragment.position_clipspace_light);
     }
     
     // Hemispheric diffuse (indirect diffuse)
@@ -265,6 +266,10 @@ Fragment_Output main(Fragment_Input fragment)
     Lo += diffuse_ambient + specular_ambient;
 
     output.color = float4(Lo, albedo.a);
+
+    // debug shadow map
+    // output.color = float4(ShadowFactor(fragment.position_clipspace_light).xxx, 1.0f);
+    
     return output;
 }
 

@@ -263,7 +263,7 @@ bool Render_Init()
 
 ////////// FRAME RENDERING /////////////
 
-static void Render_Unanimated_Shadow(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer, mat4 light_viewproj_matrix)
+static void Render_Unanimated_Shadow(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
 {
     if (!Array_Len(models_unanimated)) return;
 
@@ -725,11 +725,27 @@ bool Render()
     Light_Directional light_directional = 
     {
         .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
-        .strength = 1.0f,
+        .strength = 0.0f,
         .color = {1.0f, 1.0f, 1.0f},
     };
+    // Lights_UpdateShadowMatrices_Directional(light_direction_world);
+    
+    {
+        vec3 light_position_world = {8.0f, 0.0f, 8.0f};
+        vec3 light_target_world   = {0.0f, 0.0f, 0.0f};
 
-    Lights_UpdateShadowMatrices_Directional(light_direction_world);
+        vec3 light_direction_world;
+        glm_vec3_sub(light_target_world, light_position_world, light_direction_world);
+        glm_vec3_normalize(light_direction_world);
+                
+        Lights_UpdateShadowMatrices_Spot(&(Light_Spot)
+        {
+            .position = { light_position_world[0], light_position_world[1], light_position_world[2] },
+            .direction = { light_direction_world[0], light_direction_world[1], light_direction_world[2] },
+            .cutoff_inner = SDL_cosf(glm_rad(45.0f)),
+            .cutoff_outer = SDL_cosf(glm_rad(45.0f))
+        });
+    }
 
     // Shadow Pass
 
@@ -766,7 +782,7 @@ bool Render()
         .min_depth = 0.0f, .max_depth = 1.0f
     });
 
-    Render_Unanimated_Shadow(shadow_pass, command_buffer_draw, light_viewproj_matrix);
+    Render_Unanimated_Shadow(shadow_pass, command_buffer_draw);
 
     // TODO add bone animated shadow rendering (need a different vert shader)
 

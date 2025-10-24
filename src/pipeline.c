@@ -943,7 +943,7 @@ bool Pipeline_ShadowDepth_Init()
             .cull_mode = SDL_GPU_CULLMODE_BACK, // TODO consider front face culling for shadow maps if peter panning becomes an issue
             .fill_mode = SDL_GPU_FILLMODE_FILL,
             .front_face = SDL_GPU_FRONTFACE_CLOCKWISE,
-            .depth_bias_constant_factor = 1.25f,
+            .depth_bias_constant_factor = 0.0f, // 1.25f,
             .depth_bias_clamp = 0.0f,
             .depth_bias_slope_factor = 1.75f,
             .enable_depth_bias = true,

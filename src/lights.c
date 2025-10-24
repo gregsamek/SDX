@@ -14,12 +14,12 @@ bool Lights_StorageBuffer_UpdateAndUpload()
         
         SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(command_buffer);
         
-        int active_lights_count = 3;
+        int active_lights_count = 1;
 
         Light_Spot* lights_mapped = (Light_Spot*)mapped;
         // light 1
         {
-            vec3 light_position_world = {0.0f, 5.0f, 5.0f};
+            vec3 light_position_world = {8.0f, 0.0f, 8.0f};
             vec3 light_target_world   = {0.0f, 0.0f, 0.0f};
 
             vec3 light_direction_world;
@@ -43,70 +43,11 @@ bool Lights_StorageBuffer_UpdateAndUpload()
                 .color = { 1.0f, 1.0f, 1.0f },
                 .attenuation_constant_quadratic = 0.0f,
                 .direction = { light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2] },
-                .cutoff_inner = SDL_cosf(glm_rad(180.0f)),
-                .cutoff_outer = SDL_cosf(glm_rad(180.0f))
+                .cutoff_inner = SDL_cosf(glm_rad(0.0f)),
+                .cutoff_outer = SDL_cosf(glm_rad(10.0f))
             };
         }
-        // light 2
-        {
-            vec3 light_position_world = {0.0f, 5.0f, -5.0f};
-            vec3 light_target_world   = {0.0f, 0.0f, 0.0f};
-
-            vec3 light_direction_world;
-            glm_vec3_sub(light_target_world, light_position_world, light_direction_world);
-            
-            vec4 light_position_world_4 = { light_position_world[0], light_position_world[1], light_position_world[2], 1.0f };
-            vec4 light_position_viewspace_4;
-            glm_mat4_mulv(camera.view_matrix, light_position_world_4, light_position_viewspace_4);
-            vec3 light_position_viewspace = { light_position_viewspace_4[0], light_position_viewspace_4[1], light_position_viewspace_4[2] };
-            
-            vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
-            vec4 light_direction_viewspace_4;
-            glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
-            vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
-            glm_vec3_normalize(light_direction_viewspace);
-            
-            lights_mapped[1] = (Light_Spot)
-            {
-                .position = { light_position_viewspace[0], light_position_viewspace[1], light_position_viewspace[2] },
-                .attenuation_constant_linear = 0.0f,
-                .color = { 1.0f, 1.0f, 1.0f },
-                .attenuation_constant_quadratic = 0.0f,
-                .direction = { light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2] },
-                .cutoff_inner = SDL_cosf(glm_rad(180.0f)),
-                .cutoff_outer = SDL_cosf(glm_rad(180.0f))
-            };
-        }
-        // light 3
-        {
-            vec3 light_position_world = {5.0f, 0.0f, 0.0f};
-            vec3 light_target_world   = {0.0f, 0.0f, 0.0f};
-
-            vec3 light_direction_world;
-            glm_vec3_sub(light_target_world, light_position_world, light_direction_world);
-            
-            vec4 light_position_world_4 = { light_position_world[0], light_position_world[1], light_position_world[2], 1.0f };
-            vec4 light_position_viewspace_4;
-            glm_mat4_mulv(camera.view_matrix, light_position_world_4, light_position_viewspace_4);
-            vec3 light_position_viewspace = { light_position_viewspace_4[0], light_position_viewspace_4[1], light_position_viewspace_4[2] };
-            
-            vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
-            vec4 light_direction_viewspace_4;
-            glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
-            vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
-            glm_vec3_normalize(light_direction_viewspace);
-            
-            lights_mapped[2] = (Light_Spot)
-            {
-                .position = { light_position_viewspace[0], light_position_viewspace[1], light_position_viewspace[2] },
-                .attenuation_constant_linear = 0.0f,
-                .color = { 1.0f, 1.0f, 1.0f },
-                .attenuation_constant_quadratic = 0.0f,
-                .direction = { light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2] },
-                .cutoff_inner = SDL_cosf(glm_rad(180.0f)),
-                .cutoff_outer = SDL_cosf(glm_rad(180.0f))
-            };
-        }
+        
         SDL_GPUTransferBufferLocation source = 
         {
             .transfer_buffer = lights_transfer_buffer,
@@ -133,7 +74,7 @@ bool Lights_StorageBuffer_UpdateAndUpload()
 
 void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world)
 {
-    glm_vec3_normalize(light_dir_world);
+    // glm_vec3_normalize(light_dir_world);
 
     mat4 inverse_camera_view;
     glm_mat4_inv(camera.view_matrix, inverse_camera_view);
@@ -156,9 +97,28 @@ void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world)
     glm_lookat(light_pos, focus, up, light_view_matrix);
 
     // Ortho projection covering a box around the focus point
-    glm_ortho(-SHADOW_ORTHO_HALF, SHADOW_ORTHO_HALF,
-              -SHADOW_ORTHO_HALF, SHADOW_ORTHO_HALF,
+    glm_ortho(-SHADOW_ORTHO_HALF_WIDTH, SHADOW_ORTHO_HALF_WIDTH,
+              -SHADOW_ORTHO_HALF_WIDTH, SHADOW_ORTHO_HALF_WIDTH,
               SHADOW_NEAR, SHADOW_FAR, light_proj_matrix);
+
+    // Cache VP
+    glm_mat4_mul(light_proj_matrix, light_view_matrix, light_viewproj_matrix);
+}
+
+void Lights_UpdateShadowMatrices_Spot(Light_Spot* light)
+{
+    // glm_vec3_normalize(light->direction);
+
+    vec3 up = { 0.0f, 1.0f, 0.0f };
+    vec3 center;
+    glm_vec3_add(light->position, light->direction, center);
+    glm_lookat(light->position, center, up, light_view_matrix);
+
+    // 'cutoff_outer' is stored as cos(half_angle)
+    float fov = SDL_acosf(light->cutoff_outer) * 2.0f; // full cone angle in radians
+
+    float aspect_ratio = 1.0f;
+    glm_perspective(fov, aspect_ratio, SHADOW_NEAR, SHADOW_FAR, light_proj_matrix);
 
     // Cache VP
     glm_mat4_mul(light_proj_matrix, light_view_matrix, light_viewproj_matrix);

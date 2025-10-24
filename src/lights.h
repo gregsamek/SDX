@@ -31,8 +31,12 @@ Struct (Light_Spot)
     vec3 color;
     float attenuation_constant_quadratic;
     vec3 direction;
-    float cutoff_inner;  // don't pass angle; pass SDL_cosf(glm_rad(angle))
+
+    // these angles are saved as SDL_cosf(glm_rad(angle in degrees))
+    // note also that these are HALF-angles - from the center of the cone to the edge
+    float cutoff_inner;
     float cutoff_outer;
+    
     float _padding[3]; // pad to vec4 size
 };
 
@@ -56,5 +60,6 @@ Struct (ShadowUBO)
 
 bool Lights_StorageBuffer_UpdateAndUpload();
 void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world);
+void Lights_UpdateShadowMatrices_Spot(Light_Spot* light);
 
 #endif // LIGHTS_H

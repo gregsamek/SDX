@@ -42,11 +42,17 @@ float3 linear_to_srgb(float3 c)
     return lerp(lo, hi, step(0.0031308.xxx, c));
 }
 
+float LinearizeDepth(float depth, float near, float far)
+{
+    return (2.0 * near) / (far + near - depth * (far - near));
+}
+
 float4 main(FragmentInput input): SV_Target0
 {
     if (magic_debug & MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE)
     {
         float3 color = hdrTex.Sample(Sampler, input.TexCoord).r;
+        color = LinearizeDepth(color, 0.001, 15.0); // near/far plane values
         return float4(color, 1.0);
     }
     else
