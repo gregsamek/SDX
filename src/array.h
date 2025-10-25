@@ -51,7 +51,7 @@ typedef struct
 
 inline bool _Array_Init(void** array, size_t element_size, size_t capacity)
 {
-    if (capacity == 0) capacity = (4096 - sizeof(_Array_Header)) / element_size;
+    if (capacity == 0) return false;
     void* data = SDL_malloc(element_size * capacity + sizeof(_Array_Header));
     if (!data) return false;
     
@@ -65,13 +65,15 @@ inline bool _Array_Init(void** array, size_t element_size, size_t capacity)
     return true;
 }
 
+// TODO Array_Resize
+
 inline bool _Array_Append_Slow(void** array, void* element)
 {
     _Array_Header* header = Array_Header(*array);
 
     // if (header->len >= header->capacity) /* no need for this check; it happens in the `Array_Append` macro */
     {
-        size_t new_capacity = (size_t)(header->capacity * 1.5);
+        size_t new_capacity = (size_t)(header->capacity * 1.5) + 1;
         if (new_capacity <= header->capacity) new_capacity = header->capacity + 1;
         
         void* new_block = SDL_realloc(header, header->element_size * new_capacity + sizeof(_Array_Header));

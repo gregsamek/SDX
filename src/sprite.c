@@ -116,13 +116,6 @@ static bool Sprite_Load(const char* sprite_name, Sprite* sprite)
 
 bool Sprite_LoadSprites(void)
 {
-    Array_Init(sprites, 0);
-    if (!sprites)
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize sprites array");
-        return false;
-    }
-
     char path[MAXIMUM_URI_LENGTH];
     SDL_snprintf(path, sizeof(path), "%stextures/%s", base_path, "_sprites_list.txt");
     size_t sprites_list_txt_size = 0;

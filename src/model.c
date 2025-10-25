@@ -12,21 +12,7 @@
 #include "../external/cgltf.h"
 
 bool Model_Load_AllScenes(void)
-{
-    Array_Init(models_unanimated, 0);
-    if (!models_unanimated)
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize models array");
-        return false;
-    }
-
-    Array_Init(models_bone_animated, 0);
-    if (!models_bone_animated)
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize models_bone_animated array");
-        return false;
-    }
-    
+{   
     char path[MAXIMUM_URI_LENGTH];
     SDL_snprintf(path, sizeof(path), "%smodels/%s", base_path, "_models_list.txt");
     size_t models_list_txt_size = 0;

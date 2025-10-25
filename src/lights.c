@@ -1,31 +1,53 @@
 #include "lights.h"
 #include "globals.h"
 
+bool Lights_LoadLights()
+{
+    Light_Spot light_spot = 
+    {
+        .position = { 8.0f, 0.0f, 8.0f },
+        .attenuation_constant_linear = 0.0f,
+        .color = { 1.0f, 1.0f, 1.0f },
+        .attenuation_constant_quadratic = 0.0f,
+        .target = {0, 0, 0},
+        .cutoff_inner = SDL_cosf(glm_rad(0.0f)),
+        .cutoff_outer = SDL_cosf(glm_rad(10.0f)),
+        .shadow_caster = 1,
+    };
+    Array_Append(lights_spot, light_spot);
+    return true;
+}
+
 bool Lights_StorageBuffer_UpdateAndUpload()
 {
     SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(gpu_device);
     {
-        void* mapped = SDL_MapGPUTransferBuffer(gpu_device, lights_transfer_buffer, true);
-        if (!mapped) 
+        Light_Spot* lights_mapped = SDL_MapGPUTransferBuffer(gpu_device, lights_transfer_buffer, true);
+        if (!lights_mapped) 
         {
             SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "SDL_MapGPUTransferBuffer failed: %s", SDL_GetError());
             return false;
         }
         
-        SDL_GPUCopyPass* copyPass = SDL_BeginGPUCopyPass(command_buffer);
-        
-        int active_lights_count = 1;
-
-        Light_Spot* lights_mapped = (Light_Spot*)mapped;
-        // light 1
+        SDL_GPUCopyPass* copy_pass = SDL_BeginGPUCopyPass(command_buffer);
+        if (!copy_pass)
         {
-            vec3 light_position_world = {8.0f, 0.0f, 8.0f};
-            vec3 light_target_world   = {0.0f, 0.0f, 0.0f};
+            SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "SDL_BeginGPUCopyPass failed: %s", SDL_GetError());
+            SDL_UnmapGPUTransferBuffer(gpu_device, lights_transfer_buffer);
+            return false;
+        }
+        
+        int active_lights_count = Array_Len(lights_spot);
+        SDL_assert(active_lights_count <= MAX_TOTAL_LIGHTS);
+
+        for (size_t i = 0; i < active_lights_count; i++)
+        {
+            Light_Spot light = lights_spot[i];
 
             vec3 light_direction_world;
-            glm_vec3_sub(light_target_world, light_position_world, light_direction_world);
-            
-            vec4 light_position_world_4 = { light_position_world[0], light_position_world[1], light_position_world[2], 1.0f };
+            glm_vec3_sub(light.target, light.position, light_direction_world);
+
+            vec4 light_position_world_4 = { light.position[0], light.position[1], light.position[2], 1.0f };
             vec4 light_position_viewspace_4;
             glm_mat4_mulv(camera.view_matrix, light_position_world_4, light_position_viewspace_4);
             vec3 light_position_viewspace = { light_position_viewspace_4[0], light_position_viewspace_4[1], light_position_viewspace_4[2] };
@@ -36,16 +58,9 @@ bool Lights_StorageBuffer_UpdateAndUpload()
             vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
             glm_vec3_normalize(light_direction_viewspace);
             
-            lights_mapped[0] = (Light_Spot)
-            {
-                .position = { light_position_viewspace[0], light_position_viewspace[1], light_position_viewspace[2] },
-                .attenuation_constant_linear = 0.0f,
-                .color = { 1.0f, 1.0f, 1.0f },
-                .attenuation_constant_quadratic = 0.0f,
-                .direction = { light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2] },
-                .cutoff_inner = SDL_cosf(glm_rad(0.0f)),
-                .cutoff_outer = SDL_cosf(glm_rad(10.0f))
-            };
+            lights_mapped[i] = light;
+            glm_vec3_copy(light_position_viewspace, lights_mapped[i].position);
+            glm_vec3_copy(light_direction_viewspace, lights_mapped[i].direction);
         }
         
         SDL_GPUTransferBufferLocation source = 
@@ -61,10 +76,10 @@ bool Lights_StorageBuffer_UpdateAndUpload()
             .size = active_lights_count * sizeof(Light_Spot)
         };
             
-        SDL_UploadToGPUBuffer(copyPass, &source, &destination, true);
+        SDL_UploadToGPUBuffer(copy_pass, &source, &destination, true);
         
         SDL_UnmapGPUTransferBuffer(gpu_device, lights_transfer_buffer);
-        SDL_EndGPUCopyPass(copyPass);
+        SDL_EndGPUCopyPass(copy_pass);
         
     }
     SDL_SubmitGPUCommandBuffer(command_buffer);
@@ -107,12 +122,8 @@ void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world)
 
 void Lights_UpdateShadowMatrices_Spot(Light_Spot* light)
 {
-    // glm_vec3_normalize(light->direction);
-
     vec3 up = { 0.0f, 1.0f, 0.0f };
-    vec3 center;
-    glm_vec3_add(light->position, light->direction, center);
-    glm_lookat(light->position, center, up, light_view_matrix);
+    glm_lookat(light->position, light->target, up, light_view_matrix);
 
     // 'cutoff_outer' is stored as cos(half_angle)
     float fov = SDL_acosf(light->cutoff_outer) * 2.0f; // full cone angle in radians

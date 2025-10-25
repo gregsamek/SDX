@@ -48,6 +48,8 @@ extern InputState input_state;
 extern Model Array models_unanimated;
 extern Model_BoneAnimated Array models_bone_animated;
 
+extern Light_Spot Array lights_spot;
+
 extern Sprite Array sprites;
 
 extern float input_deadzone_squared;

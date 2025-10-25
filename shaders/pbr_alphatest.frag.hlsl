@@ -25,7 +25,8 @@ struct Light_Spotlight
     float3 direction;
     float cutoff_inner; // passed as SDL_cosf(glm_rad(angle))
     float cutoff_outer;
-    float padding[3]; // storage buffers need to pad to float4 size
+    uint shadow_caster;
+    float padding[2];
 };
 
 // WARNING: StructuredBuffers are not natively supported by SDL's GPU API.
@@ -37,7 +38,7 @@ StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t4, space2);
 cbuffer Light_Directional_Uniform : register(b0, space3)
 {
     float3 light_directional_direction; float light_directional_strength;
-    float3 light_directional_color; float padding1;
+    float3 light_directional_color; uint light_directional_is_shadow_caster;
 };
 
 cbuffer Light_Hemisphere_Uniform : register(b1, space3)
@@ -115,6 +116,7 @@ float ShadowFactor(float4 position_clipspace_light)
     if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f || fragment_depth > 1.0f)
         return 1.0f;
 
+    // TODO hardcode a more random pattern; https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-17-efficient-soft-edged-shadows-using
     // 3x3 PCF
     float sum = 0.0f;
     int radius = (int)shadow_pcf_radius; // use floor
@@ -132,6 +134,10 @@ float ShadowFactor(float4 position_clipspace_light)
 
     float kernel = (2 * radius + 1);
     return sum / (kernel * kernel);
+
+    // bypass PCF
+    // float map_depth = shadow_map.SampleLevel(sampler_shadow, uv, 0.0).r;
+    // return (fragment_depth <= (map_depth + shadow_bias)) * 1.0f;
 }
 
 Fragment_Output main(Fragment_Input fragment)
@@ -194,8 +200,10 @@ Fragment_Output main(Fragment_Input fragment)
 
     float3 direct_dir = (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
 
-    // float shadow = ShadowFactor(fragment.position_clipspace_light);
-    Lo += direct_dir;// * shadow;
+    if (light_directional_is_shadow_caster)
+        Lo += direct_dir * ShadowFactor(fragment.position_clipspace_light);
+    else
+        Lo += direct_dir;
 
     // Spotlights
 
@@ -233,7 +241,11 @@ Fragment_Output main(Fragment_Input fragment)
         float3 kD_spot = (1.0f.xxx - kS_spot) * (1.0f - metallic);
 
         float3 light_spot = (kD_spot * albedo.rgb / 3.14159265f + specular_spot) * radiance_spot * NdotL;
-        Lo += light_spot * ShadowFactor(fragment.position_clipspace_light);
+
+        if (light.shadow_caster)
+            Lo += light_spot * ShadowFactor(fragment.position_clipspace_light);
+        else
+            Lo += light_spot;
     }
     
     // Hemispheric diffuse (indirect diffuse)

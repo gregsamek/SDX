@@ -29,6 +29,8 @@ InputState input_state = InputState_DEFAULT;
 Model Array models_unanimated = NULL;
 Model_BoneAnimated Array models_bone_animated = NULL;
 
+Light_Spot Array lights_spot = NULL;
+
 Sprite Array sprites = NULL;
 
 float input_deadzone_squared = 0.001f;

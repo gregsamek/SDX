@@ -1,6 +1,8 @@
 #ifndef LIGHTS_H
 #define LIGHTS_H
 
+#include <SDL3/SDL.h>
+
 #define CGLM_FORCE_DEPTH_ZERO_TO_ONE
 #define CGLM_FORCE_LEFT_HANDED
 #include "../external/cglm/cglm.h"
@@ -13,7 +15,7 @@ Struct (Light_Directional)
     vec3 direction;
     float strength; // ???
     vec3 color;
-    float _padding; // pad to vec4 size
+    Uint32 shadow_caster;
 };
 
 Struct (Light_Point)
@@ -30,14 +32,21 @@ Struct (Light_Spot)
     float attenuation_constant_linear; 
     vec3 color;
     float attenuation_constant_quadratic;
-    vec3 direction;
+    
+    union
+    {
+        vec3 target; // used on the CPU side for convenience
+        vec3 direction; // calculated just before upload to GPU
+    };
 
     // these angles are saved as SDL_cosf(glm_rad(angle in degrees))
     // note also that these are HALF-angles - from the center of the cone to the edge
     float cutoff_inner;
     float cutoff_outer;
     
-    float _padding[3]; // pad to vec4 size
+    Uint32 shadow_caster;
+
+    float _padding[2]; // pad to vec4 size
 };
 
 // used in hemispheric (pseudo-IBL) lighting
@@ -58,6 +67,7 @@ Struct (ShadowUBO)
     float pcf_radius; // in texels
 };
 
+bool Lights_LoadLights();
 bool Lights_StorageBuffer_UpdateAndUpload();
 void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world);
 void Lights_UpdateShadowMatrices_Spot(Light_Spot* light);

@@ -104,15 +104,48 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
+    Array_Init(sprites, 1);
+    if (!sprites)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize sprites array");
+        return SDL_APP_FAILURE;
+    }
+
     if (!Sprite_LoadSprites())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to load sprites");
         return SDL_APP_FAILURE;
     }
 
+    Array_Init(models_unanimated, 1);
+    if (!models_unanimated)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize models array");
+        return SDL_APP_FAILURE;
+    }
+
+    Array_Init(models_bone_animated, 1);
+    if (!models_bone_animated)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize models_bone_animated array");
+        return SDL_APP_FAILURE;
+    }
+
     if (!Model_Load_AllScenes())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to load models");
+        return SDL_APP_FAILURE;
+    }
+
+    Array_Init(lights_spot, MAX_TOTAL_LIGHTS);
+    if (!lights_spot)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize spot lights array");
+        return SDL_APP_FAILURE;
+    }
+    if (!Lights_LoadLights())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to load lights");
         return SDL_APP_FAILURE;
     }
 
