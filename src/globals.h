@@ -95,7 +95,7 @@ extern SDL_GPUTransferBuffer* lights_transfer_buffer;
 extern SDL_GPUTexture* shadow_map_texture;
 extern SDL_GPUSampler* shadow_sampler;
 extern SDL_GPUGraphicsPipeline* pipeline_shadow_depth;
-extern SDL_GPUTextureFormat shadow_map_texture_format;
+extern SDL_GPUTextureFormat depth_sample_texture_format;
 extern Uint32 SHADOW_MAP_SIZE;
 extern float SHADOW_ORTHO_HALF_WIDTH;       // covers +-30m around focus
 extern float SHADOW_NEAR;

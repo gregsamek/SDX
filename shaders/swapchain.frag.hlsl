@@ -15,7 +15,7 @@ cbuffer Settings_Uniform : register(b0, space3)
     uint magic_debug;
 };
 
-Texture2D hdrTex : register(t0, space2);
+Texture2D hdrTex     : register(t0, space2);
 SamplerState Sampler : register(s0, space2);
 
 struct FragmentInput
@@ -49,21 +49,21 @@ float LinearizeDepth(float depth, float near, float far)
 
 float4 main(FragmentInput input): SV_Target0
 {
+    float exposure = 1.0; // Adjust as needed
+    float3 hdr = hdrTex.Sample(Sampler, input.TexCoord).rgb;
+    float3 color = hdr * exposure;
+
     if (magic_debug & MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE)
     {
-        float3 color = hdrTex.Sample(Sampler, input.TexCoord).r;
-        color = LinearizeDepth(color, 0.001, 15.0); // near/far plane values
-        return float4(color, 1.0);
+        // color = LinearizeDepth(color, 0.001, 15.0); // near/far plane values
     }
     else
     {
-        const float exposure = 1.0; // Adjust exposure as needed
-        float3 hdr = hdrTex.Sample(Sampler, input.TexCoord).rgb;
-        float3 color = hdr * exposure;
         // color = reinhardTonemap(color);
         color = saturate(color);
-        color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR
-        return float4(color, 1.0);
+        color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR (not currently trying to support this)
     }
+    
+    return float4(color, 1.0);
     
 }

@@ -7,17 +7,20 @@ bool Lights_LoadLights()
     {
         .position = { 8.0f, 0.0f, 8.0f },
         .attenuation_constant_linear = 0.0f,
-        .color = { 1.0f, 1.0f, 1.0f },
+        .color = { 0.0f, 0.0f, 0.0f },
         .attenuation_constant_quadratic = 0.0f,
         .target = {0, 0, 0},
         .cutoff_inner = SDL_cosf(glm_rad(0.0f)),
         .cutoff_outer = SDL_cosf(glm_rad(10.0f)),
-        .shadow_caster = 1,
+        .shadow_caster = false,
     };
     Array_Append(lights_spot, light_spot);
     return true;
 }
 
+// TODO if there are no lights, don't upload buffer
+// also need to make the light count available to the shader
+// (or just handle lights totally differently)
 bool Lights_StorageBuffer_UpdateAndUpload()
 {
     SDL_GPUCommandBuffer* command_buffer = SDL_AcquireGPUCommandBuffer(gpu_device);
@@ -118,6 +121,7 @@ void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world)
 
     // Cache VP
     glm_mat4_mul(light_proj_matrix, light_view_matrix, light_viewproj_matrix);
+    SHADOW_FAR = 150.0f;
 }
 
 void Lights_UpdateShadowMatrices_Spot(Light_Spot* light)
@@ -133,4 +137,5 @@ void Lights_UpdateShadowMatrices_Spot(Light_Spot* light)
 
     // Cache VP
     glm_mat4_mul(light_proj_matrix, light_view_matrix, light_viewproj_matrix);
+    SHADOW_FAR = 15.0f;
 }

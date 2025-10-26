@@ -1,3 +1,5 @@
+#include "shaders/pbr.hlsl"
+
 #ifdef __HLSL_VERSION
     #define CLIP_TEST(v)  clip(v)
 #elif defined(__METAL_VERSION__)
@@ -8,102 +10,53 @@
     #define CLIP_TEST(v)  if (any((v) < 0)) discard
 #endif
 
-Texture2D texture_diffuse  : register(t0, space2);
-Texture2D texture_metallic_roughness : register(t1, space2);
-Texture2D texture_normal : register(t2, space2);
-Texture2D<float> shadow_map : register(t3, space2);
-
-SamplerState sampler_texture  : register(s0, space2);
-SamplerState sampler_shadow : register(s1, space2);
-
 struct Light_Spotlight
 {
     float3 position;
-    float attenuation_constant_linear; 
+    float  attenuation_constant_linear; 
     float3 color;
-    float attenuation_constant_quadratic;
+    float  attenuation_constant_quadratic;
     float3 direction;
-    float cutoff_inner; // passed as SDL_cosf(glm_rad(angle))
-    float cutoff_outer;
-    uint shadow_caster;
-    float padding[2];
+    float  cutoff_inner; // passed as SDL_cosf(glm_rad(angle))
+    float  cutoff_outer;
+    uint   shadow_caster;
+    float           _[2];
 };
 
-// WARNING: StructuredBuffers are not natively supported by SDL's GPU API.
-// They will work with SDL_shadercross because it does special processing to
-// support them, but not with direct compilation via dxc.
-// See https://github.com/libsdl-org/SDL/issues/12200 for details.
+Texture2D texture_diffuse            : register(t0, space2);
+Texture2D texture_metallic_roughness : register(t1, space2);
+Texture2D texture_normal             : register(t2, space2);
+Texture2D shadow_map                 : register(t3, space2);
+
 StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t4, space2);
+
+SamplerState sampler_texture  : register(s0, space2);
+SamplerState sampler_shadow   : register(s1, space2);
 
 cbuffer Light_Directional_Uniform : register(b0, space3)
 {
-    float3 light_directional_direction; float light_directional_strength;
-    float3 light_directional_color; uint light_directional_is_shadow_caster;
+    float3 light_directional_direction; 
+    float  light_directional_strength;
+    float3 light_directional_color; 
+    uint   light_directional_is_shadow_caster;
 };
 
 cbuffer Light_Hemisphere_Uniform : register(b1, space3)
 {
     float3 up_viewspace;
-    float _padding;
+    float             _;
     float3 color_sky;
-    float _padding2;
+    float            __;
     float3 color_ground;
-    float _padding3;
+    float           ___;
 };
 
 cbuffer Shadow_Uniform : register(b2, space3)
 {
     float2 shadow_texel_size;
-    float shadow_bias;
-    float shadow_pcf_radius; // in texels
+    float  shadow_bias;
+    float  shadow_pcf_radius; // in texels
 };
-
-struct Fragment_Input
-{
-    float4 position_clipspace_camera : SV_Position;
-    float3 position_viewspace : TEXCOORD0;
-    float3 normal_viewspace   : TEXCOORD1;
-    float2 texture_coordinate : TEXCOORD2;
-    float3 tangent_viewspace  : TEXCOORD3;
-    float3 bitangent_viewspace: TEXCOORD4;
-    float4 position_clipspace_light : TEXCOORD5;
-};
-
-struct Fragment_Output
-{
-    float4 color : SV_Target0;
-};
-
-float Distribution_GGX(float NdotH, float roughness)
-{
-    float a = roughness * roughness * roughness * roughness;
-    float denom = (NdotH * NdotH) * (a - 1.0f) + 1.0f;
-    return a / (3.14159265f * denom * denom + 1e-7f);
-}
-
-float Geometry_SchlickGGX(float NdotV, float roughness)
-{
-    float r = (roughness + 1.0f);
-    float k = (r * r) / 8.0f;
-    return NdotV / (NdotV * (1.0f - k) + k + 1e-7f);
-}
-
-float Geometry_Smith(float NdotV, float NdotL, float roughness)
-{
-    float ggx1 = Geometry_SchlickGGX(NdotV, roughness);
-    float ggx2 = Geometry_SchlickGGX(NdotL, roughness);
-    return ggx1 * ggx2;
-}
-
-float3 Fresnel_Schlick(float VdotH, float3 F0)
-{
-    return F0 + (1.0f - F0) * pow(1.0f - VdotH, 5.0f);
-}
-
-float3 Fresnel_Schlick_Roughness(float NdotV, float3 F0, float roughness)
-{
-    return F0 + (max(float3((1.0 - roughness).xxx), F0) - F0) * pow(saturate(1.0 - NdotV), 5.0);
-}
 
 float ShadowFactor(float4 position_clipspace_light)
 {
@@ -128,7 +81,7 @@ float ShadowFactor(float4 position_clipspace_light)
         {
             float2 offset = float2((float)x, (float)y) * shadow_texel_size;
             float map_depth = shadow_map.SampleLevel(sampler_shadow, uv + offset, 0.0).r; // read depth
-            sum += (fragment_depth <= (map_depth + shadow_bias)) * 1.0f;
+            sum += (fragment_depth <= (map_depth + shadow_bias));
         }
     }
 
@@ -137,8 +90,24 @@ float ShadowFactor(float4 position_clipspace_light)
 
     // bypass PCF
     // float map_depth = shadow_map.SampleLevel(sampler_shadow, uv, 0.0).r;
-    // return (fragment_depth <= (map_depth + shadow_bias)) * 1.0f;
+    // return (fragment_depth <= (map_depth + shadow_bias));
 }
+
+struct Fragment_Input
+{
+    float4 position_clipspace_camera : SV_Position;
+    float3 position_viewspace        : TEXCOORD0;
+    float3 normal_viewspace          : TEXCOORD1;
+    float2 texture_coordinate        : TEXCOORD2;
+    float3 tangent_viewspace         : TEXCOORD3;
+    float3 bitangent_viewspace       : TEXCOORD4;
+    float4 position_clipspace_light  : TEXCOORD5;
+};
+
+struct Fragment_Output
+{
+    float4 color : SV_Target0;
+};
 
 Fragment_Output main(Fragment_Input fragment)
 {
@@ -287,6 +256,12 @@ Fragment_Output main(Fragment_Input fragment)
 
 /*
 NOTES
+
+WARNING: Must Compile with SDL_shadercross
+StructuredBuffers are not natively supported by SDL's GPU API.
+They will work with SDL_shadercross because it does special processing to
+support them, but not with direct compilation via dxc.
+See https://github.com/libsdl-org/SDL/issues/12200 for details.
 
 Light Attenuation Constants
 https://learnopengl.com/Lighting/Light-casters

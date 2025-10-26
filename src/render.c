@@ -157,7 +157,7 @@ bool Render_InitRenderTargets()
         &(SDL_GPUTextureCreateInfo)
         {
             .type = SDL_GPU_TEXTURETYPE_2D,
-            .format = shadow_map_texture_format,
+            .format = depth_sample_texture_format,
             .usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER,
             .width = SHADOW_MAP_SIZE,
             .height = SHADOW_MAP_SIZE,
@@ -721,7 +721,7 @@ bool Render()
 
     // Update Directional Light
 
-    vec3 light_direction_world = {-1.0f, -0.0f, 0.0f};
+    vec3 light_direction_world = {1.0f, -1.0f, 1.0f};
     vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
     vec4 light_direction_viewspace_4;
     glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
@@ -731,9 +731,9 @@ bool Render()
     Light_Directional light_directional = 
     {
         .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
-        .strength = 0.0f,
+        .strength = 4.0f,
         .color = {1.0f, 1.0f, 1.0f},
-        .shadow_caster = false
+        .shadow_caster = true
     };
     if (light_directional.shadow_caster)
         Lights_UpdateShadowMatrices_Directional(light_direction_world);
@@ -861,8 +861,8 @@ bool Render()
         Light_Hemisphere light_hemisphere = 
         {
             .up_viewspace = {view_up[0], view_up[1], view_up[2]},
-            .color_sky = {0.2f, 0.2f, 0.2f},
-            .color_ground = {0.1f, 0.1f, 0.1f},
+            .color_sky = {0.8f, 0.8f, 0.8f},
+            .color_ground = {0.2f, 0.2f, 0.2f},
         };
 
         SDL_PushGPUFragmentUniformData(command_buffer_draw, 1, &light_hemisphere, sizeof(light_hemisphere));

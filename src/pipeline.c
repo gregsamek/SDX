@@ -929,7 +929,7 @@ bool Pipeline_ShadowDepth_Init()
         {
             .num_color_targets = 0,
             .has_depth_stencil_target = true,
-            .depth_stencil_format = shadow_map_texture_format
+            .depth_stencil_format = depth_sample_texture_format
         },
         .depth_stencil_state = (SDL_GPUDepthStencilState)
         {

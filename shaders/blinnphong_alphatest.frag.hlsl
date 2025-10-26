@@ -10,11 +10,6 @@
     #define CLIP_TEST(v)  if (any((v) < 0)) discard
 #endif
 
-Texture2D texture_diffuse  : register(t0, space2);
-Texture2D texture_metallic_roughness : register(t1, space2);
-Texture2D texture_normal : register(t2, space2);
-SamplerState sampler_texture  : register(s0, space2);
-
 struct Light_Spotlight
 {
     float3 position;
@@ -27,11 +22,13 @@ struct Light_Spotlight
     float padding[3]; // pad to float4 size
 };
 
-// WARNING: StructuredBuffers are not natively supported by SDL's GPU API.
-// They will work with SDL_shadercross because it does special processing to
-// support them, but not with direct compilation via dxc.
-// See https://github.com/libsdl-org/SDL/issues/12200 for details.
+Texture2D texture_diffuse  : register(t0, space2);
+Texture2D texture_metallic_roughness : register(t1, space2);
+Texture2D texture_normal : register(t2, space2);
+
 StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t3, space2);
+
+SamplerState sampler_texture  : register(s0, space2);
 
 cbuffer Light_Directional_Uniform : register(b0, space3)
 {
@@ -136,6 +133,11 @@ Fragment_Output main(Fragment_Input fragment)
 
 /*
 NOTES
+
+WARNING: StructuredBuffers are not natively supported by SDL's GPU API.
+They will work with SDL_shadercross because it does special processing to
+support them, but not with direct compilation via dxc.
+See https://github.com/libsdl-org/SDL/issues/12200 for details.
 
 Simple lambertian
 float NdotL = saturate(dot(N, L));

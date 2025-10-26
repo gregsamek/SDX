@@ -5,10 +5,10 @@ cbuffer TransformUBO : register(b0, space1)
 
 struct Vertex_Input
 {
-    float3 position : TEXCOORD0;
-    float3 normal   : TEXCOORD1;
+    float3 position           : TEXCOORD0;
+    float3 normal             : TEXCOORD1;
     float2 texture_coordinate : TEXCOORD2;
-    float4 tangent : TEXCOORD3; // .w = handedness
+    float4 tangent            : TEXCOORD3; // .w = handedness
 };
 
 struct Vertex_Output
