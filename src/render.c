@@ -122,6 +122,81 @@ bool Render_InitRenderTargets()
         return false;
     }
 
+    if (prepass_texture_msaa)
+    {
+        SDL_ReleaseGPUTexture(gpu_device, prepass_texture_msaa);
+    }
+    prepass_texture_msaa = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .width = virtual_screen_texture_width,
+            .height = virtual_screen_texture_height,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = msaa_level,
+            .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET
+        }
+    );
+    if (prepass_texture_msaa == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create prepass msaa texture: %s", SDL_GetError());
+        return false;
+    }
+
+    if (prepass_texture)
+    {
+        SDL_ReleaseGPUTexture(gpu_device, prepass_texture);
+    }
+    prepass_texture = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .width = virtual_screen_texture_width,
+            .height = virtual_screen_texture_height,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+        }
+    );
+    if (prepass_texture == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create prepass texture: %s", SDL_GetError());
+        return false;
+    }
+
+    if (prepass_texture_half)
+    {
+        SDL_ReleaseGPUTexture(gpu_device, prepass_texture_half);
+    }
+    prepass_texture_half = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .width = virtual_screen_texture_width / 2,
+            .height = virtual_screen_texture_height / 2,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+        }
+    );
+    if (prepass_texture_half == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create prepass half res texture: %s", SDL_GetError());
+        return false;
+    }
+
 	if (depth_texture)
 	{
 		SDL_ReleaseGPUTexture(gpu_device, depth_texture);
@@ -137,7 +212,7 @@ bool Render_InitRenderTargets()
 			.layer_count_or_depth = 1,
 			.num_levels = 1,
 			.sample_count = msaa_level,
-			.format = depth_texture_format, // Match pipeline
+			.format = depth_texture_format,
 			.usage = SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET
 		}
 	);
@@ -310,6 +385,88 @@ static void Render_Unanimated_Shadow(SDL_GPURenderPass* render_pass, SDL_GPUComm
             }, 
             SDL_GPU_INDEXELEMENTSIZE_16BIT
         );
+
+        SDL_DrawGPUIndexedPrimitives
+        (
+            render_pass,
+            (Uint32)models_unanimated[i].mesh.index_count, // num_indices
+            1,  // num_instances
+            0,  // first_index
+            0,  // vertex_offset
+            0   // first_instance
+        );
+    }
+}
+
+static void Render_Unanimated_Prepass(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
+{
+    if (!Array_Len(models_unanimated)) return;
+
+    SDL_BindGPUGraphicsPipeline(render_pass, pipeline_prepass_unanimated);
+
+    for (size_t i = 0; i < Array_Len(models_unanimated); i++)
+    {
+        // TODO implement model matrix per model
+        mat4 model_matrix;
+        glm_mat4_identity(model_matrix);
+
+        mat4 mv_matrix;
+        glm_mat4_mul(camera.view_matrix, model_matrix, mv_matrix);
+        
+        mat4 mvp_matrix;
+        glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
+
+        // TODO light mvp not needed for prepass; make a separate UBO without it?
+        TransformsUBO transforms = {0};
+        glm_mat4_copy(mvp_matrix, transforms.mvp);
+        glm_mat4_copy(mv_matrix, transforms.mv);
+
+#ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
+        // normal matrix = inverse-transpose of the upper-left 3x3 of mv
+        mat3 mv3, normal3;
+        glm_mat4_pick3(mv_matrix, mv3);     // take upper-left 3x3
+        glm_mat3_inv(mv3, normal3);
+        glm_mat3_transpose(normal3);
+        glm_mat4_identity(transforms.normal);
+        glm_mat4_ins3(normal3, transforms.normal);
+#endif
+
+        SDL_PushGPUVertexUniformData
+        (
+            command_buffer, 
+            0, // uniform buffer slot
+            &transforms, 
+            sizeof(transforms)
+        );
+        
+        SDL_BindGPUVertexBuffers
+        (
+            render_pass, 
+            0, // vertex buffer slot
+            (SDL_GPUBufferBinding[])
+            {
+                { 
+                    .buffer = models_unanimated[i].mesh.vertex_buffer, 
+                    .offset = 0 
+                },
+            }, 
+            1 // vertex buffer count
+        );            
+        
+        SDL_BindGPUIndexBuffer
+        (
+            render_pass, 
+            &(SDL_GPUBufferBinding)
+            { 
+                .buffer = models_unanimated[i].mesh.index_buffer, 
+                .offset = 0 
+            }, 
+            SDL_GPU_INDEXELEMENTSIZE_16BIT
+        );
+
+        SDL_GPUTexture* texture_diffuse = models_unanimated[i].mesh.material.texture_diffuse;    
+        SDL_GPUTexture* texture_metallic_roughness = models_unanimated[i].mesh.material.texture_metallic_roughness;
+        SDL_GPUTexture* texture_normal = models_unanimated[i].mesh.material.texture_normal;
 
         SDL_DrawGPUIndexedPrimitives
         (
@@ -717,7 +874,7 @@ bool Render()
     {
         SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "SDL_AcquireGPUCommandBuffer failed: %s", SDL_GetError());
         return false;
-    }
+    }  
 
     ///////////////////////////////////////////////////////////////////////////
     // Shadow Pass ////////////////////////////////////////////////////////////
@@ -764,6 +921,99 @@ bool Render()
     SDL_EndGPURenderPass(shadow_pass);
 
     ///////////////////////////////////////////////////////////////////////////
+    // Prepass ////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////  
+
+    SDL_GPUColorTargetInfo prepass_target_info = 
+    {
+        .texture = prepass_texture,
+        .clear_color = (SDL_FColor){ 0.0f, 0.0f, 0.0f, 1.0f },
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .store_op = SDL_GPU_STOREOP_STORE,
+        .cycle_resolve_texture = true
+    };
+
+    if (msaa_level > SDL_GPU_SAMPLECOUNT_1)
+    {
+        prepass_target_info.texture = prepass_texture_msaa;
+        prepass_target_info.store_op = SDL_GPU_STOREOP_RESOLVE_AND_STORE;
+        prepass_target_info.resolve_texture = prepass_texture;
+        prepass_target_info.cycle_resolve_texture = true;
+    }
+
+    SDL_GPUDepthStencilTargetInfo depth_stencil_target_info = 
+    {
+        .texture = depth_texture,
+        .clear_depth = 1.0f,
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .store_op = SDL_GPU_STOREOP_STORE,
+        .cycle = true,
+
+        .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
+        .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
+    };
+
+    SDL_GPURenderPass* prepass_render_pass = SDL_BeginGPURenderPass
+    (
+        command_buffer_draw,
+        &prepass_target_info,
+        1,
+        &depth_stencil_target_info
+    );
+
+    if (!prepass_render_pass)
+    {
+        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin prepass render pass: %s", SDL_GetError());
+        SDL_CancelGPUCommandBuffer(command_buffer_draw);
+        return true;
+    }
+    
+    SDL_SetGPUViewport(prepass_render_pass, &(SDL_GPUViewport)
+    { 
+        .x = 0, 
+        .y = 0,
+        .w = (int)virtual_screen_texture_width, 
+        .h = (int)virtual_screen_texture_height,
+        .min_depth = 0.0f, 
+        .max_depth = 1.0f
+    });
+
+    Render_Unanimated_Prepass(prepass_render_pass, command_buffer_draw);
+
+    SDL_EndGPURenderPass(prepass_render_pass);
+
+    // if you see halos along edges, consider computing min depth during downsample (small compute pass) and an edge-aware upsample
+    SDL_GPUBlitInfo blit_info = 
+    {
+        .source = (SDL_GPUBlitRegion)
+        {
+            .texture = prepass_texture,
+            .x = 0, .y = 0,
+            .w = virtual_screen_texture_width,
+            .h = virtual_screen_texture_height
+        },
+        .destination = (SDL_GPUBlitRegion)
+        {
+            .texture = prepass_texture_half,
+            .x = 0, .y = 0,
+            .w = virtual_screen_texture_width / 2,
+            .h = virtual_screen_texture_height / 2
+        },
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .clear_color = (SDL_FColor){ 0.0f, 0.0f, 0.0f, 1.0f },
+        .flip_mode = SDL_FLIP_NONE,
+        .filter = SDL_GPU_FILTER_LINEAR,
+        .cycle = true
+    };
+    SDL_BlitGPUTexture(command_buffer_draw, &blit_info);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // SSAO ///////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+    // TODO
+
+    ///////////////////////////////////////////////////////////////////////////
     // Main Pass //////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
@@ -784,16 +1034,16 @@ bool Render()
         virtual_target_info.cycle_resolve_texture = true;
     }
 
-    SDL_GPUDepthStencilTargetInfo depth_stencil_target_info = 
+    depth_stencil_target_info = (SDL_GPUDepthStencilTargetInfo)
     {
         .texture = depth_texture,
         .clear_depth = 1.0f,
-        .clear_stencil = 0,
-        .load_op = SDL_GPU_LOADOP_CLEAR,
-        .store_op = SDL_GPU_STOREOP_DONT_CARE, // Don't need to store depth after frame
+        .load_op = SDL_GPU_LOADOP_LOAD,
+        .store_op = SDL_GPU_STOREOP_DONT_CARE,
+        .cycle = false,
+
         .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
         .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
-        .cycle = true
     };
 
     SDL_GPURenderPass* virtual_render_pass = SDL_BeginGPURenderPass
@@ -810,16 +1060,6 @@ bool Render()
         SDL_CancelGPUCommandBuffer(command_buffer_draw);
         return true;
     }
-
-    SDL_SetGPUViewport(virtual_render_pass, &(SDL_GPUViewport)
-    { 
-        .x = 0, 
-        .y = 0,
-        .w = (int)virtual_screen_texture_width, 
-        .h = (int)virtual_screen_texture_height,
-        .min_depth = 0.0f, 
-        .max_depth = 1.0f
-    });
 
     SDL_BindGPUFragmentStorageBuffers
     (
@@ -923,7 +1163,7 @@ bool Render()
 
     if (magic_debug & MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE)
     {
-        fullscreen_texture_binding.texture = shadow_map_texture;
+        fullscreen_texture_binding.texture = prepass_texture_half;
         fullscreen_texture_binding.sampler = shadow_sampler;
     }
 

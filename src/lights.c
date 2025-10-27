@@ -3,7 +3,7 @@
 
 bool Lights_Update()
 {
-    // Update Spot Lights
+    // Spot ///////////////////////////////////////////////////////////////////
     
     if (lights_storage_buffer) Lights_StorageBuffer_UpdateAndUpload();
     
@@ -19,7 +19,7 @@ bool Lights_Update()
         }
     }
 
-    // Update Directional Light
+    // Directional ////////////////////////////////////////////////////////////
 
     vec3 light_direction_world = {1.0f, -1.0f, 1.0f};
     vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
@@ -42,7 +42,7 @@ bool Lights_Update()
         Lights_UpdateShadowMatrices_Directional(light_direction_world);
     }
     
-    // Update Hemisphere Light
+    // Hemisphere /////////////////////////////////////////////////////////////
 
     vec4 world_up_4 = { 0.0f, 1.0f, 0.0f, 0.0f };
     vec4 view_up_4;
@@ -149,6 +149,7 @@ bool Lights_StorageBuffer_UpdateAndUpload()
     return true;
 }
 
+// TODO I need to figure out a proper way to size these shadow maps
 void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world)
 {
     // glm_vec3_normalize(light_dir_world);

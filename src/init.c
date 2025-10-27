@@ -62,7 +62,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    // depth texture for main render pass
     if (SDL_GPUTextureSupportsFormat(gpu_device, SDL_GPU_TEXTUREFORMAT_D32_FLOAT, SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET))
     {
         depth_texture_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
@@ -77,8 +76,6 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         depth_texture_format = SDL_GPU_TEXTUREFORMAT_D16_UNORM;
     }
 
-    // we need to test this separately because the above format may not support sampling usage as well
-    // maybe I should just use the one that supports sampling for both?
     if (SDL_GPUTextureSupportsFormat(gpu_device, SDL_GPU_TEXTUREFORMAT_D32_FLOAT, SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER))
     {
         depth_sample_texture_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;

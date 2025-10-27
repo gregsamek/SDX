@@ -66,7 +66,8 @@ SDL_GPUSampleCount msaa_level = SDL_GPU_SAMPLECOUNT_1;
 Uint32 n_mipmap_levels = 6;
 bool use_linear_filtering = false;
 SDL_GPUDevice* gpu_device = NULL;
-SDL_GPUTextureFormat depth_texture_format = SDL_GPU_TEXTUREFORMAT_INVALID;
+
+SDL_GPUGraphicsPipeline* pipeline_prepass_unanimated = NULL;
 SDL_GPUGraphicsPipeline* pipeline_unanimated = NULL;
 SDL_GPUGraphicsPipeline* pipeline_bone_animated = NULL;
 SDL_GPUGraphicsPipeline* pipeline_rigid_animated = NULL;
@@ -74,12 +75,19 @@ SDL_GPUGraphicsPipeline* pipeline_instanced = NULL;
 SDL_GPUGraphicsPipeline* pipeline_text = NULL;
 SDL_GPUGraphicsPipeline* pipeline_fullscreen_quad = NULL;
 SDL_GPUGraphicsPipeline* pipeline_sprite = NULL;
+
+SDL_GPUTexture* prepass_texture_msaa = NULL;
+SDL_GPUTexture* prepass_texture = NULL;
+SDL_GPUTexture* prepass_texture_half = NULL;
+
 SDL_GPUTexture* depth_texture = NULL;
+SDL_GPUTextureFormat depth_texture_format = SDL_GPU_TEXTUREFORMAT_INVALID;
 SDL_GPUTexture* msaa_texture = NULL;
 SDL_GPUTexture* virtual_screen_texture = NULL;
 Uint32 virtual_screen_texture_width = 0;
 Uint32 virtual_screen_texture_height = 360;
 SDL_GPUSampler* default_texture_sampler = NULL;
+
 SDL_GPUBuffer* joint_matrix_storage_buffer = NULL;
 SDL_GPUTransferBuffer* joint_matrix_transfer_buffer = NULL;
 SDL_GPUBuffer* lights_storage_buffer = NULL;

@@ -75,7 +75,8 @@ extern SDL_GPUSampleCount msaa_level;
 extern Uint32 n_mipmap_levels;
 extern bool use_linear_filtering;
 extern SDL_GPUDevice* gpu_device;
-extern SDL_GPUTextureFormat depth_texture_format;
+
+extern SDL_GPUGraphicsPipeline* pipeline_prepass_unanimated;
 extern SDL_GPUGraphicsPipeline* pipeline_unanimated;
 extern SDL_GPUGraphicsPipeline* pipeline_bone_animated;
 extern SDL_GPUGraphicsPipeline* pipeline_rigid_animated;
@@ -83,12 +84,19 @@ extern SDL_GPUGraphicsPipeline* pipeline_instanced;
 extern SDL_GPUGraphicsPipeline* pipeline_fullscreen_quad;
 extern SDL_GPUGraphicsPipeline* pipeline_text;
 extern SDL_GPUGraphicsPipeline* pipeline_sprite;
+
+extern SDL_GPUTexture* prepass_texture_msaa;
+extern SDL_GPUTexture* prepass_texture;
+extern SDL_GPUTexture* prepass_texture_half;
+
 extern SDL_GPUTexture* depth_texture;
+extern SDL_GPUTextureFormat depth_texture_format;
 extern SDL_GPUTexture* msaa_texture;
 extern SDL_GPUTexture* virtual_screen_texture;
 extern Uint32 virtual_screen_texture_width;
 extern Uint32 virtual_screen_texture_height;
 extern SDL_GPUSampler* default_texture_sampler;
+
 extern SDL_GPUBuffer* joint_matrix_storage_buffer;
 extern SDL_GPUTransferBuffer* joint_matrix_transfer_buffer;
 extern SDL_GPUBuffer* lights_storage_buffer;
