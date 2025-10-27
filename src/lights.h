@@ -67,6 +67,7 @@ Struct (ShadowUBO)
     float pcf_radius; // in texels
 };
 
+bool Lights_Update();
 bool Lights_LoadLights();
 bool Lights_StorageBuffer_UpdateAndUpload();
 void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world);

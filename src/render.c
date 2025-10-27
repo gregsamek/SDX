@@ -5,7 +5,7 @@
 #include "pipeline.h"
 #include "lights.h"
 
-////////// INITIALIZATION /////////////
+// INITIALIZATION /////////////////////////////////////////////////////////////
 
 bool Render_LoadRenderSettings()
 {
@@ -245,23 +245,23 @@ bool Render_Init()
         return false;
     }
     
-    SDL_LogTrace(SDL_LOG_CATEGORY_GPU, "All graphics pipelines initialized successfully.");
-
     if (!Sampler_Init())
     {
         return false;
     }
-
+    
     if (!Render_InitRenderTargets())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize render targets");
         return false;
     }
+    
+    SDL_LogTrace(SDL_LOG_CATEGORY_GPU, "Renderer initialized successfully.");
 
     return true;
 }
 
-////////// FRAME RENDERING /////////////
+// FRAME RENDERING ////////////////////////////////////////////////////////////
 
 static void Render_Unanimated_Shadow(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* command_buffer)
 {
@@ -708,9 +708,9 @@ bool Render()
         renderer_needs_to_be_reinitialized = false;
     }
 
-    // can these be compined into one copy pass? (also text update)
     if (Array_Len(models_bone_animated)) Model_JointMat_UpdateAndUpload();
-    if (lights_storage_buffer) Lights_StorageBuffer_UpdateAndUpload();
+
+    Lights_Update();
 
     SDL_GPUCommandBuffer* command_buffer_draw = SDL_AcquireGPUCommandBuffer(gpu_device);
     if (command_buffer_draw == NULL)
@@ -719,34 +719,11 @@ bool Render()
         return false;
     }
 
-    // Update Directional Light
+    ///////////////////////////////////////////////////////////////////////////
+    // Shadow Pass ////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
 
-    vec3 light_direction_world = {1.0f, -1.0f, 1.0f};
-    vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
-    vec4 light_direction_viewspace_4;
-    glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
-    vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
-    glm_vec3_normalize(light_direction_viewspace);
-
-    Light_Directional light_directional = 
-    {
-        .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
-        .strength = 4.0f,
-        .color = {1.0f, 1.0f, 1.0f},
-        .shadow_caster = true
-    };
-    if (light_directional.shadow_caster)
-        Lights_UpdateShadowMatrices_Directional(light_direction_world);
-    
-    foreach(light_spot, lights_spot)
-    {
-        if (light_spot.shadow_caster)
-            Lights_UpdateShadowMatrices_Spot(&light_spot);
-    }
-
-    // Shadow Pass
-
-    SDL_GPUDepthStencilTargetInfo shadow_target = 
+    SDL_GPUDepthStencilTargetInfo shadow_target_info = 
     {
         .texture = shadow_map_texture,
         .clear_depth = 1.0f,
@@ -763,7 +740,7 @@ bool Render()
         command_buffer_draw,
         NULL, 
         0,
-        &shadow_target
+        &shadow_target_info
     );
     if (!shadow_pass)
     {
@@ -782,10 +759,13 @@ bool Render()
     Render_Unanimated_Shadow(shadow_pass, command_buffer_draw);
 
     // TODO add bone animated shadow rendering (need a different vert shader)
+    // Render_BoneAnimated_Shadow(shadow_pass, command_buffer_draw);
 
     SDL_EndGPURenderPass(shadow_pass);
 
-    // Main Pass
+    ///////////////////////////////////////////////////////////////////////////
+    // Main Pass //////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
 
     SDL_GPUColorTargetInfo virtual_target_info = 
     {
@@ -850,24 +830,7 @@ bool Render()
     );
 
     SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &light_directional, sizeof(light_directional));
-
-    {
-        vec4 world_up_4 = { 0.0f, 1.0f, 0.0f, 0.0f };
-        vec4 view_up_4;
-        glm_mat4_mulv(camera.view_matrix, world_up_4, view_up_4);
-        vec3 view_up = { view_up_4[0], view_up_4[1], view_up_4[2] };
-        glm_vec3_normalize(view_up);
-
-        Light_Hemisphere light_hemisphere = 
-        {
-            .up_viewspace = {view_up[0], view_up[1], view_up[2]},
-            .color_sky = {0.8f, 0.8f, 0.8f},
-            .color_ground = {0.2f, 0.2f, 0.2f},
-        };
-
-        SDL_PushGPUFragmentUniformData(command_buffer_draw, 1, &light_hemisphere, sizeof(light_hemisphere));
-    }
-
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 1, &light_hemisphere, sizeof(light_hemisphere));
     SDL_PushGPUFragmentUniformData(command_buffer_draw, 2, &shadow_ubo, sizeof(shadow_ubo));
     
     Render_Unanimated(virtual_render_pass, command_buffer_draw);
@@ -887,6 +850,10 @@ bool Render()
     }
 
     SDL_EndGPURenderPass(virtual_render_pass);
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Swapchain Pass /////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
 
     SDL_GPUTexture* swapchain_texture;
     Uint32 swapchain_texture_width;

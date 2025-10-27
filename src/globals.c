@@ -29,6 +29,8 @@ InputState input_state = InputState_DEFAULT;
 Model Array models_unanimated = NULL;
 Model_BoneAnimated Array models_bone_animated = NULL;
 
+Light_Directional light_directional = {0};
+Light_Hemisphere light_hemisphere = {0};
 Light_Spot Array lights_spot = NULL;
 
 Sprite Array sprites = NULL;

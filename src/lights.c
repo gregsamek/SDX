@@ -1,6 +1,65 @@
 #include "lights.h"
 #include "globals.h"
 
+bool Lights_Update()
+{
+    // Update Spot Lights
+    
+    if (lights_storage_buffer) Lights_StorageBuffer_UpdateAndUpload();
+    
+    // current shadow casting only supports one shadow casting light
+    bool any_shadow_casters = false;
+    
+    foreach(light_spot, lights_spot)
+    {
+        if (light_spot.shadow_caster)
+        {
+            Lights_UpdateShadowMatrices_Spot(&light_spot);
+            any_shadow_casters = true;
+        }
+    }
+
+    // Update Directional Light
+
+    vec3 light_direction_world = {1.0f, -1.0f, 1.0f};
+    vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
+    vec4 light_direction_viewspace_4;
+    glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
+    vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
+    glm_vec3_normalize(light_direction_viewspace);
+
+    light_directional = (Light_Directional)
+    {
+        .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
+        .strength = 4.0f,
+        .color = {1.0f, 1.0f, 1.0f},
+        .shadow_caster = true
+    };
+
+    if (light_directional.shadow_caster)
+    {
+        SDL_assert(!any_shadow_casters); // only one shadow caster supported currently
+        Lights_UpdateShadowMatrices_Directional(light_direction_world);
+    }
+    
+    // Update Hemisphere Light
+
+    vec4 world_up_4 = { 0.0f, 1.0f, 0.0f, 0.0f };
+    vec4 view_up_4;
+    glm_mat4_mulv(camera.view_matrix, world_up_4, view_up_4);
+    vec3 view_up = { view_up_4[0], view_up_4[1], view_up_4[2] };
+    glm_vec3_normalize(view_up);
+
+    light_hemisphere = (Light_Hemisphere)
+    {
+        .up_viewspace = {view_up[0], view_up[1], view_up[2]},
+        .color_sky = {0.8f, 0.8f, 0.8f},
+        .color_ground = {0.2f, 0.2f, 0.2f},
+    };
+
+    return true;
+}
+
 bool Lights_LoadLights()
 {
     Light_Spot light_spot = 

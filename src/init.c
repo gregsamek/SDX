@@ -78,6 +78,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     }
 
     // we need to test this separately because the above format may not support sampling usage as well
+    // maybe I should just use the one that supports sampling for both?
     if (SDL_GPUTextureSupportsFormat(gpu_device, SDL_GPU_TEXTUREFORMAT_D32_FLOAT, SDL_GPU_TEXTURETYPE_2D, SDL_GPU_TEXTUREUSAGE_DEPTH_STENCIL_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER))
     {
         depth_sample_texture_format = SDL_GPU_TEXTUREFORMAT_D32_FLOAT;
@@ -149,7 +150,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    // STORAGE BUFFERS
+    // STORAGE BUFFERS ////////////////////////////////////////////////////////
 
     // TODO size joint buffers appropriately based on the number of joints in the loaded models
     joint_matrix_storage_buffer = SDL_CreateGPUBuffer
@@ -212,7 +213,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    // AUDIO
+    // AUDIO //////////////////////////////////////////////////////////////////
 
     if (!Audio_Init())
     {
@@ -220,7 +221,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    // TEXT
+    // TEXT ///////////////////////////////////////////////////////////////////
 
     if (!Text_Init())
     {
@@ -228,7 +229,7 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
-    // other initializations
+    // OTHER //////////////////////////////////////////////////////////////////
 
     keyboard_state = (bool*)SDL_GetKeyboardState(NULL);
     
