@@ -18,12 +18,12 @@ struct Vertex_Input
 
 struct Vertex_Output
 {
-    float4 position_clipspace   : SV_Position;
-    float3 position_viewspace   : TEXCOORD0;
-    float3 normal_viewspace     : TEXCOORD1;
-    float2 texture_coordinate   : TEXCOORD2;
-    float3 tangent_viewspace    : TEXCOORD3;
-    float3 bitangent_viewspace  : TEXCOORD4;
+    float4 position_clipspace       : SV_Position;
+    float3 position_viewspace       : TEXCOORD0;
+    float3 normal_viewspace         : TEXCOORD1;
+    float2 texture_coordinate       : TEXCOORD2;
+    float3 tangent_viewspace        : TEXCOORD3;
+    float3 bitangent_viewspace      : TEXCOORD4;
     float4 position_clipspace_light : TEXCOORD5;
 };
 

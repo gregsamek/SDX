@@ -77,8 +77,7 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             }
             else if (event->key.scancode == SDL_SCANCODE_M)
             {
-                magic_debug = !magic_debug;
-                SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION, "Magic Debug Mode %s", magic_debug ? "Enabled" : "Disabled");
+                Bit_Toggle(settings_render, SETTINGS_RENDER_SHOW_DEBUG_TEXTURE);
             }
             else if(event->key.scancode == SDL_SCANCODE_C)
             {
@@ -86,11 +85,11 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             }
             else if (event->key.scancode == SDL_SCANCODE_L)
             {
-                SDL_Log("Light View-Projection Matrix:\n");
-                for (int i = 0; i < 4; i++)
-                {
-                    SDL_Log("%f %f %f %f\n", light_viewproj_matrix[i][0], light_viewproj_matrix[i][1], light_viewproj_matrix[i][2], light_viewproj_matrix[i][3]);
-                }
+                Bit_Toggle(settings_render, SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE);
+            }
+            else if (event->key.scancode == SDL_SCANCODE_O)
+            {
+                Bit_Toggle(settings_render, SETTINGS_RENDER_DISABLE_AO);
             }
         } break;
     }

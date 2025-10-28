@@ -5,6 +5,7 @@
 
 bool Pipeline_Init();
 bool Pipeline_Prepass_Unanimated_Init();
+bool Pipeline_SSAO_Init();
 bool Pipeline_Unlit_Unanimated_Init();
 bool Pipeline_BlinnPhong_Unanimated_Init();
 bool Pipeline_PBR_Unanimated_Init();

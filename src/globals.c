@@ -2,7 +2,7 @@
 
 #include "globals.h"
 
-Magic_Debug magic_debug = 0;
+Settings_Render settings_render = 0;
 
 float mouse_sensitivity = 0.1f;
 float movement_speed = 10.0f; // Units per second
@@ -46,7 +46,7 @@ Camera camera =
     .pitch = -15.0f,
     .fov = 75.0f,
     .near_plane = 0.1f,
-    .far_plane = 1000.0f,
+    .far_plane = 10.0f,
     .view_projection_matrix = {0}
 };
 
@@ -68,6 +68,7 @@ bool use_linear_filtering = false;
 SDL_GPUDevice* gpu_device = NULL;
 
 SDL_GPUGraphicsPipeline* pipeline_prepass_unanimated = NULL;
+SDL_GPUGraphicsPipeline* pipeline_ssao = NULL;
 SDL_GPUGraphicsPipeline* pipeline_unanimated = NULL;
 SDL_GPUGraphicsPipeline* pipeline_bone_animated = NULL;
 SDL_GPUGraphicsPipeline* pipeline_rigid_animated = NULL;
@@ -79,6 +80,8 @@ SDL_GPUGraphicsPipeline* pipeline_sprite = NULL;
 SDL_GPUTexture* prepass_texture_msaa = NULL;
 SDL_GPUTexture* prepass_texture = NULL;
 SDL_GPUTexture* prepass_texture_half = NULL;
+
+SDL_GPUTexture* ssao_texture = NULL;
 
 SDL_GPUTexture* depth_texture = NULL;
 SDL_GPUTextureFormat depth_texture_format = SDL_GPU_TEXTUREFORMAT_INVALID;
@@ -94,7 +97,7 @@ SDL_GPUBuffer* lights_storage_buffer = NULL;
 SDL_GPUTransferBuffer* lights_transfer_buffer = NULL;
 
 SDL_GPUTexture* shadow_map_texture = NULL;
-SDL_GPUSampler* shadow_sampler = NULL;
+SDL_GPUSampler* sampler_data_texture = NULL;
 SDL_GPUGraphicsPipeline* pipeline_shadow_depth = NULL;
 SDL_GPUTextureFormat depth_sample_texture_format = SDL_GPU_TEXTUREFORMAT_INVALID;
 Uint32 SHADOW_MAP_SIZE = 1024;

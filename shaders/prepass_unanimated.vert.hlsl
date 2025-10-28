@@ -18,9 +18,10 @@ struct Vertex_Input
 
 struct Vertex_Output
 {
-    float4 position_clipspace   : SV_Position;
-    float3 position_viewspace   : TEXCOORD0;
-    float3 normal_viewspace     : TEXCOORD1;
+    float4 position_clipspace : SV_Position;
+    float3 position_viewspace : TEXCOORD0;
+    float3 normal_viewspace   : TEXCOORD1;
+    float2 texture_coordinate : TEXCOORD2;
 };
 
 Vertex_Output main(Vertex_Input vertex)
@@ -41,6 +42,8 @@ Vertex_Output main(Vertex_Input vertex)
     float3 N_vs = normalize(mul((float3x3)mv, vertex.normal));
 #endif
     output.normal_viewspace = N_vs;
+
+    output.texture_coordinate = vertex.texture_coordinate;
 
     return output;
 }

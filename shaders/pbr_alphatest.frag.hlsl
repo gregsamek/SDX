@@ -27,11 +27,12 @@ Texture2D texture_diffuse            : register(t0, space2);
 Texture2D texture_metallic_roughness : register(t1, space2);
 Texture2D texture_normal             : register(t2, space2);
 Texture2D shadow_map                 : register(t3, space2);
+Texture2D texture_ssao               : register(t4, space2);
 
-StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t4, space2);
+StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t5, space2);
 
 SamplerState sampler_texture  : register(s0, space2);
-SamplerState sampler_shadow   : register(s1, space2);
+SamplerState sampler_data_texture   : register(s1, space2);
 
 cbuffer Light_Directional_Uniform : register(b0, space3)
 {
@@ -58,6 +59,11 @@ cbuffer Shadow_Uniform : register(b2, space3)
     float  shadow_pcf_radius; // in texels
 };
 
+cbuffer Inverse_Resolution : register(b3, space3)
+{
+    float2 screen_inv_resolution; // 1.0 / (width, height)
+};
+
 float ShadowFactor(float4 position_clipspace_light)
 {
     float3 ndc = position_clipspace_light.xyz / max(position_clipspace_light.w, 1e-7f);
@@ -80,7 +86,7 @@ float ShadowFactor(float4 position_clipspace_light)
         for (int x = -radius; x <= radius; x++)
         {
             float2 offset = float2((float)x, (float)y) * shadow_texel_size;
-            float map_depth = shadow_map.SampleLevel(sampler_shadow, uv + offset, 0.0).r; // read depth
+            float map_depth = shadow_map.SampleLevel(sampler_data_texture, uv + offset, 0.0).r; // read depth
             sum += (fragment_depth <= (map_depth + shadow_bias));
         }
     }
@@ -89,7 +95,7 @@ float ShadowFactor(float4 position_clipspace_light)
     return sum / (kernel * kernel);
 
     // bypass PCF
-    // float map_depth = shadow_map.SampleLevel(sampler_shadow, uv, 0.0).r;
+    // float map_depth = shadow_map.SampleLevel(sampler_data_texture, uv, 0.0).r;
     // return (fragment_depth <= (map_depth + shadow_bias));
 }
 
@@ -176,7 +182,7 @@ Fragment_Output main(Fragment_Input fragment)
 
     // Spotlights
 
-    for (int i = 0; i < 1; i++) // TODO: number of active lights as uniform
+    for (int i = 0; i < 0; i++) // TODO: number of active lights as uniform
     {
         Light_Spotlight light = buffer_spotlights[i];
 
@@ -226,7 +232,9 @@ Fragment_Output main(Fragment_Input fragment)
     float3 kS_ambient = Fresnel_Schlick_Roughness(NdotV, F0, roughness);
     float3 kD_ambient = (1.0f.xxx - kS_ambient) * (1.0f - metallic);
 
-    float3 diffuse_ambient = kD_ambient * (albedo.rgb / 3.14159265f) * diffuse_environment_color * ao;
+    float2 uv = fragment.position_clipspace_camera.xy * screen_inv_resolution; // SV_Position.xy -> [0,1]
+    float ssao = texture_ssao.Sample(sampler_data_texture, uv).r;
+    float3 diffuse_ambient = kD_ambient * (albedo.rgb / 3.14159265f) * diffuse_environment_color * ao * ssao;
 
     // Hemispheric specular (indirect specular)
     float3 R = reflect(-V, N);
@@ -247,10 +255,6 @@ Fragment_Output main(Fragment_Input fragment)
     Lo += diffuse_ambient + specular_ambient;
 
     output.color = float4(Lo, albedo.a);
-
-    // debug shadow map
-    // output.color = float4(ShadowFactor(fragment.position_clipspace_light).xxx, 1.0f);
-    
     return output;
 }
 

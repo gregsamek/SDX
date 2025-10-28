@@ -13,13 +13,16 @@
 
 #include "array.h"
 
-Enum (Uint32, Magic_Debug)
+Enum (Uint32, Settings_Render)
 {
-    MAGIC_DEBUG_NONE                 = 0,
-    MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE = 1 << 0,
+    SETTINGS_RENDER_NONE                    = 0,
+    SETTINGS_RENDER_SHOW_DEBUG_TEXTURE      = 1 << 0,
+    SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE = 1 << 1,
+    SETTINGS_RENDER_DISABLE_AO              = 1 << 2,
+    SETTINGS_RENDER_DISABLE_SHADOWS         = 1 << 3,
 };
 
-extern Magic_Debug magic_debug;
+extern Settings_Render settings_render;
 
 extern float mouse_sensitivity;
 extern float movement_speed;
@@ -77,6 +80,7 @@ extern bool use_linear_filtering;
 extern SDL_GPUDevice* gpu_device;
 
 extern SDL_GPUGraphicsPipeline* pipeline_prepass_unanimated;
+extern SDL_GPUGraphicsPipeline* pipeline_ssao;
 extern SDL_GPUGraphicsPipeline* pipeline_unanimated;
 extern SDL_GPUGraphicsPipeline* pipeline_bone_animated;
 extern SDL_GPUGraphicsPipeline* pipeline_rigid_animated;
@@ -88,6 +92,8 @@ extern SDL_GPUGraphicsPipeline* pipeline_sprite;
 extern SDL_GPUTexture* prepass_texture_msaa;
 extern SDL_GPUTexture* prepass_texture;
 extern SDL_GPUTexture* prepass_texture_half;
+
+extern SDL_GPUTexture* ssao_texture;
 
 extern SDL_GPUTexture* depth_texture;
 extern SDL_GPUTextureFormat depth_texture_format;
@@ -103,7 +109,7 @@ extern SDL_GPUBuffer* lights_storage_buffer;
 extern SDL_GPUTransferBuffer* lights_transfer_buffer;
 
 extern SDL_GPUTexture* shadow_map_texture;
-extern SDL_GPUSampler* shadow_sampler;
+extern SDL_GPUSampler* sampler_data_texture;
 extern SDL_GPUGraphicsPipeline* pipeline_shadow_depth;
 extern SDL_GPUTextureFormat depth_sample_texture_format;
 extern Uint32 SHADOW_MAP_SIZE;

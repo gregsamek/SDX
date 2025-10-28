@@ -1,18 +1,9 @@
-#ifdef __HLSL_VERSION
-    #define CLIP_TEST(v)  clip(v)
-#elif defined(__METAL_VERSION__)
-    #include <metal_stdlib>
-    using namespace metal;
-    #define CLIP_TEST(v)  if (any((v) < 0)) discard_fragment()
-#else
-    #define CLIP_TEST(v)  if (any((v) < 0)) discard
-#endif
-
-#define MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE 1
+#define SETTINGS_RENDER_SHOW_DEBUG_TEXTURE 1
+#define SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE 2
 
 cbuffer Settings_Uniform : register(b0, space3)
 {
-    uint magic_debug;
+    uint settings_render;
 };
 
 Texture2D hdrTex     : register(t0, space2);
@@ -49,21 +40,23 @@ float LinearizeDepth(float depth, float near, float far)
 
 float4 main(FragmentInput input): SV_Target0
 {
-    float exposure = 1.0; // Adjust as needed
-    float3 hdr = hdrTex.Sample(Sampler, input.TexCoord).rgb;
-    float3 color = hdr * exposure;
 
-    if (magic_debug & MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE)
+    if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
-        // color = LinearizeDepth(color, 0.001, 15.0); // near/far plane values
+        float3 color = hdrTex.Sample(Sampler, input.TexCoord).r;
+        if (settings_render & SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE)
+            color = LinearizeDepth(color.r, 0.1, 10.0); // near/far plane values
+        return float4(color, 1.0);
     }
     else
     {
+        float exposure = 1.0; // Adjust as needed
+        float3 hdr = hdrTex.Sample(Sampler, input.TexCoord).rgb;
+        float3 color = hdr * exposure;
         // color = reinhardTonemap(color);
         color = saturate(color);
         color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR (not currently trying to support this)
+        return float4(color, 1.0);    
     }
-    
-    return float4(color, 1.0);
     
 }

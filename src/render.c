@@ -40,6 +40,7 @@ bool Render_LoadRenderSettings()
             {
                 virtual_screen_texture_height = (Uint32)SDL_strtoul(setting_value, NULL, 10);
             }
+            // TODO SDL_GPUTextureSupportsSampleCount; make msaa an on/off setting
             else if (SDL_strcmp(setting_name, "msaa_level") == 0)
             {
                 int msaa = SDL_strtol(setting_value, NULL, 10);
@@ -194,6 +195,31 @@ bool Render_InitRenderTargets()
     if (prepass_texture_half == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create prepass half res texture: %s", SDL_GetError());
+        return false;
+    }
+
+    if (ssao_texture)
+    {
+        SDL_ReleaseGPUTexture(gpu_device, ssao_texture);
+    }
+    ssao_texture = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .width = virtual_screen_texture_width / 2,
+            .height = virtual_screen_texture_height / 2,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .format = SDL_GPU_TEXTUREFORMAT_R16_FLOAT,
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+        }
+    );
+    if (ssao_texture == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create SSAO texture: %s", SDL_GetError());
         return false;
     }
 
@@ -464,9 +490,18 @@ static void Render_Unanimated_Prepass(SDL_GPURenderPass* render_pass, SDL_GPUCom
             SDL_GPU_INDEXELEMENTSIZE_16BIT
         );
 
+        // need to sample diffuse because of alpha testing, otherwise depth buffer will be incorrect
         SDL_GPUTexture* texture_diffuse = models_unanimated[i].mesh.material.texture_diffuse;    
-        SDL_GPUTexture* texture_metallic_roughness = models_unanimated[i].mesh.material.texture_metallic_roughness;
-        SDL_GPUTexture* texture_normal = models_unanimated[i].mesh.material.texture_normal;
+        SDL_BindGPUFragmentSamplers
+        (
+            render_pass, 
+            0, // first slot
+            (SDL_GPUTextureSamplerBinding[])
+            {
+                { .texture = texture_diffuse,  .sampler = default_texture_sampler },
+            },
+            1 // num_bindings
+        );
 
         SDL_DrawGPUIndexedPrimitives
         (
@@ -563,9 +598,10 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
                 { .texture = texture_diffuse,  .sampler = default_texture_sampler },
                 { .texture = texture_metallic_roughness, .sampler = default_texture_sampler },
                 { .texture = texture_normal, .sampler = default_texture_sampler },
-                { .texture = shadow_map_texture, .sampler = shadow_sampler },
+                { .texture = shadow_map_texture, .sampler = sampler_data_texture },
+                { .texture = ssao_texture, .sampler = sampler_data_texture },
             },
-            4 // num_bindings
+            5 // num_bindings
         );
 
         SDL_DrawGPUIndexedPrimitives
@@ -1011,7 +1047,78 @@ bool Render()
     // SSAO ///////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
-    // TODO
+    SDL_GPUColorTargetInfo ssao_target_info = 
+    {
+        .texture = ssao_texture,
+        .clear_color = (SDL_FColor){ 1.0f, 1.0f, 1.0f, 1.0f },
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .store_op = SDL_GPU_STOREOP_STORE,
+        .cycle = true
+    };
+
+    SDL_GPURenderPass* ssao_render_pass = SDL_BeginGPURenderPass
+    (
+        command_buffer_draw,
+        &ssao_target_info,
+        1,
+        NULL
+    );
+
+    if (!ssao_render_pass)
+    {
+        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin SSAO render pass: %s", SDL_GetError());
+        SDL_CancelGPUCommandBuffer(command_buffer_draw);
+        return true;
+    }
+
+    SDL_SetGPUViewport(ssao_render_pass, &(SDL_GPUViewport)
+    { 
+        .x = 0, 
+        .y = 0,
+        .w = (int)virtual_screen_texture_width / 2, 
+        .h = (int)virtual_screen_texture_height / 2,
+        .min_depth = 0.0f, 
+        .max_depth = 1.0f
+    });
+
+    SDL_BindGPUGraphicsPipeline(ssao_render_pass, pipeline_ssao);
+
+    SDL_BindGPUFragmentSamplers
+    (
+        ssao_render_pass,
+        0, // first slot
+        (SDL_GPUTextureSamplerBinding[])
+        {
+            { .texture = prepass_texture_half,  .sampler = sampler_data_texture },
+        },
+        1 // num_bindings
+    );
+
+    mat4 projection_matrix;
+    glm_perspective
+    (
+        glm_rad(camera.fov),
+        (float)window_width / (float)window_height,
+        camera.near_plane,
+        camera.far_plane,
+        projection_matrix
+    );
+
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &projection_matrix, sizeof(projection_matrix));
+
+    float ssao_ubo[8] = 
+    {
+        (float)(virtual_screen_texture_width), (float)(virtual_screen_texture_height), 
+        4.0f, 0.5f, 0.005f, 1.0f, 1.0f, 32.0f
+    };
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 1, &ssao_ubo, sizeof(ssao_ubo));
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 2, &settings_render, sizeof(settings_render));
+
+    SDL_DrawGPUPrimitives(ssao_render_pass, 6, 1, 0, 0);
+
+    SDL_EndGPURenderPass(ssao_render_pass);
+
+    // TODO Edge-aware blur (bilateral/ATrous)
 
     ///////////////////////////////////////////////////////////////////////////
     // Main Pass //////////////////////////////////////////////////////////////
@@ -1061,6 +1168,16 @@ bool Render()
         return true;
     }
 
+    SDL_SetGPUViewport(virtual_render_pass, &(SDL_GPUViewport)
+    { 
+        .x = 0, 
+        .y = 0,
+        .w = (int)virtual_screen_texture_width, 
+        .h = (int)virtual_screen_texture_height,
+        .min_depth = 0.0f, 
+        .max_depth = 1.0f
+    });
+
     SDL_BindGPUFragmentStorageBuffers
     (
         virtual_render_pass,
@@ -1073,6 +1190,14 @@ bool Render()
     SDL_PushGPUFragmentUniformData(command_buffer_draw, 1, &light_hemisphere, sizeof(light_hemisphere));
     SDL_PushGPUFragmentUniformData(command_buffer_draw, 2, &shadow_ubo, sizeof(shadow_ubo));
     
+    vec4 inverse_ssao_texture_size = 
+    {
+        1.0f / (float)(virtual_screen_texture_width),
+        1.0f / (float)(virtual_screen_texture_height),
+        0.0f, 0.0f
+    };
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 3, &inverse_ssao_texture_size, sizeof(inverse_ssao_texture_size));
+
     Render_Unanimated(virtual_render_pass, command_buffer_draw);
 
     Render_BoneAnimated(virtual_render_pass, command_buffer_draw);
@@ -1149,11 +1274,7 @@ bool Render()
 
     SDL_BindGPUGraphicsPipeline(swapchain_render_pass, pipeline_fullscreen_quad);
 
-    mat4 projection_matrix_ortho;
-    glm_ortho(0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, projection_matrix_ortho);
-    SDL_PushGPUVertexUniformData(command_buffer_draw, 0, &projection_matrix_ortho, sizeof(projection_matrix_ortho));
-
-    SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &magic_debug, sizeof(magic_debug));
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &settings_render, sizeof(settings_render));
 
     SDL_GPUTextureSamplerBinding fullscreen_texture_binding = 
     { 
@@ -1161,10 +1282,10 @@ bool Render()
         .sampler = default_texture_sampler 
     };
 
-    if (magic_debug & MAGIC_DEBUG_SHADOW_DEPTH_TEXTURE)
+    if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
-        fullscreen_texture_binding.texture = prepass_texture_half;
-        fullscreen_texture_binding.sampler = shadow_sampler;
+        fullscreen_texture_binding.texture = ssao_texture;
+        fullscreen_texture_binding.sampler = sampler_data_texture;
     }
 
     SDL_BindGPUFragmentSamplers

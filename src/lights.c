@@ -31,7 +31,7 @@ bool Lights_Update()
     light_directional = (Light_Directional)
     {
         .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
-        .strength = 4.0f,
+        .strength = 0.0f,
         .color = {1.0f, 1.0f, 1.0f},
         .shadow_caster = true
     };
@@ -53,8 +53,8 @@ bool Lights_Update()
     light_hemisphere = (Light_Hemisphere)
     {
         .up_viewspace = {view_up[0], view_up[1], view_up[2]},
-        .color_sky = {0.8f, 0.8f, 0.8f},
-        .color_ground = {0.2f, 0.2f, 0.2f},
+        .color_sky = {1.0f, 1.0f, 1.0f},
+        .color_ground = {1.0f, 1.0f, 1.0f},
     };
 
     return true;

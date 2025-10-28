@@ -44,12 +44,13 @@ bool Sampler_Init()
         return false;
     }
 
-    if (shadow_sampler)
+    // used for sampling shadow maps, prepass texture, etc.
+    if (sampler_data_texture)
     {
-        SDL_ReleaseGPUSampler(gpu_device, shadow_sampler);
-        shadow_sampler = NULL;
+        SDL_ReleaseGPUSampler(gpu_device, sampler_data_texture);
+        sampler_data_texture = NULL;
     }
-    shadow_sampler = SDL_CreateGPUSampler
+    sampler_data_texture = SDL_CreateGPUSampler
     (
         gpu_device,
         &(SDL_GPUSamplerCreateInfo)
@@ -69,7 +70,7 @@ bool Sampler_Init()
             .enable_compare = false,
         }
     );
-    if (!shadow_sampler)
+    if (!sampler_data_texture)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create shadow sampler: %s", SDL_GetError());
         return false;
