@@ -504,6 +504,7 @@ static void Render_Unanimated_Prepass(SDL_GPURenderPass* render_pass, SDL_GPUCom
         );
 
         // need to sample diffuse because of alpha testing, otherwise depth buffer will be incorrect
+        // if I get squeezed for performance, I could make a separate pipeline without alpha testing
         SDL_GPUTexture* texture_diffuse = models_unanimated[i].mesh.material.texture_diffuse;    
         SDL_BindGPUFragmentSamplers
         (
@@ -610,11 +611,9 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
             {
                 { .texture = texture_diffuse,  .sampler = default_texture_sampler },
                 { .texture = texture_metallic_roughness, .sampler = default_texture_sampler },
-                { .texture = texture_normal, .sampler = default_texture_sampler },
-                { .texture = shadow_map_texture, .sampler = sampler_data_texture },
-                { .texture = ssao_texture, .sampler = sampler_data_texture },
+                { .texture = texture_normal, .sampler = default_texture_sampler }
             },
-            5 // num_bindings
+            3 // num_bindings
         );
 
         SDL_DrawGPUIndexedPrimitives
@@ -1198,6 +1197,20 @@ bool Render()
         .min_depth = 0.0f, 
         .max_depth = 1.0f
     });
+
+    // can't skip these bindings, even if shadows & ssao are disabled
+    // would need a separate pipeline if I wanted this for performance
+    SDL_BindGPUFragmentSamplers
+    (
+        virtual_render_pass, 
+        3, // first slot
+        (SDL_GPUTextureSamplerBinding[])
+        {
+            { .texture = shadow_map_texture, .sampler = sampler_data_texture },
+            { .texture = ssao_texture, .sampler = sampler_data_texture }
+        },
+        2 // num_bindings
+    );
 
     SDL_BindGPUFragmentStorageBuffers
     (
