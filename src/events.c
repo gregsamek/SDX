@@ -89,7 +89,7 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             }
             else if (event->key.scancode == SDL_SCANCODE_O)
             {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_DISABLE_AO);
+                Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_SSAO);
             }
         } break;
     }

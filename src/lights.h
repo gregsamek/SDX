@@ -60,7 +60,7 @@ Struct (Light_Hemisphere)
     float _padding3;
 };
 
-Struct (ShadowUBO) 
+Struct (Shadow_Settings) 
 {
     vec2 texel_size; // 1/width, 1/height
     float bias;

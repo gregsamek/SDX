@@ -45,7 +45,7 @@ void Update_FrameRate(void)
         average_frame_rate = 1.0 / (total_frame_time / FRAME_TIME_ARRAY_SIZE);
     }
 
-    if (manage_frame_rate_manually && (frame_time < minimum_frame_time)) 
+    if ((settings_render & SETTINGS_RENDER_MANUAL_FRAME_RATE) && (frame_time < minimum_frame_time)) 
     {
         SDL_DelayPrecise((minimum_frame_time - frame_time) * 1000000000.0);
     }

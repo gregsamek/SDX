@@ -2,7 +2,7 @@
 
 #include "globals.h"
 
-Settings_Render settings_render = 0;
+Settings_Render settings_render = SETTINGS_RENDER_ENABLE_SSAO | SETTINGS_RENDER_ENABLE_SHADOWS | SETTINGS_RENDER_USE_LINEAR_FILTERING;
 
 float mouse_sensitivity = 0.1f;
 float movement_speed = 10.0f; // Units per second
@@ -61,10 +61,8 @@ SDL_GPUTransferBuffer* text_transfer_buffer = NULL;
 SDL_GPUSwapchainComposition swapchain_composition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR;
 SDL_GPUPresentMode swapchain_present_mode = SDL_GPU_PRESENTMODE_VSYNC;
 double minimum_frame_time = 1.0 / 60.0;
-bool manage_frame_rate_manually = false;
 SDL_GPUSampleCount msaa_level = SDL_GPU_SAMPLECOUNT_1;
 Uint32 n_mipmap_levels = 6;
-bool use_linear_filtering = false;
 SDL_GPUDevice* gpu_device = NULL;
 
 SDL_GPUGraphicsPipeline* pipeline_prepass_unanimated = NULL;
@@ -109,4 +107,4 @@ float SHADOW_PCF_RADIUS = 1.5f; // in texels
 mat4 light_view_matrix = {0};
 mat4 light_proj_matrix = {0};
 mat4 light_viewproj_matrix = {0};
-ShadowUBO shadow_ubo = {0};
+Shadow_Settings shadow_settings = {0};

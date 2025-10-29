@@ -10,7 +10,6 @@
 #define Bit_Toggle(var, bit) ((var) ^= (bit))
 #define Bit_Set(var, bit)    ((var) |= (bit))
 #define Bit_Clear(var, bit)  ((var) &= ~(bit))
-#define Bit_Check(var, bit)  ((var) & (bit))
 
 // #define offsetof(_STRUCT, _MEMBER) ((size_t)((char *)&((_STRUCT *)0)->_MEMBER - (char *)0))
 

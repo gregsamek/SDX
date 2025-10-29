@@ -34,35 +34,53 @@ StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t5, space2);
 SamplerState sampler_texture  : register(s0, space2);
 SamplerState sampler_data_texture   : register(s1, space2);
 
-cbuffer Light_Directional_Uniform : register(b0, space3)
+// struct Light_Directional_Uniform
+// {
+//     float3 light_directional_direction; 
+//     float  light_directional_strength;
+//     float3 light_directional_color; 
+//     uint   light_directional_is_shadow_caster;
+// };
+
+// struct Light_Hemisphere_Uniform
+// {
+//     float3 up_viewspace;
+//     float             _;
+//     float3 color_sky;
+//     float            __;
+//     float3 color_ground;
+//     float           ___;
+// };
+
+// struct Shadow_Uniform
+// {
+//     float2 shadow_texel_size;
+//     float  shadow_bias;
+//     float  shadow_pcf_radius; // in texels
+// };
+
+cbuffer UBO_Main_Frag : register(b0, space3)
 {
     float3 light_directional_direction; 
     float  light_directional_strength;
     float3 light_directional_color; 
     uint   light_directional_is_shadow_caster;
-};
-
-cbuffer Light_Hemisphere_Uniform : register(b1, space3)
-{
     float3 up_viewspace;
     float             _;
     float3 color_sky;
     float            __;
     float3 color_ground;
     float           ___;
-};
-
-cbuffer Shadow_Uniform : register(b2, space3)
-{
     float2 shadow_texel_size;
     float  shadow_bias;
     float  shadow_pcf_radius; // in texels
-};
+    float2 screen_inv_resolution;
+    uint   settings_render;
+    float         ____;
+}
 
-cbuffer Inverse_Resolution : register(b3, space3)
-{
-    float2 screen_inv_resolution; // 1.0 / (width, height)
-};
+#define SETTINGS_RENDER_ENABLE_SSAO     (1 << 2)
+#define SETTINGS_RENDER_ENABLE_SHADOWS  (1 << 3)
 
 float ShadowFactor(float4 position_clipspace_light)
 {
@@ -175,7 +193,7 @@ Fragment_Output main(Fragment_Input fragment)
 
     float3 direct_dir = (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
 
-    if (light_directional_is_shadow_caster)
+    if (light_directional_is_shadow_caster && (settings_render & SETTINGS_RENDER_ENABLE_SHADOWS))
         Lo += direct_dir * ShadowFactor(fragment.position_clipspace_light);
     else
         Lo += direct_dir;
@@ -217,7 +235,7 @@ Fragment_Output main(Fragment_Input fragment)
 
         float3 light_spot = (kD_spot * albedo.rgb / 3.14159265f + specular_spot) * radiance_spot * NdotL;
 
-        if (light.shadow_caster)
+        if (light.shadow_caster && (settings_render & SETTINGS_RENDER_ENABLE_SHADOWS))
             Lo += light_spot * ShadowFactor(fragment.position_clipspace_light);
         else
             Lo += light_spot;
@@ -233,7 +251,9 @@ Fragment_Output main(Fragment_Input fragment)
     float3 kD_ambient = (1.0f.xxx - kS_ambient) * (1.0f - metallic);
 
     float2 uv = fragment.position_clipspace_camera.xy * screen_inv_resolution; // SV_Position.xy -> [0,1]
-    float ssao = texture_ssao.Sample(sampler_data_texture, uv).r;
+    float ssao = 1.0f;
+    if (settings_render & SETTINGS_RENDER_ENABLE_SSAO)
+        ssao = texture_ssao.Sample(sampler_data_texture, uv).r;
     float3 diffuse_ambient = kD_ambient * (albedo.rgb / 3.14159265f) * diffuse_environment_color * ao * ssao;
 
     // Hemispheric specular (indirect specular)

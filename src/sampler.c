@@ -22,7 +22,7 @@ bool Sampler_Init()
         .enable_compare = false
     };
 
-    if (use_linear_filtering)
+    if (settings_render & SETTINGS_RENDER_USE_LINEAR_FILTERING)
     {
         sampler_create_info.min_filter = SDL_GPU_FILTER_LINEAR;
         sampler_create_info.mag_filter = SDL_GPU_FILTER_LINEAR;

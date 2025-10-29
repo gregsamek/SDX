@@ -13,13 +13,16 @@
 
 #include "array.h"
 
+// TODO I should probably move this into a dedicated header that can be shared with shaders
 Enum (Uint32, Settings_Render)
 {
     SETTINGS_RENDER_NONE                    = 0,
     SETTINGS_RENDER_SHOW_DEBUG_TEXTURE      = 1 << 0,
     SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE = 1 << 1,
-    SETTINGS_RENDER_DISABLE_AO              = 1 << 2,
-    SETTINGS_RENDER_DISABLE_SHADOWS         = 1 << 3,
+    SETTINGS_RENDER_ENABLE_SSAO             = 1 << 2,
+    SETTINGS_RENDER_ENABLE_SHADOWS          = 1 << 3,
+    SETTINGS_RENDER_USE_LINEAR_FILTERING    = 1 << 4,
+    SETTINGS_RENDER_MANUAL_FRAME_RATE       = 1 << 5
 };
 
 extern Settings_Render settings_render;
@@ -73,10 +76,8 @@ extern SDL_GPUTransferBuffer* text_transfer_buffer;
 extern SDL_GPUSwapchainComposition swapchain_composition;
 extern SDL_GPUPresentMode swapchain_present_mode;
 extern double minimum_frame_time;
-bool manage_frame_rate_manually;
 extern SDL_GPUSampleCount msaa_level;
 extern Uint32 n_mipmap_levels;
-extern bool use_linear_filtering;
 extern SDL_GPUDevice* gpu_device;
 
 extern SDL_GPUGraphicsPipeline* pipeline_prepass_unanimated;
@@ -121,6 +122,6 @@ extern float SHADOW_PCF_RADIUS;        // in texels
 extern mat4 light_view_matrix;
 extern mat4 light_proj_matrix;
 extern mat4 light_viewproj_matrix;
-extern ShadowUBO shadow_ubo;
+extern Shadow_Settings shadow_settings;
 
 #endif // GLOBALS_H

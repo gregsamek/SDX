@@ -216,7 +216,7 @@ bool Pipeline_SSAO_Init()
         1, // num_samplers
         0, // num_storage_textures
         0, // num_storage_buffers
-        3  // num_uniform_buffers
+        1  // num_uniform_buffers
     );
     if (fragment_shader == NULL)
     {
@@ -554,7 +554,7 @@ bool Pipeline_PBR_Unanimated_Init()
         5, // num_samplers
         0, // num_storage_textures
         0, // num_storage_buffers
-        4 // num_uniform_buffers
+        1 // num_uniform_buffers
     );
     if (fragment_shader == NULL)
     {

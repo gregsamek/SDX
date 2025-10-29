@@ -1,55 +1,18 @@
-// Blank SSAO shader for testing //////////////////////////////////////////////////////////////////
-
-// Texture2D    prepass_texture : register(t0, space2);
-// SamplerState texture_sampler : register(s0, space2);
-
-// struct Fragment_Input
-// {
-//     float4 position : SV_Position;
-//     float2 texcoord : TEXCOORD0;
-// };
-
-// struct Fragment_Output
-// {
-//     float4 color : SV_Target0;
-// };
-
-// Fragment_Output main(Fragment_Input fragment)
-// {
-//     float3 normal_viewspace = prepass_texture.Sample(texture_sampler, fragment.texcoord).rgb;
-//     float depth_viewspace = prepass_texture.Sample(texture_sampler, fragment.texcoord).a;
-    
-//     Fragment_Output output;
-//     output.color = depth_viewspace;
-//     return output;
-// }
-
-// SSAO implementation based on common techniques /////////////////////////////////////////////////
 
 Texture2D    prepass_texture : register(t0, space2);
 SamplerState texture_sampler : register(s0, space2);
 
-cbuffer ProjectionMatrix : register(b0, space3)
+cbuffer UBO_SSAO : register(b0, space3)
 {
-    float4x4 projection;     // View -> Clip. LH, depth 0..1
-}
-
-cbuffer SSAO_UBO : register(b1, space3)
-{
+    float4x4 projection_matrix; // View -> Clip. LH, depth 0..1
+    uint settings_render;
     float2 screen_size;
-    float noise_size;
     float radius; // TODO scale radius with depth?
     float bias;
     float intensity;
     float power;
     float kernel_size;
-};
-
-#define SETTINGS_RENDER_DISABLE_AO 4
-cbuffer Settings_Uniform : register(b2, space3)
-{
-    uint settings_render;
-};
+}
 
 struct Fragment_Input
 {
@@ -102,7 +65,7 @@ float3 sampleHemisphereCosine(float2 Xi)
     return float3(x, y, z);
 }
 
-// Reconstruct view-space position from UV and view-space depth, using projection._11/_22
+// Reconstruct view-space position from UV and view-space depth, using projection_matrix._11/_22
 float3 reconstructViewPosition(float2 uv, float depthVS, float2 projFocal)
 {
     // Map UV (0..1, +Y down) to NDC (-1..1, +Y up) for D3D/Metal LH
@@ -110,7 +73,7 @@ float3 reconstructViewPosition(float2 uv, float depthVS, float2 projFocal)
     ndc.x = uv.x * 2.0 - 1.0;
     ndc.y = 1.0 - uv.y * 2.0;
 
-    // For LH projection with w = z:
+    // For LH projection_matrix with w = z:
     // ndc.x = (x * P00) / z  => x = ndc.x * z / P00
     // ndc.y = (y * P11) / z  => y = ndc.y * z / P11
     float3 posVS;
@@ -137,12 +100,6 @@ float2 projectToUV(float3 posVS, float2 projFocal)
 
 Fragment_Output main(Fragment_Input fragment)
 {
-    if (settings_render & SETTINGS_RENDER_DISABLE_AO)
-    {
-        Fragment_Output out0;
-        out0.color = 1.0; // no occlusion
-        return out0;
-    }
     float4 gbuffer = prepass_texture.SampleLevel(texture_sampler, fragment.texcoord, 0.0);
     float3 normal = normalize(gbuffer.rgb);
     float  depth_viewspace  = gbuffer.a;
@@ -157,7 +114,7 @@ Fragment_Output main(Fragment_Input fragment)
 
     // Pull focal lengths from projection matrix (P00, P11)
     // HLSL matrix indexing: _11 is first row/col (P00), _22 is P11
-    float2 projFocal = float2(projection._11, projection._22);
+    float2 projFocal = float2(projection_matrix._11, projection_matrix._22);
 
     // Reconstruct current pixel's view-space position
     float3 position= reconstructViewPosition(fragment.texcoord, depth_viewspace, projFocal);
