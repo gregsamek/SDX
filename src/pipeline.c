@@ -102,15 +102,15 @@ bool Pipeline_Prepass_Unanimated_Init()
                 .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
                 .blend_state = (SDL_GPUColorTargetBlendState)
                 {
-                    .enable_blend = true,
-                    .color_blend_op = SDL_GPU_BLENDOP_ADD,
-                    .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-                    .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-                    .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
-                    .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-                    .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-                    .color_write_mask = SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A,
-                    .enable_color_write_mask = true
+                    .enable_blend = false,
+                    // .color_blend_op = SDL_GPU_BLENDOP_ADD,
+                    // .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                    // .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                    // .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
+                    // .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                    // .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                    // .color_write_mask = SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A,
+                    .enable_color_write_mask = false
                 }
             }},
             .has_depth_stencil_target = true,
@@ -234,15 +234,15 @@ bool Pipeline_SSAO_Init()
                 .format = SDL_GPU_TEXTUREFORMAT_R16_FLOAT,
                 .blend_state = (SDL_GPUColorTargetBlendState)
                 {
-                    .enable_blend = true,
-                    .color_blend_op = SDL_GPU_BLENDOP_ADD,
-                    .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-                    .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-                    .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
-                    .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
-                    .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
-                    .color_write_mask = SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A,
-                    .enable_color_write_mask = true
+                    .enable_blend = false,
+                    // .color_blend_op = SDL_GPU_BLENDOP_ADD,
+                    // .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                    // .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                    // .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
+                    // .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                    // .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                    // .color_write_mask = SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A,
+                    .enable_color_write_mask = false
                 }
             }},
             .has_depth_stencil_target = false,

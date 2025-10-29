@@ -45,7 +45,7 @@ float4 main(FragmentInput input): SV_Target0
     {
         float3 color = hdrTex.Sample(Sampler, input.TexCoord).r;
         if (settings_render & SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE)
-            color = LinearizeDepth(color.r, 0.1, 10.0); // near/far plane values
+            color = LinearizeDepth(color.r, 0.1, 200.0); // near/far plane values
         return float4(color, 1.0);
     }
     else

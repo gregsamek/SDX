@@ -22,7 +22,6 @@ Enum (Uint32, Settings_Render)
     SETTINGS_RENDER_ENABLE_SSAO             = 1 << 2,
     SETTINGS_RENDER_ENABLE_SHADOWS          = 1 << 3,
     SETTINGS_RENDER_USE_LINEAR_FILTERING    = 1 << 4,
-    SETTINGS_RENDER_MANUAL_FRAME_RATE       = 1 << 5
 };
 
 extern Settings_Render settings_render;

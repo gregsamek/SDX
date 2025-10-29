@@ -29,3 +29,20 @@ Vertex_Output main(uint vid : SV_VertexID)
     output.texcoord = uv[i];
     return output;
 }
+
+// // Full-screen triangle
+// struct VSOut
+// {
+//     float4 pos : SV_POSITION;
+//     float2 uv  : TEXCOORD0;
+// };
+
+// VSOut VS_Fullscreen(uint vid : SV_VertexID)
+// {
+//     VSOut o;
+//     // Fullscreen triangle positions
+//     float2 p = float2((vid << 1) & 2, vid & 2);
+//     o.pos = float4(p * float2(2, -2) + float2(-1, 1), 0, 1);
+//     o.uv  = p;
+//     return o;
+// }

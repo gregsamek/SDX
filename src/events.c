@@ -75,21 +75,30 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             {
                 SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
             }
-            else if (event->key.scancode == SDL_SCANCODE_M)
-            {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_SHOW_DEBUG_TEXTURE);
-            }
             else if(event->key.scancode == SDL_SCANCODE_C)
             {
                 Camera_Log();
             }
-            else if (event->key.scancode == SDL_SCANCODE_L)
+            else if (event->key.scancode == SDL_SCANCODE_0)
+            {
+                Bit_Toggle(settings_render, SETTINGS_RENDER_SHOW_DEBUG_TEXTURE);
+            }
+            else if (event->key.scancode == SDL_SCANCODE_1)
             {
                 Bit_Toggle(settings_render, SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE);
             }
-            else if (event->key.scancode == SDL_SCANCODE_O)
+            else if (event->key.scancode == SDL_SCANCODE_2)
             {
                 Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_SSAO);
+            }
+            else if (event->key.scancode == SDL_SCANCODE_3)
+            {
+                Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_SHADOWS);
+            }
+            else if (event->key.scancode == SDL_SCANCODE_4)
+            {
+                Bit_Toggle(settings_render, SETTINGS_RENDER_USE_LINEAR_FILTERING);
+                renderer_needs_to_be_reinitialized = true;
             }
         } break;
     }

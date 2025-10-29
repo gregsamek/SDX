@@ -45,7 +45,7 @@ void Update_FrameRate(void)
         average_frame_rate = 1.0 / (total_frame_time / FRAME_TIME_ARRAY_SIZE);
     }
 
-    if ((settings_render & SETTINGS_RENDER_MANUAL_FRAME_RATE) && (frame_time < minimum_frame_time)) 
+    if ((swapchain_present_mode == SDL_GPU_PRESENTMODE_IMMEDIATE) && (frame_time < minimum_frame_time)) 
     {
         SDL_DelayPrecise((minimum_frame_time - frame_time) * 1000000000.0);
     }

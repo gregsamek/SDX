@@ -327,6 +327,7 @@ bool Render_Init()
         swapchain_composition = SDL_GPU_SWAPCHAINCOMPOSITION_SDR; // Fallback to SDR
     }
 
+    // TODO try for MAILBOX present mode
     if (!SDL_WindowSupportsGPUPresentMode(gpu_device, window, swapchain_present_mode))
     {
         SDL_LogError(SDL_LOG_CATEGORY_ERROR, "Window does not support GPU present mode %d! SDL Error: %s\n", swapchain_present_mode, SDL_GetError());
@@ -338,7 +339,6 @@ bool Render_Init()
         SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Immediate present mode may cause tearing! Consider using VSync or Mailbox instead.");
         // TODO check for MAILBOX support and make that option available
         // if MAILBOX is supported, use that as the default instead of IMMEDIATE
-        Bit_Set(settings_render, SETTINGS_RENDER_MANUAL_FRAME_RATE);
     }
 
     if (!SDL_SetGPUSwapchainParameters
@@ -876,39 +876,39 @@ bool Render()
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load render settings");
             return false;
         }
-        foreach(model, models_unanimated)
-        {
-            Model_Free(&model);
-        }
-        Array_Len(models_unanimated) = 0;
-        foreach(model_bone_animated, models_bone_animated)
-        {
-            Model_BoneAnimated_Free(&model_bone_animated);
-        }
-        Array_Len(models_bone_animated) = 0;
-        if (!Model_Load_AllScenes())
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload models");
-            return false;
-        }
-        foreach(sprite, sprites)
-        {
-            SDL_ReleaseGPUTexture(gpu_device, sprite.texture);
-        }
-        Array_Len(sprites) = 0;
-        if (!Sprite_LoadSprites())
-        {
-            SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload sprites");
-            return false;
-        }
+        // foreach(model, models_unanimated)
+        // {
+        //     Model_Free(&model);
+        // }
+        // Array_Len(models_unanimated) = 0;
+        // foreach(model_bone_animated, models_bone_animated)
+        // {
+        //     Model_BoneAnimated_Free(&model_bone_animated);
+        // }
+        // Array_Len(models_bone_animated) = 0;
+        // if (!Model_Load_AllScenes())
+        // {
+        //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload models");
+        //     return false;
+        // }
+        // foreach(sprite, sprites)
+        // {
+        //     SDL_ReleaseGPUTexture(gpu_device, sprite.texture);
+        // }
+        // Array_Len(sprites) = 0;
+        // if (!Sprite_LoadSprites())
+        // {
+        //     SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload sprites");
+        //     return false;
+        // }
+        // Array_Len(lights_spot) = 0;
+        // if (!Lights_LoadLights())
+        // {
+        //     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload lights");
+        //     return false;
+        // }
         if (!Render_Init())
         {
-            return false;
-        }
-        Array_Len(lights_spot) = 0;
-        if (!Lights_LoadLights())
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to reload lights");
             return false;
         }
         renderer_needs_to_be_reinitialized = false;

@@ -46,7 +46,7 @@ Camera camera =
     .pitch = -15.0f,
     .fov = 75.0f,
     .near_plane = 0.1f,
-    .far_plane = 10.0f,
+    .far_plane = 200.0f,
     .view_projection_matrix = {0}
 };
 

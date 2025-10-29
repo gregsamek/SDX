@@ -32,7 +32,7 @@ Fragment_Output main(Fragment_Input fragment)
     Fragment_Output output;
 
     float3 N_vs = normalize(fragment.normal_viewspace);
-    float depth = -fragment.position_viewspace.z;
+    float depth = fragment.position_viewspace.z;
     output.data = float4(N_vs, depth);
 
     return output;

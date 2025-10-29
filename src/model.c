@@ -658,8 +658,8 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
     }
 
     // texture_diffuse_uri = "white.png";
-    // texture_metallic_roughness_uri = "orange.png";
-    // texture_normal_uri = "default_normal.png";
+    texture_metallic_roughness_uri = "orange.png";
+    texture_normal_uri = "default_normal.png";
 
     SDL_Surface* texture_diffuse_surface = LoadImage(texture_diffuse_uri);
     if (!texture_diffuse_surface)

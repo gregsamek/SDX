@@ -1,6 +1,6 @@
 
 Texture2D    prepass_texture : register(t0, space2);
-SamplerState texture_sampler : register(s0, space2);
+SamplerState sampler_data_texture : register(s0, space2);
 
 cbuffer UBO_SSAO : register(b0, space3)
 {
@@ -11,7 +11,7 @@ cbuffer UBO_SSAO : register(b0, space3)
     float bias;
     float intensity;
     float power;
-    float kernel_size;
+    uint kernel_size;
 }
 
 struct Fragment_Input
@@ -100,7 +100,7 @@ float2 projectToUV(float3 posVS, float2 projFocal)
 
 Fragment_Output main(Fragment_Input fragment)
 {
-    float4 gbuffer = prepass_texture.SampleLevel(texture_sampler, fragment.texcoord, 0.0);
+    float4 gbuffer = prepass_texture.SampleLevel(sampler_data_texture, fragment.texcoord, 0.0);
     float3 normal = normalize(gbuffer.rgb);
     float  depth_viewspace  = gbuffer.a;
 
@@ -152,7 +152,7 @@ Fragment_Output main(Fragment_Input fragment)
             continue;
 
         // Fetch view-space depth at the sample's screen position
-        float sampleDepthVS = prepass_texture.SampleLevel(texture_sampler, sampleUV, 0.0).a;
+        float sampleDepthVS = prepass_texture.SampleLevel(sampler_data_texture, sampleUV, 0.0).a;
 
         // If scene depth is closer than the sample position, it's occluded.
         // LH: larger z => farther. Occlusion if (scene depth) < (sample z - bias).

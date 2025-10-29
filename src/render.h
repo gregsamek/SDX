@@ -16,7 +16,7 @@ Struct (UBO_SSAO)
     float bias;
     float intensity;
     float power;
-    float kernel_size;
+    Uint32 kernel_size;
 };
 
 Struct (UBO_Main_Frag)
