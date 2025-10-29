@@ -29,6 +29,26 @@ Struct (UBO_Main_Frag)
     float _padding;
 };
 
+Struct (UBO_Fog_Frag)
+{
+    vec3   color;          // linear space
+    float  density;        // for exp/exp2; e.g. 0.02
+
+    float  start;          // for linear fog
+    float  end;            // for linear fog
+    int    mode;           // 0=Linear, 1=Exp, 2=Exp2
+    int    depth_is_view_z;      // 1 if texture stores camera-space z (positive = -z_view), 0 if it stores Euclidean distance
+
+    // Height fog (optional)
+    float  height_fog_enable;   // 0 or 1
+    float  fog_height;         // world-space height of fog layer
+    float  height_falloff;     // e.g. 0.1–2.0
+    float  _padding0;
+
+    mat4 inv_proj_mat;         // inverse projection (for view-ray)
+    mat4 inv_view_mat;         // inverse view (view->world), for height fog
+};
+
 bool Render_LoadRenderSettings();
 bool Render_Init();
 bool Render();

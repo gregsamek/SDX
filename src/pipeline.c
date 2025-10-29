@@ -57,6 +57,11 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize shadow depth pipeline!");
         return false;
     }
+    if (!Pipeline_Fog_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize fog pipeline!");
+        return false;
+    }
     return true;
 }
 
@@ -1239,6 +1244,89 @@ bool Pipeline_ShadowDepth_Init()
     return true;
 }
 
+bool Pipeline_Fog_Init()
+{
+    SDL_GPUShader* vertex_shader = Shader_Load
+    (
+        gpu_device,
+        "fullscreen_quad.vert", // Base filename
+        0, // num_samplers
+        0, // num_storage_textures
+        0, // num_storage_buffers
+        0  // num_uniform_buffers
+    );
+    if (vertex_shader == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to load vertex shader!");
+        return false;
+    }
+    SDL_GPUShader* fragment_shader = Shader_Load
+    (
+        gpu_device,
+        "fog.frag", // Base filename
+        2, // num_samplers
+        0, // num_storage_textures
+        0, // num_storage_buffers
+        1  // num_uniform_buffers
+    );
+    if (fragment_shader == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to load fragment shader!");
+        return false;
+    }
+
+    SDL_GPUGraphicsPipelineCreateInfo pipeline_create_info =
+    {
+        .target_info =
+        {
+            .num_color_targets = 1,
+            .color_target_descriptions = (SDL_GPUColorTargetDescription[])
+            {{
+                .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+                .blend_state = (SDL_GPUColorTargetBlendState)
+                {
+                    .enable_blend = false,
+                    // .color_blend_op = SDL_GPU_BLENDOP_ADD,
+                    // .src_color_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                    // .dst_color_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                    // .alpha_blend_op = SDL_GPU_BLENDOP_ADD,
+                    // .src_alpha_blendfactor = SDL_GPU_BLENDFACTOR_SRC_ALPHA,
+                    // .dst_alpha_blendfactor = SDL_GPU_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+                    // .color_write_mask = SDL_GPU_COLORCOMPONENT_R | SDL_GPU_COLORCOMPONENT_G | SDL_GPU_COLORCOMPONENT_B | SDL_GPU_COLORCOMPONENT_A,
+                    .enable_color_write_mask = false
+                }
+            }},
+            .has_depth_stencil_target = false,
+            .depth_stencil_format = SDL_GPU_TEXTUREFORMAT_INVALID
+        },
+        .rasterizer_state = (SDL_GPURasterizerState)
+        {
+            .cull_mode = SDL_GPU_CULLMODE_BACK,
+            .fill_mode = SDL_GPU_FILLMODE_FILL,
+            .front_face = SDL_GPU_FRONTFACE_CLOCKWISE
+        },
+        .primitive_type = SDL_GPU_PRIMITIVETYPE_TRIANGLELIST,
+        .vertex_shader = vertex_shader,
+        .fragment_shader = fragment_shader,
+        .multisample_state = (SDL_GPUMultisampleState) { .sample_count = SDL_GPU_SAMPLECOUNT_1 }
+    };
+    if (pipeline_fog)
+    {
+        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_fog);
+        pipeline_fog = NULL;
+    }
+    pipeline_fog = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
+    if (pipeline_fog == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create pipeline: %s", SDL_GetError());
+        return false;
+    }
+
+    SDL_ReleaseGPUShader(gpu_device, vertex_shader);
+    SDL_ReleaseGPUShader(gpu_device, fragment_shader);
+
+    return true;
+}
 SDL_GPUComputePipeline* Pipeline_Compute_Init
 (
 	SDL_GPUDevice* gpu_device,

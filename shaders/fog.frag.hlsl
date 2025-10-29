@@ -1,7 +1,6 @@
 Texture2D texture_color           : register(t0, space2);
 Texture2D texture_prepass         : register(t1, space2);
-SamplerState sampler_texture      : register(s0, space2);
-SamplerState sampler_data_texture : register(s1, space2);
+SamplerState sampler_data_texture : register(s0, space2);
 
 cbuffer UBO_Fog : register(b0, space3)
 {
@@ -11,7 +10,7 @@ cbuffer UBO_Fog : register(b0, space3)
     float  FogStart;          // for linear fog
     float  FogEnd;            // for linear fog
     int    FogMode;           // 0=Linear, 1=Exp, 2=Exp2
-    int    DepthIsViewZ;      // 1 if texture stores camera-space z (positive = -z_view), 0 if it stores Euclidean distance
+    int    DepthIsViewZ;      // 1 if texture stores camera-space z, 0 if it stores Euclidean distance
 
     // Height fog (optional)
     float  HeightFogEnable;   // 0 or 1
@@ -37,7 +36,7 @@ float ComputeDistance(float viewDepth, float2 uv)
     if (DepthIsViewZ != 0)
     {
         float3 vr = GetViewRay(uv);     // view-ray to far plane (view space)
-        float t   = viewDepth / max(-vr.z, 1e-6); // scale along ray so z matches +viewDepth
+        float t   = viewDepth / max(vr.z, 1e-6); // scale along ray so z matches +viewDepth
         float3 vp = vr * t;             // view-space position of the pixel
         return length(vp);              // Euclidean distance
     }
@@ -87,9 +86,9 @@ struct Fragment_Input
 
 float4 main(Fragment_Input fragment) : SV_TARGET
 {
-    float4 scene = texture_color.Sample(sampler_texture, fragment.uv);
+    float4 scene = texture_color.Sample(sampler_data_texture, fragment.uv);
 
-    float vd = texture_prepass.Sample(sampler_data_texture, fragment.uv);
+    float vd = texture_prepass.Sample(sampler_data_texture, fragment.uv).a;
 
     // If depth is 0 (sky) decide how you want to fog it. Here we apply max fog.
     if (vd <= 0.0f)
@@ -109,7 +108,7 @@ float4 main(Fragment_Input fragment) : SV_TARGET
     {
         // Reuse the view-space position computed from the ray (avoid recomputing if desired)
         float3 vr = GetViewRay(fragment.uv);
-        float t = (DepthIsViewZ != 0) ? (vd / max(-vr.z, 1e-6)) : (d / max(length(vr), 1e-6)); // crude mapping if d is Euclidean
+        float t = (DepthIsViewZ != 0) ? (vd / max(vr.z, 1e-6)) : (d / max(length(vr), 1e-6)); // crude mapping if d is Euclidean
         float3 vp = vr * t;
         float heightAtten = HeightAttenuation(vp);
         // Combine: reduce fog above the fog layer

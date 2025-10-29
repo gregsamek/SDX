@@ -16,6 +16,7 @@ bool Pipeline_Text_Init();
 bool Pipeline_Swapchain_Init();
 bool Pipeline_Sprite_Init();
 bool Pipeline_ShadowDepth_Init();
+bool Pipeline_Fog_Init();
 
 SDL_GPUComputePipeline* Pipeline_Compute_Init
 (

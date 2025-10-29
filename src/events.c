@@ -100,6 +100,10 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
                 Bit_Toggle(settings_render, SETTINGS_RENDER_USE_LINEAR_FILTERING);
                 renderer_needs_to_be_reinitialized = true;
             }
+            else if (event->key.scancode == SDL_SCANCODE_5)
+            {
+                Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_FOG);
+            }
         } break;
     }
     return true;

@@ -185,6 +185,7 @@ bool Render_InitRenderTargets()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create prepass texture: %s", SDL_GetError());
         return false;
     }
+    
 
     if (prepass_texture_half)
     {
@@ -233,6 +234,31 @@ bool Render_InitRenderTargets()
     if (ssao_texture == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create SSAO texture: %s", SDL_GetError());
+        return false;
+    }
+
+    if (fog_texture)
+    {
+        SDL_ReleaseGPUTexture(gpu_device, fog_texture);
+    }
+    fog_texture = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .width = virtual_screen_texture_width,
+            .height = virtual_screen_texture_height,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+        }
+    );
+    if (fog_texture == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create prepass texture: %s", SDL_GetError());
         return false;
     }
 
@@ -1122,14 +1148,7 @@ bool Render()
             .kernel_size = 16.0f,
         };
 
-        glm_perspective
-        (
-            glm_rad(camera.fov),
-            (float)window_width / (float)window_height,
-            camera.near_plane,
-            camera.far_plane,
-            ubo_ssao.projection_matrix
-        );
+        glm_mat4_copy(camera.projection_matrix, ubo_ssao.projection_matrix);
 
         SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &ubo_ssao, sizeof(ubo_ssao));
 
@@ -1255,6 +1274,73 @@ bool Render()
     SDL_EndGPURenderPass(virtual_render_pass);
 
     ///////////////////////////////////////////////////////////////////////////
+    // Fog Pass ///////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+    if (settings_render & SETTINGS_RENDER_ENABLE_FOG)
+    {
+        SDL_GPUColorTargetInfo fog_target_info = 
+        {
+            .texture = fog_texture,
+            .clear_color = (SDL_FColor){ 0.0f, 0.0f, 0.0f, 1.0f },
+            .load_op = SDL_GPU_LOADOP_DONT_CARE,
+            .store_op = SDL_GPU_STOREOP_STORE,
+            .cycle = true
+        };
+
+        SDL_GPURenderPass* fog_render_pass = SDL_BeginGPURenderPass
+        (
+            command_buffer_draw,
+            &fog_target_info,
+            1,
+            NULL
+        );
+
+        if (!fog_render_pass)
+        {
+            SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin fog render pass: %s", SDL_GetError());
+            SDL_CancelGPUCommandBuffer(command_buffer_draw);
+            return true;
+        }
+
+        SDL_BindGPUGraphicsPipeline(fog_render_pass, pipeline_fog);
+
+        SDL_BindGPUFragmentSamplers
+        (
+            fog_render_pass, 
+            0, // first slot
+            (SDL_GPUTextureSamplerBinding[])
+            {
+                { .texture = virtual_screen_texture, .sampler = sampler_data_texture },
+                { .texture = prepass_texture, .sampler = sampler_data_texture }
+            },
+            2 // num_bindings
+        );
+
+        
+        UBO_Fog_Frag ubo_fog_frag =
+        {
+            .color = {0.0f, 0.1f, 0.2f},
+            .density = 0.02f,
+            .start = 0.0f,
+            .end = 100.0f,
+            .mode = 2,
+            .depth_is_view_z = 1,
+            .height_fog_enable = 0.0f,
+            .fog_height = 0.0f,
+            .height_falloff = 0.0f,
+        };
+        glm_mat4_inv(camera.projection_matrix, ubo_fog_frag.inv_proj_mat);
+        glm_mat4_inv(camera.view_matrix, ubo_fog_frag.inv_view_mat);
+
+        SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &ubo_fog_frag, sizeof(ubo_fog_frag));
+
+        SDL_DrawGPUPrimitives(fog_render_pass, 6, 1, 0, 0);
+
+        SDL_EndGPURenderPass(fog_render_pass);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
     // Swapchain Pass /////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
@@ -1319,6 +1405,11 @@ bool Render()
         .texture = virtual_screen_texture, 
         .sampler = default_texture_sampler 
     };
+
+    if (settings_render & SETTINGS_RENDER_ENABLE_FOG)
+    {
+        fullscreen_texture_binding.texture = fog_texture;
+    }
 
     if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {

@@ -31,7 +31,7 @@ bool Lights_Update()
     light_directional = (Light_Directional)
     {
         .direction = {light_direction_viewspace[0], light_direction_viewspace[1], light_direction_viewspace[2]},
-        .strength = 0.0f,
+        .strength = 1.0f,
         .color = {1.0f, 1.0f, 1.0f},
         .shadow_caster = true
     };

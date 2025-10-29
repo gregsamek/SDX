@@ -2,7 +2,7 @@
 
 #include "globals.h"
 
-Settings_Render settings_render = SETTINGS_RENDER_ENABLE_SSAO | SETTINGS_RENDER_ENABLE_SHADOWS | SETTINGS_RENDER_USE_LINEAR_FILTERING;
+Settings_Render settings_render = SETTINGS_RENDER_ENABLE_FOG | SETTINGS_RENDER_ENABLE_SSAO | SETTINGS_RENDER_ENABLE_SHADOWS | SETTINGS_RENDER_USE_LINEAR_FILTERING;
 
 float mouse_sensitivity = 0.1f;
 float movement_speed = 10.0f; // Units per second
@@ -74,13 +74,13 @@ SDL_GPUGraphicsPipeline* pipeline_instanced = NULL;
 SDL_GPUGraphicsPipeline* pipeline_text = NULL;
 SDL_GPUGraphicsPipeline* pipeline_fullscreen_quad = NULL;
 SDL_GPUGraphicsPipeline* pipeline_sprite = NULL;
+SDL_GPUGraphicsPipeline* pipeline_fog = NULL;
 
 SDL_GPUTexture* prepass_texture_msaa = NULL;
 SDL_GPUTexture* prepass_texture = NULL;
 SDL_GPUTexture* prepass_texture_half = NULL;
-
 SDL_GPUTexture* ssao_texture = NULL;
-
+SDL_GPUTexture* fog_texture = NULL;
 SDL_GPUTexture* depth_texture = NULL;
 SDL_GPUTextureFormat depth_texture_format = SDL_GPU_TEXTUREFORMAT_INVALID;
 SDL_GPUTexture* msaa_texture = NULL;

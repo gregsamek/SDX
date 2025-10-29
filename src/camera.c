@@ -65,17 +65,16 @@ void Camera_Update()
     glm_vec3_add(camera.position, camera.forward, camera_target);
     glm_lookat(camera.position, camera_target, camera.up, camera.view_matrix);
 
-    mat4 projection_matrix;
     glm_perspective
     (
         glm_rad(camera.fov),
         (float)window_width / (float)window_height,
         camera.near_plane,
         camera.far_plane,
-        projection_matrix
+        camera.projection_matrix
     );
 
-    glm_mat4_mul(projection_matrix, camera.view_matrix, camera.view_projection_matrix);
+    glm_mat4_mul(camera.projection_matrix, camera.view_matrix, camera.view_projection_matrix);
 }
 
 void Camera_Log()
