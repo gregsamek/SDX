@@ -203,7 +203,7 @@ bool Render_InitRenderTargets()
             .num_levels = 1,
             .sample_count = SDL_GPU_SAMPLECOUNT_1,
             .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE
         }
     );
     if (prepass_texture_half == NULL)
@@ -228,12 +228,37 @@ bool Render_InitRenderTargets()
             .num_levels = 1,
             .sample_count = SDL_GPU_SAMPLECOUNT_1,
             .format = SDL_GPU_TEXTUREFORMAT_R16_FLOAT,
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ
         }
     );
     if (ssao_texture == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create SSAO texture: %s", SDL_GetError());
+        return false;
+    }
+
+    if (ssao_texture_upsampled)
+    {
+        SDL_ReleaseGPUTexture(gpu_device, ssao_texture_upsampled);
+    }
+    ssao_texture_upsampled = SDL_CreateGPUTexture
+    (
+        gpu_device,
+        &(SDL_GPUTextureCreateInfo)
+        {
+            .type = SDL_GPU_TEXTURETYPE_2D,
+            .width = virtual_screen_texture_width,
+            .height = virtual_screen_texture_height,
+            .layer_count_or_depth = 1,
+            .num_levels = 1,
+            .sample_count = SDL_GPU_SAMPLECOUNT_1,
+            .format = SDL_GPU_TEXTUREFORMAT_R16_FLOAT,
+            .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE
+        }
+    );
+    if (ssao_texture_upsampled == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create SSAO upsampled texture: %s", SDL_GetError());
         return false;
     }
 
@@ -1060,7 +1085,7 @@ bool Render()
     SDL_EndGPURenderPass(prepass_render_pass);
 
     ///////////////////////////////////////////////////////////////////////////
-    // Downsample /////////////////////////////////////////////////////////////
+    // Downsample Prepass /////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
     SDL_GPUComputePass* prepass_downsample_pass = SDL_BeginGPUComputePass
@@ -1157,10 +1182,51 @@ bool Render()
         SDL_DrawGPUPrimitives(ssao_render_pass, 6, 1, 0, 0);
 
         SDL_EndGPURenderPass(ssao_render_pass);
-
-        // TODO Edge-aware blur (bilateral/ATrous)
     }
-    
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Upsample SSAO //////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+    if ((settings_render & SETTINGS_RENDER_UPSCALE_SSAO) && (settings_render & SETTINGS_RENDER_ENABLE_SSAO))
+    {
+        SDL_GPUComputePass* ssao_upsample_pass = SDL_BeginGPUComputePass
+        (
+            command_buffer_draw,
+            (SDL_GPUStorageTextureReadWriteBinding[])
+            {{
+                .texture = ssao_texture_upsampled,
+                .cycle = true
+            }},
+            1,
+            NULL,
+            0
+        );
+        SDL_BindGPUComputePipeline(ssao_upsample_pass, pipeline_ssao_upsample);
+        SDL_BindGPUComputeStorageTextures
+        (
+            ssao_upsample_pass,
+            0, // first slot
+            (SDL_GPUTexture*[])
+            {
+                ssao_texture,
+                prepass_texture_half,
+                prepass_texture
+            },
+            3 // num_bindings
+        );
+        UBO_SSAOUpsample ubo_ssao_upsample = 
+        {
+            .sigma_spatial = 1.0f,
+            .sigma_depth = 1.0f,
+            .sigma_normal = 0.1f,
+            .normal_power = 8.0f
+        };
+        SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_ssao_upsample, sizeof(ubo_ssao_upsample));
+        SDL_DispatchGPUCompute(ssao_upsample_pass, virtual_screen_texture_width / 8, virtual_screen_texture_height / 8, 1);
+        SDL_EndGPUComputePass(ssao_upsample_pass);
+    }
+
     ///////////////////////////////////////////////////////////////////////////
     // Main Pass //////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
@@ -1221,6 +1287,12 @@ bool Render()
 
     // can't skip these bindings, even if shadows & ssao are disabled
     // would need a separate pipeline if I wanted this for performance
+    SDL_GPUTexture* ssao_texture_to_use;
+    if (settings_render & SETTINGS_RENDER_UPSCALE_SSAO)
+        ssao_texture_to_use = ssao_texture_upsampled;
+    else
+        ssao_texture_to_use = ssao_texture;
+
     SDL_BindGPUFragmentSamplers
     (
         virtual_render_pass, 
@@ -1228,7 +1300,7 @@ bool Render()
         (SDL_GPUTextureSamplerBinding[])
         {
             { .texture = shadow_map_texture, .sampler = sampler_data_texture },
-            { .texture = ssao_texture, .sampler = sampler_data_texture }
+            { .texture = ssao_texture_to_use, .sampler = sampler_data_texture }
         },
         2 // num_bindings
     );
@@ -1246,7 +1318,7 @@ bool Render()
         .light_directional = light_directional,
         .light_hemisphere = light_hemisphere,
         .shadow_settings = shadow_settings,
-        .inverse_ssao_texture_size = 
+        .inverse_screen_resolution = 
         {
             1.0f / (float)(virtual_screen_texture_width),
             1.0f / (float)(virtual_screen_texture_height)
@@ -1415,7 +1487,7 @@ bool Render()
 
     if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
-        fullscreen_texture_binding.texture = ssao_texture;
+        fullscreen_texture_binding.texture = ssao_texture_to_use;
         fullscreen_texture_binding.sampler = sampler_data_texture;
     }
 

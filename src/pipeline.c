@@ -62,18 +62,16 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize fog pipeline!");
         return false;
     }
-    pipeline_prepass_downsample = Pipeline_Compute_Init
-    (
-        gpu_device,"prepass_downsample.comp",
-        &(SDL_GPUComputePipelineCreateInfo)
-        {
-			.num_readonly_storage_textures = 1,
-			.num_readwrite_storage_textures = 1,
-			.threadcount_x = 8,
-			.threadcount_y = 8,
-			.threadcount_z = 1,
-        }
-    );
+    if (!Pipeline_PrepassDownsample_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize prepass downsample compute pipeline!");
+        return false;
+    }
+    if (!Pipeline_SSAOUpsample_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize SSAO upsample compute pipeline!");
+        return false;
+    }
     return true;
 }
 
@@ -1337,6 +1335,61 @@ bool Pipeline_Fog_Init()
     SDL_ReleaseGPUShader(gpu_device, vertex_shader);
     SDL_ReleaseGPUShader(gpu_device, fragment_shader);
 
+    return true;
+}
+
+bool Pipeline_PrepassDownsample_Init()
+{
+    if (pipeline_prepass_downsample)
+    {
+        SDL_ReleaseGPUComputePipeline(gpu_device, pipeline_prepass_downsample);
+        pipeline_prepass_downsample = NULL;
+    }
+    pipeline_prepass_downsample = Pipeline_Compute_Init
+    (
+        gpu_device,"prepass_downsample.comp",
+        &(SDL_GPUComputePipelineCreateInfo)
+        {
+			.num_readonly_storage_textures = 1,
+			.num_readwrite_storage_textures = 1,
+			.threadcount_x = 8,
+			.threadcount_y = 8,
+			.threadcount_z = 1,
+        }
+    );
+    if (pipeline_prepass_downsample == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize prepass downsample compute pipeline!");
+        return false;
+    }
+    return true;
+}
+
+bool Pipeline_SSAOUpsample_Init()
+{
+    if (pipeline_ssao_upsample)
+    {
+        SDL_ReleaseGPUComputePipeline(gpu_device, pipeline_ssao_upsample);
+        pipeline_ssao_upsample = NULL;
+    }
+    pipeline_ssao_upsample = Pipeline_Compute_Init
+    (
+        gpu_device,"ssao_upsample.comp",
+        &(SDL_GPUComputePipelineCreateInfo)
+        {
+			.num_readonly_storage_textures = 3,
+			.num_readwrite_storage_textures = 1,
+            .num_uniform_buffers = 1,
+			.threadcount_x = 8,
+			.threadcount_y = 8,
+			.threadcount_z = 1,
+        }
+    );
+    if (pipeline_ssao_upsample == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize SSAO upsample compute pipeline!");
+        return false;
+    }
     return true;
 }
 

@@ -22,7 +22,8 @@ Enum (Uint32, Settings_Render)
     SETTINGS_RENDER_ENABLE_SSAO             = 1 << 2,
     SETTINGS_RENDER_ENABLE_SHADOWS          = 1 << 3,
     SETTINGS_RENDER_USE_LINEAR_FILTERING    = 1 << 4,
-    SETTINGS_RENDER_ENABLE_FOG              = 1 << 5
+    SETTINGS_RENDER_ENABLE_FOG              = 1 << 5,
+    SETTINGS_RENDER_UPSCALE_SSAO            = 1 << 6
 };
 
 extern Settings_Render settings_render;
@@ -92,11 +93,13 @@ extern SDL_GPUGraphicsPipeline* pipeline_sprite;
 extern SDL_GPUGraphicsPipeline* pipeline_fog;
 
 extern SDL_GPUComputePipeline* pipeline_prepass_downsample;
+extern SDL_GPUComputePipeline* pipeline_ssao_upsample;
 
 extern SDL_GPUTexture* prepass_texture_msaa;
 extern SDL_GPUTexture* prepass_texture;
 extern SDL_GPUTexture* prepass_texture_half;
 extern SDL_GPUTexture* ssao_texture;
+extern SDL_GPUTexture* ssao_texture_upsampled;
 extern SDL_GPUTexture* fog_texture;
 extern SDL_GPUTexture* depth_texture;
 extern SDL_GPUTextureFormat depth_texture_format;

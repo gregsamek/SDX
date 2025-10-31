@@ -106,6 +106,10 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             {
                 Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_FOG);
             }
+            else if (event->key.scancode == SDL_SCANCODE_6)
+            {
+                Bit_Toggle(settings_render, SETTINGS_RENDER_UPSCALE_SSAO);
+            }
         } break;
     }
     return true;

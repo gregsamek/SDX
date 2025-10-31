@@ -4,6 +4,7 @@ set -e
 
 (
     # find SDL3_shadercross-3.0.0-darwin-arm64-x64 -type f -exec xattr -d com.apple.quarantine {} \; 2>/dev/null
+    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/ssao_upsample.comp.hlsl             -o MyApp.app/Contents/Resources/shaders/ssao_upsample.comp.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/prepass_downsample.comp.hlsl    -o MyApp.app/Contents/Resources/shaders/prepass_downsample.comp.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/fog.frag.hlsl                   -o MyApp.app/Contents/Resources/shaders/fog.frag.msl
     SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/ssao.frag.hlsl                  -o MyApp.app/Contents/Resources/shaders/ssao.frag.msl

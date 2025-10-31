@@ -24,7 +24,7 @@ Struct (UBO_Main_Frag)
     Light_Directional light_directional;
     Light_Hemisphere light_hemisphere;
     Shadow_Settings shadow_settings;
-    vec2 inverse_ssao_texture_size;
+    vec2 inverse_screen_resolution;
     Uint32 settings_render;
     float _padding;
 };
@@ -47,6 +47,14 @@ Struct (UBO_Fog_Frag)
 
     mat4 inv_proj_mat;         // inverse projection (for view-ray)
     mat4 inv_view_mat;         // inverse view (view->world), for height fog
+};
+
+Struct (UBO_SSAOUpsample)
+{
+    float sigma_spatial; // in low-res pixel units (e.g. 1.0)
+    float sigma_depth;   // in view-space z units (e.g. 1.0 .. 3.0 depending on your scale)
+    float sigma_normal;  // angular softness via (1 - dot(n)) scaling (e.g. 0.1 .. 0.3)
+    float normal_power;  // additional sharpening via pow(dot, normalPower) (e.g. 8 .. 32). Set to 1 to disable.
 };
 
 bool Render_LoadRenderSettings();
