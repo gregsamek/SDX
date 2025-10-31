@@ -91,6 +91,8 @@ extern SDL_GPUGraphicsPipeline* pipeline_text;
 extern SDL_GPUGraphicsPipeline* pipeline_sprite;
 extern SDL_GPUGraphicsPipeline* pipeline_fog;
 
+extern SDL_GPUComputePipeline* pipeline_prepass_downsample;
+
 extern SDL_GPUTexture* prepass_texture_msaa;
 extern SDL_GPUTexture* prepass_texture;
 extern SDL_GPUTexture* prepass_texture_half;

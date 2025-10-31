@@ -177,7 +177,7 @@ bool Render_InitRenderTargets()
             .num_levels = 1,
             .sample_count = SDL_GPU_SAMPLECOUNT_1,
             .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ
         }
     );
     if (prepass_texture == NULL)
@@ -203,7 +203,7 @@ bool Render_InitRenderTargets()
             .num_levels = 1,
             .sample_count = SDL_GPU_SAMPLECOUNT_1,
             .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE
         }
     );
     if (prepass_texture_half == NULL)
@@ -1059,31 +1059,33 @@ bool Render()
 
     SDL_EndGPURenderPass(prepass_render_pass);
 
-    // if you see halos along edges, consider computing min depth during downsample (small compute pass) and an edge-aware upsample
-    SDL_GPUBlitInfo blit_info = 
-    {
-        .source = (SDL_GPUBlitRegion)
-        {
-            .texture = prepass_texture,
-            .x = 0, .y = 0,
-            .w = virtual_screen_texture_width,
-            .h = virtual_screen_texture_height
-        },
-        .destination = (SDL_GPUBlitRegion)
-        {
-            .texture = prepass_texture_half,
-            .x = 0, .y = 0,
-            .w = virtual_screen_texture_width / 2,
-            .h = virtual_screen_texture_height / 2
-        },
-        .load_op = SDL_GPU_LOADOP_CLEAR,
-        .clear_color = (SDL_FColor){ 0.0f, 0.0f, 0.0f, 1.0f },
-        .flip_mode = SDL_FLIP_NONE,
-        .filter = SDL_GPU_FILTER_LINEAR,
-        .cycle = true
-    };
-    SDL_BlitGPUTexture(command_buffer_draw, &blit_info);
+    ///////////////////////////////////////////////////////////////////////////
+    // Downsample /////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
 
+    SDL_GPUComputePass* prepass_downsample_pass = SDL_BeginGPUComputePass
+    (
+        command_buffer_draw,
+        (SDL_GPUStorageTextureReadWriteBinding[])
+        {{
+				.texture = prepass_texture_half,
+				.cycle = true
+        }},
+        1,
+        NULL,
+        0
+    );
+    SDL_BindGPUComputePipeline(prepass_downsample_pass, pipeline_prepass_downsample);
+    SDL_BindGPUComputeStorageTextures
+    (
+        prepass_downsample_pass,
+        0, // first slot
+        &prepass_texture,
+        1 // num_bindings
+    );
+    SDL_DispatchGPUCompute(prepass_downsample_pass, virtual_screen_texture_width / 8, virtual_screen_texture_height / 8, 1);
+    SDL_EndGPUComputePass(prepass_downsample_pass);
+    
     ///////////////////////////////////////////////////////////////////////////
     // SSAO ///////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////

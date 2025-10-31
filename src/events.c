@@ -97,8 +97,10 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
             }
             else if (event->key.scancode == SDL_SCANCODE_4)
             {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_USE_LINEAR_FILTERING);
-                renderer_needs_to_be_reinitialized = true;
+                // TODO the way the renderer is reinitialized currently overrides this flag, so this doesn't actually do anything
+                // Bit_Toggle(settings_render, SETTINGS_RENDER_USE_LINEAR_FILTERING);
+                // renderer_needs_to_be_reinitialized = true;
+                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Linear Filtering must currently be overridden by changing the settings file and reloading the renderer");
             }
             else if (event->key.scancode == SDL_SCANCODE_5)
             {

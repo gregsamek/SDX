@@ -62,6 +62,18 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize fog pipeline!");
         return false;
     }
+    pipeline_prepass_downsample = Pipeline_Compute_Init
+    (
+        gpu_device,"prepass_downsample.comp",
+        &(SDL_GPUComputePipelineCreateInfo)
+        {
+			.num_readonly_storage_textures = 1,
+			.num_readwrite_storage_textures = 1,
+			.threadcount_x = 8,
+			.threadcount_y = 8,
+			.threadcount_z = 1,
+        }
+    );
     return true;
 }
 
@@ -1327,6 +1339,7 @@ bool Pipeline_Fog_Init()
 
     return true;
 }
+
 SDL_GPUComputePipeline* Pipeline_Compute_Init
 (
 	SDL_GPUDevice* gpu_device,

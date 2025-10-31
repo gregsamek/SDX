@@ -76,6 +76,8 @@ SDL_GPUGraphicsPipeline* pipeline_fullscreen_quad = NULL;
 SDL_GPUGraphicsPipeline* pipeline_sprite = NULL;
 SDL_GPUGraphicsPipeline* pipeline_fog = NULL;
 
+SDL_GPUComputePipeline* pipeline_prepass_downsample = NULL;
+
 SDL_GPUTexture* prepass_texture_msaa = NULL;
 SDL_GPUTexture* prepass_texture = NULL;
 SDL_GPUTexture* prepass_texture_half = NULL;
