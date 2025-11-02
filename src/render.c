@@ -302,8 +302,8 @@ bool Render_InitRenderTargets()
             &(SDL_GPUTextureCreateInfo)
             {
                 .type = SDL_GPU_TEXTURETYPE_2D,
-                .width = virtual_screen_texture_width / (1 << (i + 1)),
-                .height = virtual_screen_texture_height / (1 << (i + 1)),
+                .width = virtual_screen_texture_width >> (i + 1),
+                .height = virtual_screen_texture_height >> (i + 1),
                 .layer_count_or_depth = 1,
                 .num_levels = 1,
                 .sample_count = SDL_GPU_SAMPLECOUNT_1,
@@ -1509,6 +1509,54 @@ bool Render()
         SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_bloom_threshold, sizeof(ubo_bloom_threshold));
         SDL_DispatchGPUCompute(bloom_threshold_pass, virtual_screen_texture_width / 8, virtual_screen_texture_height / 8, 1);
         SDL_EndGPUComputePass(bloom_threshold_pass);
+
+        // Downsample Passes //////////////////////////////////////////////////
+
+        for (int i = 1; i < MAX_BLOOM_LEVELS; i++)
+        {
+            SDL_GPUComputePass* bloom_downsample_pass = SDL_BeginGPUComputePass
+            (
+                command_buffer_draw,
+                (SDL_GPUStorageTextureReadWriteBinding[])
+                {{
+                    .texture = bloom_level_textures[i],
+                    .cycle = true
+                }},
+                1,
+                NULL,
+                0
+            );
+            
+            SDL_BindGPUComputePipeline(bloom_downsample_pass, pipeline_bloom_downsample);
+
+            SDL_BindGPUComputeSamplers
+            (
+                bloom_downsample_pass,
+                0, // first slot
+                (SDL_GPUTextureSamplerBinding[])
+                {
+                    { .texture = bloom_level_textures[i - 1],  .sampler = default_texture_sampler },
+                },
+                1 // num_bindings
+            );
+
+            UBO_Bloom_Downsample ubo_bloom_downsample = 
+            {
+                .radius = (float)(i / 2 + 1), // TODO scale wrt resolution; if rendering at 360p, use 3 levels: [0.5, 0.5, 0.75]
+                .tap_bias = 0.5f,
+                ._padding = { 0, 0 }
+            };
+            SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_bloom_downsample, sizeof(ubo_bloom_downsample));
+
+            SDL_DispatchGPUCompute
+            (
+                bloom_downsample_pass,
+                (virtual_screen_texture_width >> i) / 8,
+                (virtual_screen_texture_height >> i) / 8,
+                1
+            );
+            SDL_EndGPUComputePass(bloom_downsample_pass);
+        }
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1584,7 +1632,7 @@ bool Render()
 
     if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
-        fullscreen_texture_binding.texture = bloom_level_textures[0];
+        fullscreen_texture_binding.texture = bloom_level_textures[MAX_BLOOM_LEVELS - 1];
         fullscreen_texture_binding.sampler = sampler_data_texture;
     }
 

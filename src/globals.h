@@ -96,6 +96,7 @@ extern SDL_GPUGraphicsPipeline* pipeline_fog;
 extern SDL_GPUComputePipeline* pipeline_prepass_downsample;
 extern SDL_GPUComputePipeline* pipeline_ssao_upsample;
 extern SDL_GPUComputePipeline* pipeline_bloom_threshold;
+extern SDL_GPUComputePipeline* pipeline_bloom_downsample;
 
 extern SDL_GPUTexture* prepass_texture_msaa;
 extern SDL_GPUTexture* prepass_texture;

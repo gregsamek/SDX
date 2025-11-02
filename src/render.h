@@ -65,6 +65,13 @@ Struct (UBO_Bloom_Threshold)
     float  exposure;
 };
 
+Struct (UBO_Bloom_Downsample)
+{
+    float radius;
+    float tap_bias;
+    Uint32 _padding[2];
+};
+
 bool Render_LoadRenderSettings();
 bool Render_Init();
 bool Render();

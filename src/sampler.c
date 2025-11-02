@@ -14,9 +14,9 @@ bool Sampler_Init()
         
         .min_lod = 0.0f,
         .max_lod = 16.0f, // arbitrary limit (i.e. use every mip level)
-        .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
-        .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
-        .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_REPEAT,
+        .address_mode_u = SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT,
+        .address_mode_v = SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT,
+        .address_mode_w = SDL_GPU_SAMPLERADDRESSMODE_MIRRORED_REPEAT,
         .enable_anisotropy = true,
         .max_anisotropy = 16.0f,
         .enable_compare = false
