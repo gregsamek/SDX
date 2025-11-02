@@ -1530,8 +1530,8 @@ bool Render()
             SDL_DispatchGPUCompute
             (
                 bloom_downsample_pass,
-                (virtual_screen_texture_width >> i) / 8,
-                (virtual_screen_texture_height >> i) / 8,
+                ((virtual_screen_texture_width >> i) + 7) / 8,
+                ((virtual_screen_texture_height >> i) + 7) / 8,
                 1
             );
             SDL_EndGPUComputePass(bloom_downsample_pass);
@@ -1577,8 +1577,8 @@ bool Render()
             SDL_DispatchGPUCompute
             (
                 bloom_upsample_pass,
-                (virtual_screen_texture_width >> i) / 8,
-                (virtual_screen_texture_height >> i) / 8,
+                ((virtual_screen_texture_width >> i) + 7) / 8,
+                ((virtual_screen_texture_height >> i) + 7) / 8,
                 1
             );
             SDL_EndGPUComputePass(bloom_upsample_pass);
