@@ -583,7 +583,7 @@ bool Pipeline_PBR_Unanimated_Init()
         "pbr_alphatest.frag", // Base filename
         5, // num_samplers
         0, // num_storage_textures
-        0, // num_storage_buffers
+        1, // num_storage_buffers
         1 // num_uniform_buffers
     );
     if (fragment_shader == NULL)
@@ -992,7 +992,7 @@ bool Pipeline_Swapchain_Init()
     (
         gpu_device,
         "swapchain.frag", // Base filename
-        1, // num_samplers (for the single texture)
+        2, // num_samplers
         0, // num_storage_textures
         0, // num_storage_buffers
         1  // num_uniform_buffers

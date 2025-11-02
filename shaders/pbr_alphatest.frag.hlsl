@@ -200,7 +200,7 @@ Fragment_Output main(Fragment_Input fragment)
 
     // Spotlights
 
-    for (int i = 0; i < 0; i++) // TODO: number of active lights as uniform
+    for (int i = 0; i < 1; i++) // TODO: number of active lights as uniform
     {
         Light_Spotlight light = buffer_spotlights[i];
 

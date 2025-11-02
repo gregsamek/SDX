@@ -1,13 +1,15 @@
 #define SETTINGS_RENDER_SHOW_DEBUG_TEXTURE 1
 #define SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE 2
+#define SETTINGS_RENDER_ENABLE_BLOOM (1 << 7)
 
 cbuffer Settings_Uniform : register(b0, space3)
 {
     uint settings_render;
 };
 
-Texture2D texture_hdr     : register(t0, space2);
-SamplerState Sampler : register(s0, space2);
+Texture2D texture_hdr   : register(t0, space2);
+Texture2D texture_bloom : register(t1, space2);
+SamplerState Sampler    : register(s0, space2);
 
 struct FragmentInput
 {
@@ -60,6 +62,11 @@ float4 main(FragmentInput input): SV_Target0
         float exposure = 1.0; // Adjust as needed
         float3 hdr = texture_hdr.Sample(Sampler, input.TexCoord).rgb;
         float3 color = hdr * exposure;
+        if (settings_render & SETTINGS_RENDER_ENABLE_BLOOM)
+        {
+            float3 bloom = texture_bloom.Sample(Sampler, input.TexCoord).rgb;
+            color += bloom;
+        }
         // color = reinhardTonemap(color);
         color = saturate(color);
         color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR (not currently trying to support this)

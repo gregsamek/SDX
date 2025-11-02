@@ -1666,8 +1666,12 @@ bool Render()
     (
         swapchain_render_pass, 
         0, // fragment sampler slot
-        &fullscreen_texture_binding, 
-        1 // num_bindings
+        (SDL_GPUTextureSamplerBinding[])
+        {
+            fullscreen_texture_binding,
+            { .texture = bloom_level_textures[0],  .sampler = default_texture_sampler },
+        }, 
+        2 // num_bindings
     );
 
     SDL_DrawGPUPrimitives(swapchain_render_pass, 6, 1, 0, 0);

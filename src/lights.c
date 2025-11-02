@@ -64,11 +64,11 @@ bool Lights_LoadLights()
 {
     Light_Spot light_spot = 
     {
-        .position = { 8.0f, 0.0f, 8.0f },
+        .position = { -2.0f, 8.0f, -2.0f },
         .attenuation_constant_linear = 0.0f,
-        .color = { 0.0f, 0.0f, 0.0f },
+        .color = { 100.0f, 0.0f, 0.0f },
         .attenuation_constant_quadratic = 0.0f,
-        .target = {0, 0, 0},
+        .target = {-2.0f, 0.0f, -2.0f},
         .cutoff_inner = SDL_cosf(glm_rad(0.0f)),
         .cutoff_outer = SDL_cosf(glm_rad(10.0f)),
         .shadow_caster = false,
