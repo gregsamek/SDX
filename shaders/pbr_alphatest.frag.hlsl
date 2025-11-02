@@ -23,16 +23,18 @@ struct Light_Spotlight
     float           _[2];
 };
 
-Texture2D texture_diffuse            : register(t0, space2);
-Texture2D texture_metallic_roughness : register(t1, space2);
-Texture2D texture_normal             : register(t2, space2);
-Texture2D shadow_map                 : register(t3, space2);
-Texture2D texture_ssao               : register(t4, space2);
+Texture2D    texture_diffuse            : register(t0, space2);
+SamplerState sampler_diffuse            : register(s0, space2);
+Texture2D    texture_metallic_roughness : register(t1, space2);
+SamplerState sampler_metallic_roughness : register(s1, space2);
+Texture2D    texture_normal             : register(t2, space2);
+SamplerState sampler_normal             : register(s2, space2);
+Texture2D    shadow_map                 : register(t3, space2);
+SamplerState sampler_shadow_map         : register(s3, space2);
+Texture2D    texture_ssao               : register(t4, space2);
+SamplerState sampler_ssao               : register(s4, space2);
 
 StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t5, space2);
-
-SamplerState sampler_texture  : register(s0, space2);
-SamplerState sampler_data_texture   : register(s1, space2);
 
 // struct Light_Directional_Uniform
 // {
@@ -94,7 +96,7 @@ float ShadowFactor(float4 position_clipspace_light)
         return 1.0f;
 
     // bypass PCF
-    // float map_depth = shadow_map.SampleLevel(sampler_data_texture, uv, 0.0).r;
+    // float map_depth = shadow_map.SampleLevel(sampler_shadow_map, uv, 0.0).r;
     // return (fragment_depth <= (map_depth + shadow_bias));
 
     // TODO hardcode a more random pattern; https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-17-efficient-soft-edged-shadows-using
@@ -108,7 +110,7 @@ float ShadowFactor(float4 position_clipspace_light)
         for (int x = -radius; x <= radius; x++)
         {
             float2 offset = float2((float)x, (float)y) * shadow_texel_size;
-            float map_depth = shadow_map.SampleLevel(sampler_data_texture, uv + offset, 0.0).r; // read depth
+            float map_depth = shadow_map.SampleLevel(sampler_shadow_map, uv + offset, 0.0).r; // read depth
             sum += (fragment_depth <= (map_depth + shadow_bias));
         }
     }
@@ -137,17 +139,17 @@ Fragment_Output main(Fragment_Input fragment)
 {
     Fragment_Output output;
 
-    float4 albedo = texture_diffuse.Sample(sampler_texture, fragment.texture_coordinate);
+    float4 albedo = texture_diffuse.Sample(sampler_diffuse, fragment.texture_coordinate);
     CLIP_TEST(albedo.a - 0.5);
 
-    float3 mr_sample = texture_metallic_roughness.Sample(sampler_texture, fragment.texture_coordinate).rgb;
+    float3 mr_sample = texture_metallic_roughness.Sample(sampler_metallic_roughness, fragment.texture_coordinate).rgb;
     float metallic = mr_sample.b;
     float roughness = mr_sample.g;
     float ao = mr_sample.r;
 
     // Normal Mapping
 
-    float3 N_ts = texture_normal.Sample(sampler_texture, fragment.texture_coordinate).xyz * 2.0f - 1.0f;
+    float3 N_ts = texture_normal.Sample(sampler_normal, fragment.texture_coordinate).xyz * 2.0f - 1.0f;
     // If normal map uses OpenGL convention (green down), uncomment:
     // N_ts.y = -N_ts.y;
 
@@ -253,7 +255,7 @@ Fragment_Output main(Fragment_Input fragment)
     float2 uv = fragment.position_clipspace_camera.xy * screen_inv_resolution; // SV_Position.xy -> [0,1]
     float ssao = 1.0f;
     if (settings_render & SETTINGS_RENDER_ENABLE_SSAO)
-        ssao = texture_ssao.Sample(sampler_data_texture, uv).r;
+        ssao = texture_ssao.Sample(sampler_ssao, uv).r;
     float3 diffuse_ambient = kD_ambient * (albedo.rgb / 3.14159265f) * diffuse_environment_color * ao * ssao;
 
     // Hemispheric specular (indirect specular)

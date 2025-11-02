@@ -9,8 +9,8 @@
 #endif
 
 
-Texture2D Texture : register(t0, space2);
-SamplerState Sampler : register(s0, space2);
+Texture2D    texture_unlit : register(t0, space2);
+SamplerState sampler_unlit : register(s0, space2);
 
 struct FragmentInput
 {
@@ -27,7 +27,7 @@ FragmentOutput main(FragmentInput input)
 {
     FragmentOutput output;
 
-    output.Color = Texture.Sample(Sampler, input.TexCoord);
+    output.Color = texture_unlit.Sample(sampler_unlit, input.TexCoord);
 
     CLIP_TEST(output.Color.a - 0.5);
 

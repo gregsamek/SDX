@@ -794,11 +794,11 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
         (
             render_pass, 
             0, // fragment sampler slot
-            &(SDL_GPUTextureSamplerBinding)
-            { 
+            (SDL_GPUTextureSamplerBinding[])
+            {{
                 .texture = models_bone_animated[i].model.mesh.material.texture_diffuse, 
-                .sampler = default_texture_sampler 
-            }, 
+                .sampler = default_texture_sampler
+            }}, 
             1 // num_bindings
         );
 
@@ -885,11 +885,11 @@ static bool Render_Text(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* co
         (
             render_pass,
             0, // fragment sampler slot
-            &(SDL_GPUTextureSamplerBinding)
-            { 
+            (SDL_GPUTextureSamplerBinding[])
+            {{ 
                 .texture = sequence->atlas_texture, 
                 .sampler = default_texture_sampler 
-            },
+            }},
             1 // num_bindings
         );
     
@@ -935,11 +935,11 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
         (
             render_pass, 
             0, // fragment sampler slot
-            &(SDL_GPUTextureSamplerBinding)
-            { 
+            (SDL_GPUTextureSamplerBinding[])
+            {{
                 .texture = sprites[i].texture, 
                 .sampler = default_texture_sampler 
-            }, 
+            }}, 
             1 // num_bindings
         );
 

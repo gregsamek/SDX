@@ -8,30 +8,34 @@
     #define CLIP_TEST(v)  if (any((v) < 0)) discard
 #endif
 
-Texture2D<float4> tex : register(t0, space2);
-SamplerState samp : register(s0, space2);
+Texture2D<float4> texture_text : register(t0, space2);
+SamplerState      sampler_text : register(s0, space2);
 
-struct PSInput {
-    float4 color : TEXCOORD0;
+struct PSInput 
+{
+    float4 color     : TEXCOORD0;
     float2 tex_coord : TEXCOORD1;
 };
 
-struct PSOutput {
+struct PSOutput 
+{
     float4 color : SV_Target;
 };
 
-PSOutput main(PSInput input) {
+PSOutput main(PSInput input) 
+{
     PSOutput output;
-    output.color = input.color * tex.Sample(samp, input.tex_coord);
+    output.color = input.color * texture_text.Sample(sampler_text, input.tex_coord);
     CLIP_TEST(output.color.a - 0.5);
     return output;
 }
 
 // // SDF Rendering
-// PSOutput main(PSInput input) {
+// PSOutput main(PSInput input) 
+// {
 //     PSOutput output;
 //     const float smoothing = (1.0 / 16.0);
-//     float distance = tex.Sample(samp, input.tex_coord).a;
+//     float distance = texture_text.Sample(sampler_text, input.tex_coord).a;
 //     float alpha = smoothstep(0.5 - smoothing, 0.5 + smoothing, distance);
 //     output.color = float4(input.color.rgb, input.color.a * alpha);
 //     return output;

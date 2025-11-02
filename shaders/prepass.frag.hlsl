@@ -8,8 +8,8 @@
     #define CLIP_TEST(v)  if (any((v) < 0)) discard
 #endif
 
-Texture2D texture_diffuse    : register(t0, space2);
-SamplerState sampler_texture : register(s0, space2);
+Texture2D    texture_diffuse : register(t0, space2);
+SamplerState sampler_diffuse : register(s0, space2);
 
 struct Fragment_Input
 {
@@ -26,7 +26,7 @@ struct Fragment_Output
 
 Fragment_Output main(Fragment_Input fragment)
 {
-    float4 albedo = texture_diffuse.Sample(sampler_texture, fragment.texture_coordinate);
+    float4 albedo = texture_diffuse.Sample(sampler_diffuse, fragment.texture_coordinate);
     CLIP_TEST(albedo.a - 0.5);
     
     Fragment_Output output;

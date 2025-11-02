@@ -1,6 +1,7 @@
-Texture2D texture_color           : register(t0, space2);
-Texture2D texture_prepass         : register(t1, space2);
-SamplerState sampler_data_texture : register(s0, space2);
+Texture2D    texture_color   : register(t0, space2);
+SamplerState sampler_color   : register(s0, space2);
+Texture2D    texture_prepass : register(t1, space2);
+SamplerState sampler_prepass : register(s1, space2);
 
 cbuffer UBO_Fog : register(b0, space3)
 {
@@ -86,9 +87,9 @@ struct Fragment_Input
 
 float4 main(Fragment_Input fragment) : SV_TARGET
 {
-    float4 scene = texture_color.Sample(sampler_data_texture, fragment.uv);
+    float4 scene = texture_color.Sample(sampler_color, fragment.uv);
 
-    float vd = texture_prepass.Sample(sampler_data_texture, fragment.uv).a;
+    float vd = texture_prepass.Sample(sampler_prepass, fragment.uv).a;
 
     // If depth is 0 (sky) decide how you want to fog it. Here we apply max fog.
     if (vd <= 0.0f)

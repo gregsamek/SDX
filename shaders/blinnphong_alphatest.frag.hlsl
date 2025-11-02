@@ -22,13 +22,14 @@ struct Light_Spotlight
     float padding[3]; // pad to float4 size
 };
 
-Texture2D texture_diffuse  : register(t0, space2);
-Texture2D texture_metallic_roughness : register(t1, space2);
-Texture2D texture_normal : register(t2, space2);
+Texture2D    texture_diffuse            : register(t0, space2);
+SamplerState sampler_diffuse            : register(s0, space2);
+Texture2D    texture_metallic_roughness : register(t1, space2);
+SamplerState sampler_metallic_roughness : register(s1, space2);
+Texture2D    texture_normal             : register(t2, space2);
+SamplerState sampler_normal             : register(s2, space2);
 
 StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t3, space2);
-
-SamplerState sampler_texture  : register(s0, space2);
 
 cbuffer Light_Directional_Uniform : register(b0, space3)
 {
@@ -57,22 +58,22 @@ Fragment_Output main(Fragment_Input fragment)
 {
     Fragment_Output output;
 
-    float4 albedo = texture_diffuse.Sample(sampler_texture, fragment.texture_coordinate);
+    float4 albedo = texture_diffuse.Sample(sampler_diffuse, fragment.texture_coordinate);
     CLIP_TEST(albedo.a - 0.5);
 
     float3 ambient_color = float3(0.0f, 0.0f, 0.0f);
     float3 color_out = ambientStrength * ambient_color * albedo.rgb;
 
-    float roughness = texture_metallic_roughness.Sample(sampler_texture, fragment.texture_coordinate).g;
+    float roughness = texture_metallic_roughness.Sample(sampler_metallic_roughness, fragment.texture_coordinate).g;
     float shininess = 2 / (roughness * roughness * roughness * roughness + 0.001f) - 2;
     shininess = clamp(shininess, 1.0f, 256.0f);
 
-    float metallic = texture_metallic_roughness.Sample(sampler_texture, fragment.texture_coordinate).b;
+    float metallic = texture_metallic_roughness.Sample(sampler_metallic_roughness, fragment.texture_coordinate).b;
     float3 F0 = float3(0.04f, 0.04f, 0.04f); // base reflectivity at normal incidence for dielectrics
     F0 = lerp(F0, albedo.rgb, metallic); // if metallic, use albedo color as F0
 
 #ifdef USE_NORMAL_MAP
-    float3 N_ts = texture_normal.Sample(sampler_texture, fragment.texture_coordinate).xyz * 2.0f - 1.0f;
+    float3 N_ts = texture_normal.Sample(sampler_normal, fragment.texture_coordinate).xyz * 2.0f - 1.0f;
     // If normal map uses OpenGL convention (green down), uncomment:
     // N_ts.y = -N_ts.y;
     float3 T = normalize(fragment.tangent_viewspace);
