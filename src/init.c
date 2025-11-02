@@ -4,7 +4,6 @@
 #include "audio.h"
 #include "globals.h"
 #include "texture.h"
-#include "gltf.h"
 #include "text.h"
 #include "sprite.h"
 #include "render.h"

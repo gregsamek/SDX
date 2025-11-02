@@ -1060,7 +1060,7 @@ bool Render()
     SDL_GPUColorTargetInfo prepass_target_info = 
     {
         .texture = prepass_texture,
-        .clear_color = (SDL_FColor){ 0.0f, 0.0f, 0.0f, 1.0f },
+        .clear_color = (SDL_FColor){ 0.0f, 0.0f, 0.0f, 0.0f },
         .load_op = SDL_GPU_LOADOP_CLEAR,
         .store_op = SDL_GPU_STOREOP_STORE,
         .cycle_resolve_texture = true
@@ -1265,7 +1265,7 @@ bool Render()
     SDL_GPUColorTargetInfo virtual_target_info = 
     {
         .texture = virtual_screen_texture,
-        .clear_color = (SDL_FColor){ 0.5f, 0.5f, 0.5f, 1.0f },
+        .clear_color = (SDL_FColor){ 0.6f, 0.8f, 1.0f, 1.0f },
         .load_op = SDL_GPU_LOADOP_CLEAR,
         .store_op = SDL_GPU_STOREOP_STORE,
         .cycle = true
@@ -1424,8 +1424,8 @@ bool Render()
 
         UBO_Fog_Frag ubo_fog_frag =
         {
-            .color = {0.0f, 0.1f, 0.2f},
-            .density = 0.02f,
+            .color = { 0.6f, 0.8f, 1.0f },
+            .density = 0.01f,
             .start = 0.0f,
             .end = 100.0f,
             .mode = 2,
@@ -1481,7 +1481,7 @@ bool Render()
         
         UBO_Bloom_Threshold ubo_bloom_threshold = 
         {
-            .threshold = 0.5f,
+            .threshold = 1.0f,
             .soft_knee = 0.5f,
             .use_maxRGB = 0,
             .exposure = 1.0f

@@ -1,4 +1,4 @@
-#include "shaders/pbr.hlsl"
+#include "shaders/pbr.h"
 
 #ifdef __HLSL_VERSION
     #define CLIP_TEST(v)  clip(v)
@@ -103,10 +103,10 @@ float ShadowFactor(float4 position_clipspace_light)
     // 3x3 PCF
     float sum = 0.0f;
     int radius = (int)shadow_pcf_radius; // use floor
-    [unroll]
+    // [unroll] TODO settle on a pcf_radius and unroll loops
     for (int y = -radius; y <= radius; y++)
     {
-        [unroll]
+        // [unroll]
         for (int x = -radius; x <= radius; x++)
         {
             float2 offset = float2((float)x, (float)y) * shadow_texel_size;

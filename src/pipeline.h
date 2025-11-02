@@ -23,11 +23,4 @@ bool Pipeline_Bloom_Threshold_Init();
 bool Pipeline_Bloom_Downsample_Init();
 bool Pipeline_Bloom_Upsample_Init();
 
-SDL_GPUComputePipeline* Pipeline_Compute_Init
-(
-	SDL_GPUDevice* gpu_device,
-	const char* shaderFilename,
-	SDL_GPUComputePipelineCreateInfo *createInfo
-);
-
 #endif // PIPELINE_H

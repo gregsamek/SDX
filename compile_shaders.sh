@@ -1,36 +1,57 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
-set -e
+set -euo pipefail
 
-(
+# Config (override via environment variables if desired)
+SHADERCROSS_BIN="${SHADERCROSS_BIN:-SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross}"
+SHADER_SRC_DIR="${SHADER_SRC_DIR:-shaders}"
+OUT_DIR="${OUT_DIR:-MyApp.app/Contents/Resources/shaders}"
+
+# Ensure shadercross exists
+if [[ ! -x "$SHADERCROSS_BIN" ]]; then
+  echo "Error: shadercross not found or not executable at: $SHADERCROSS_BIN" >&2
+  exit 1
+fi
+
+# Clean output directory
+rm -rf "$OUT_DIR"
+mkdir -p "$OUT_DIR"
+
+# Compile each .hlsl file to .msl, .json, .spv, .dxil
+# Preserves relative subdirectories from SHADER_SRC_DIR
+echo "Scanning '$SHADER_SRC_DIR' for .hlsl files..."
+found_any=false
+while IFS= read -r -d '' src; do
+  found_any=true
+
+  # Compute relative path and strip .hlsl suffix
+  rel="${src#$SHADER_SRC_DIR/}"
+  base_no_ext="${rel%.hlsl}"
+
+  # Where outputs will go (ensure directory exists)
+  out_base="$OUT_DIR/$base_no_ext"
+  mkdir -p "$(dirname "$out_base")"
+
+  echo "Compiling: $rel"
+  "$SHADERCROSS_BIN" "$src" -o "$out_base.msl"
+  "$SHADERCROSS_BIN" "$src" -o "$out_base.json"
+  "$SHADERCROSS_BIN" "$src" -o "$out_base.spv"
+  "$SHADERCROSS_BIN" "$src" -o "$out_base.dxil"
+done < <(find "$SHADER_SRC_DIR" -type f -name "*.hlsl" -print0)
+
+if [[ "$found_any" == false ]]; then
+  echo "No .hlsl files found in '$SHADER_SRC_DIR'."
+fi
+
+echo "Done. Outputs written to: $OUT_DIR"
+
+# run this when a new SDL_shadercross binary is downloaded on macOS (and update SHADERCROSS_BIN)
+    
     # find SDL3_shadercross-3.0.0-darwin-arm64-x64 -type f -exec xattr -d com.apple.quarantine {} \; 2>/dev/null
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/bloom_threshold.comp.hlsl       -o MyApp.app/Contents/Resources/shaders/bloom_threshold.comp.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/bloom_downsample.comp.hlsl      -o MyApp.app/Contents/Resources/shaders/bloom_downsample.comp.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/bloom_upsample.comp.hlsl        -o MyApp.app/Contents/Resources/shaders/bloom_upsample.comp.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/ssao_upsample.comp.hlsl         -o MyApp.app/Contents/Resources/shaders/ssao_upsample.comp.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/prepass_downsample.comp.hlsl    -o MyApp.app/Contents/Resources/shaders/prepass_downsample.comp.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/fog.frag.hlsl                   -o MyApp.app/Contents/Resources/shaders/fog.frag.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/ssao.frag.hlsl                  -o MyApp.app/Contents/Resources/shaders/ssao.frag.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/prepass_unanimated.vert.hlsl    -o MyApp.app/Contents/Resources/shaders/prepass_unanimated.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/prepass.frag.hlsl               -o MyApp.app/Contents/Resources/shaders/prepass.frag.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/unlit_unanimated.vert.hlsl      -o MyApp.app/Contents/Resources/shaders/unlit_unanimated.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/blinnphong_unanimated.vert.hlsl -o MyApp.app/Contents/Resources/shaders/blinnphong_unanimated.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/swapchain.frag.hlsl             -o MyApp.app/Contents/Resources/shaders/swapchain.frag.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/unlit_alphatest.frag.hlsl       -o MyApp.app/Contents/Resources/shaders/unlit_alphatest.frag.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/pbr_alphatest.frag.hlsl         -o MyApp.app/Contents/Resources/shaders/pbr_alphatest.frag.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/blinnphong_alphatest.frag.hlsl  -o MyApp.app/Contents/Resources/shaders/blinnphong_alphatest.frag.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/pbr_unanimated.vert.hlsl        -o MyApp.app/Contents/Resources/shaders/pbr_unanimated.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/pbr_animated.vert.hlsl          -o MyApp.app/Contents/Resources/shaders/pbr_animated.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/text.vert.hlsl                  -o MyApp.app/Contents/Resources/shaders/text.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/text.frag.hlsl                  -o MyApp.app/Contents/Resources/shaders/text.frag.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/fullscreen_quad.vert.hlsl       -o MyApp.app/Contents/Resources/shaders/fullscreen_quad.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/sprite.vert.hlsl                -o MyApp.app/Contents/Resources/shaders/sprite.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/shadow_unanimated.vert.hlsl     -o MyApp.app/Contents/Resources/shaders/shadow_unanimated.vert.msl
-    SDL3_shadercross-3.0.0-darwin-arm64-x64/bin/shadercross shaders/shadow.frag.hlsl                -o MyApp.app/Contents/Resources/shaders/shadow.frag.msl
 
-    # if for some reason, you can't use shadercross, you *theoretically* can use the underlying tools
-    # HOWEVER, they DO NOT work with structured buffers, so good luck with that!
-    # https://github.com/libsdl-org/SDL/issues/12200
+# if for some reason, you can't use shadercross, you *theoretically* can use the underlying tools
+# HOWEVER, they DO NOT work with structured buffers, so good luck with that!
+# https://github.com/libsdl-org/SDL/issues/12200
 
     # glslc -x hlsl -fshader-stage=vert shader.vert.hlsl -o MyApp.app/Contents/Resources/shaders/shader.vert.spv
     # spirv-cross MyApp.app/Contents/Resources/shaders/shader.vert.spv --msl --stage vert --output MyApp.app/Contents/Resources/shaders/shader.vert.msl
@@ -38,4 +59,3 @@ set -e
     # glslc -x hlsl -fshader-stage=frag shader.frag.hlsl -o MyApp.app/Contents/Resources/shaders/shader.frag.spv
     # spirv-cross MyApp.app/Contents/Resources/shaders/shader.frag.spv --msl --stage frag --output MyApp.app/Contents/Resources/shaders/shader.frag.msl
     # spirv-cross MyApp.app/Contents/Resources/shaders/shader.frag.spv --reflect --stage frag --output MyApp.app/Contents/Resources/shaders/shader.frag.json
-)

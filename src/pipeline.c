@@ -3,7 +3,10 @@
 #include "pipeline.h"
 #include "globals.h"
 #include "text.h"
-#include "shader.h"
+#include "json.h"
+
+static SDL_GPUShader* Shader_Load (SDL_GPUDevice* gpu_device, const char* shaderFilename);
+static SDL_GPUComputePipeline* Pipeline_Compute_Init (SDL_GPUDevice* gpu_device, const char* shaderFilename);
 
 bool Pipeline_Init()
 {
@@ -95,11 +98,7 @@ bool Pipeline_Prepass_Unanimated_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "prepass_unanimated.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers (transform matrices)
+        "prepass_unanimated.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -110,11 +109,7 @@ bool Pipeline_Prepass_Unanimated_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "prepass.frag", // Base filename
-        1, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        0  // num_uniform_buffers
+        "prepass.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -228,11 +223,7 @@ bool Pipeline_SSAO_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "fullscreen_quad.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        0  // num_uniform_buffers
+        "fullscreen_quad.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -242,11 +233,7 @@ bool Pipeline_SSAO_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "ssao.frag", // Base filename
-        1, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers
+        "ssao.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -312,11 +299,7 @@ bool Pipeline_Unlit_Unanimated_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "unlit_unanimated.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers (MVP matrix)
+        "unlit_unanimated.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -327,11 +310,7 @@ bool Pipeline_Unlit_Unanimated_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "unlit_alphatest.frag", // Base filename
-        1, // num_samplers (for the single texture)
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        0  // num_uniform_buffers
+        "unlit_alphatest.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -432,11 +411,7 @@ bool Pipeline_BlinnPhong_Unanimated_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "blinnphong_unanimated.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers (transform matrices)
+        "blinnphong_unanimated.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -447,11 +422,7 @@ bool Pipeline_BlinnPhong_Unanimated_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "blinnphong_alphatest.frag", // Base filename
-        3, // num_samplers
-        0, // num_storage_textures
-        1, // num_storage_buffers
-        1  // num_uniform_buffers
+        "blinnphong_alphatest.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -565,11 +536,7 @@ bool Pipeline_PBR_Unanimated_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "pbr_unanimated.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers (transform matrices)
+        "pbr_unanimated.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -580,11 +547,7 @@ bool Pipeline_PBR_Unanimated_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "pbr_alphatest.frag", // Base filename
-        5, // num_samplers
-        0, // num_storage_textures
-        1, // num_storage_buffers
-        1 // num_uniform_buffers
+        "pbr_alphatest.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -698,11 +661,7 @@ bool Pipeline_PBR_Animated_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "pbr_animated.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        1, // num_storage_buffers (joint matrices)
-        2  // num_uniform_buffers (MVP matrix, joint matrices storage buffer offset)
+        "pbr_animated.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -713,11 +672,7 @@ bool Pipeline_PBR_Animated_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "pbr_alphatest.frag", // Base filename
-        3, // num_samplers (for the single texture)
-        0, // num_storage_textures
-        1, // num_storage_buffers
-        1  // num_uniform_buffers
+        "pbr_alphatest.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -855,11 +810,7 @@ bool Pipeline_Text_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "text.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers (screen size)
+        "text.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -870,11 +821,7 @@ bool Pipeline_Text_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "text.frag", // Base filename
-        1, // num_samplers (for the font texture)
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        0  // num_uniform_buffers (text color?)
+        "text.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -976,11 +923,7 @@ bool Pipeline_Swapchain_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "fullscreen_quad.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        0  // num_uniform_buffers
+        "fullscreen_quad.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -991,11 +934,7 @@ bool Pipeline_Swapchain_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "swapchain.frag", // Base filename
-        2, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers
+        "swapchain.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -1060,11 +999,7 @@ bool Pipeline_Sprite_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "sprite.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers
+        "sprite.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -1075,11 +1010,7 @@ bool Pipeline_Sprite_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "unlit_alphatest.frag", // Base filename
-        1, // num_samplers (for the single texture)
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        0  // num_uniform_buffers
+        "unlit_alphatest.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -1152,11 +1083,7 @@ bool Pipeline_ShadowDepth_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "shadow_unanimated.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers
+        "shadow_unanimated.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -1168,11 +1095,7 @@ bool Pipeline_ShadowDepth_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "shadow.frag", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        0  // num_uniform_buffers
+        "shadow.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -1274,11 +1197,7 @@ bool Pipeline_Fog_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "fullscreen_quad.vert", // Base filename
-        0, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        0  // num_uniform_buffers
+        "fullscreen_quad.vert"
     );
     if (vertex_shader == NULL)
     {
@@ -1288,11 +1207,7 @@ bool Pipeline_Fog_Init()
     SDL_GPUShader* fragment_shader = Shader_Load
     (
         gpu_device,
-        "fog.frag", // Base filename
-        2, // num_samplers
-        0, // num_storage_textures
-        0, // num_storage_buffers
-        1  // num_uniform_buffers
+        "fog.frag"
     );
     if (fragment_shader == NULL)
     {
@@ -1362,15 +1277,7 @@ bool Pipeline_PrepassDownsample_Init()
     }
     pipeline_prepass_downsample = Pipeline_Compute_Init
     (
-        gpu_device,"prepass_downsample.comp",
-        &(SDL_GPUComputePipelineCreateInfo)
-        {
-			.num_readonly_storage_textures = 1,
-			.num_readwrite_storage_textures = 1,
-			.threadcount_x = 8,
-			.threadcount_y = 8,
-			.threadcount_z = 1,
-        }
+        gpu_device,"prepass_downsample.comp"
     );
     if (pipeline_prepass_downsample == NULL)
     {
@@ -1389,16 +1296,7 @@ bool Pipeline_SSAOUpsample_Init()
     }
     pipeline_ssao_upsample = Pipeline_Compute_Init
     (
-        gpu_device,"ssao_upsample.comp",
-        &(SDL_GPUComputePipelineCreateInfo)
-        {
-			.num_readonly_storage_textures = 3,
-			.num_readwrite_storage_textures = 1,
-            .num_uniform_buffers = 1,
-			.threadcount_x = 8,
-			.threadcount_y = 8,
-			.threadcount_z = 1,
-        }
+        gpu_device,"ssao_upsample.comp"
     );
     if (pipeline_ssao_upsample == NULL)
     {
@@ -1417,16 +1315,7 @@ bool Pipeline_Bloom_Threshold_Init()
     }
     pipeline_bloom_threshold = Pipeline_Compute_Init
     (
-        gpu_device,"bloom_threshold.comp",
-        &(SDL_GPUComputePipelineCreateInfo)
-        {
-            .num_readonly_storage_textures = 1,
-            .num_readwrite_storage_textures = 1,
-            .num_uniform_buffers = 1,
-            .threadcount_x = 8,
-            .threadcount_y = 8,
-            .threadcount_z = 1,
-        }
+        gpu_device,"bloom_threshold.comp"
     );
     if (pipeline_bloom_threshold == NULL)
     {
@@ -1445,17 +1334,7 @@ bool Pipeline_Bloom_Downsample_Init()
     }
     pipeline_bloom_downsample = Pipeline_Compute_Init
     (
-        gpu_device,"bloom_downsample.comp",
-        &(SDL_GPUComputePipelineCreateInfo)
-        {
-            .num_readonly_storage_textures = 0,
-            .num_samplers = 1,
-            .num_readwrite_storage_textures = 1,
-            .num_uniform_buffers = 1,
-            .threadcount_x = 8,
-            .threadcount_y = 8,
-            .threadcount_z = 1,
-        }
+        gpu_device,"bloom_downsample.comp"
     );
     if (pipeline_bloom_downsample == NULL)
     {
@@ -1474,17 +1353,7 @@ bool Pipeline_Bloom_Upsample_Init()
     }
     pipeline_bloom_upsample = Pipeline_Compute_Init
     (
-        gpu_device,"bloom_upsample.comp",
-        &(SDL_GPUComputePipelineCreateInfo)
-        {
-            .num_readonly_storage_textures = 0,
-            .num_samplers = 1,
-            .num_readwrite_storage_textures = 1,
-            .num_uniform_buffers = 1,
-            .threadcount_x = 8,
-            .threadcount_y = 8,
-            .threadcount_z = 1,
-        }
+        gpu_device,"bloom_upsample.comp"
     );
     if (pipeline_bloom_upsample == NULL)
     {
@@ -1494,33 +1363,32 @@ bool Pipeline_Bloom_Upsample_Init()
     return true;
 }
 
-SDL_GPUComputePipeline* Pipeline_Compute_Init
+static SDL_GPUComputePipeline* Pipeline_Compute_Init
 (
 	SDL_GPUDevice* gpu_device,
-	const char* shaderFilename,
-	SDL_GPUComputePipelineCreateInfo *createInfo
+	const char* shaderFilename
 ) 
 {
-	char fullPath[MAXIMUM_URI_LENGTH];
-	SDL_GPUShaderFormat backendFormats = SDL_GetGPUShaderFormats(gpu_device);
+	char full_path[MAXIMUM_URI_LENGTH];
+	SDL_GPUShaderFormat backend_formats = SDL_GetGPUShaderFormats(gpu_device);
 	SDL_GPUShaderFormat format = SDL_GPU_SHADERFORMAT_INVALID;
 	const char *entrypoint;
 
-	if (backendFormats & SDL_GPU_SHADERFORMAT_SPIRV) 
+	if (backend_formats & SDL_GPU_SHADERFORMAT_SPIRV) 
     {
-		SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/%s.spv", base_path, shaderFilename);
+		SDL_snprintf(full_path, sizeof(full_path), "%sshaders/%s.spv", base_path, shaderFilename);
 		format = SDL_GPU_SHADERFORMAT_SPIRV;
 		entrypoint = "main";
 	} 
-    else if (backendFormats & SDL_GPU_SHADERFORMAT_MSL) 
+    else if (backend_formats & SDL_GPU_SHADERFORMAT_MSL) 
     {
-		SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/%s.msl", base_path, shaderFilename);
+		SDL_snprintf(full_path, sizeof(full_path), "%sshaders/%s.msl", base_path, shaderFilename);
 		format = SDL_GPU_SHADERFORMAT_MSL;
 		entrypoint = "main0";
 	} 
-    else if (backendFormats & SDL_GPU_SHADERFORMAT_DXIL) 
+    else if (backend_formats & SDL_GPU_SHADERFORMAT_DXIL) 
     {
-		SDL_snprintf(fullPath, sizeof(fullPath), "%sshaders/%s.dxil", base_path, shaderFilename);
+		SDL_snprintf(full_path, sizeof(full_path), "%sshaders/%s.dxil", base_path, shaderFilename);
 		format = SDL_GPU_SHADERFORMAT_DXIL;
 		entrypoint = "main";
 	} 
@@ -1530,22 +1398,102 @@ SDL_GPUComputePipeline* Pipeline_Compute_Init
 		return NULL;
 	}
 
-	size_t codeSize;
-	void* code = SDL_LoadFile(fullPath, &codeSize);
+	size_t code_size;
+	void* code = SDL_LoadFile(full_path, &code_size);
 	if (code == NULL)
 	{
-		SDL_Log("Failed to load compute shader from disk! %s", fullPath);
+		SDL_Log("Failed to load compute shader from disk! %s", full_path);
 		return NULL;
 	}
 
-	// Make a copy of the create data, then overwrite the parts we need
-	SDL_GPUComputePipelineCreateInfo newCreateInfo = *createInfo;
-	newCreateInfo.code = (const Uint8*) code;
-	newCreateInfo.code_size = codeSize;
-	newCreateInfo.entrypoint = entrypoint;
-	newCreateInfo.format = format;
+	SDL_GPUComputePipelineCreateInfo create_info = 
+    {
+        .code = (const Uint8*) code,
+        .code_size = code_size,
+        .entrypoint = entrypoint,
+        .format = format,
+    };
 
-	SDL_GPUComputePipeline* pipeline = SDL_CreateGPUComputePipeline(gpu_device, &newCreateInfo);
+    // Shader Reflection //////////////////////////////////////////////////////
+
+    char json_path[MAXIMUM_URI_LENGTH];
+    SDL_snprintf(json_path, sizeof(json_path), "%sshaders/%s.json", base_path, shaderFilename);
+    size_t json_size;
+    char* json_raw = (char*)SDL_LoadFile(json_path, &json_size);
+    if (json_raw == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to load compute shader reflection JSON from disk! %s", json_path);
+        SDL_free(code);
+        return NULL;
+    }
+
+    cJSON* json = cJSON_ParseWithLength(json_raw, (int)json_size);
+    if (json == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to parse compute shader reflection JSON!");
+        SDL_free(code);
+        SDL_free(json_raw);
+        return NULL;
+    }
+
+    cJSON* num_samplers_json = cJSON_GetObjectItemCaseSensitive(json, "samplers");
+    if (cJSON_IsNumber(num_samplers_json))
+    {
+        create_info.num_samplers = cJSON_GetNumberValue(num_samplers_json);
+    }
+
+    cJSON* num_readonly_storage_textures_json = cJSON_GetObjectItemCaseSensitive(json, "readonly_storage_textures");
+    if (cJSON_IsNumber(num_readonly_storage_textures_json))
+    {
+        create_info.num_readonly_storage_textures = cJSON_GetNumberValue(num_readonly_storage_textures_json);
+    }
+
+    cJSON* num_readonly_storage_buffers_json = cJSON_GetObjectItemCaseSensitive(json, "readonly_storage_buffers");
+    if (cJSON_IsNumber(num_readonly_storage_buffers_json))
+    {
+        create_info.num_readonly_storage_buffers = cJSON_GetNumberValue(num_readonly_storage_buffers_json);
+    }
+
+    cJSON* num_readwrite_storage_textures_json = cJSON_GetObjectItemCaseSensitive(json, "readwrite_storage_textures");
+    if (cJSON_IsNumber(num_readwrite_storage_textures_json))
+    {
+        create_info.num_readwrite_storage_textures = cJSON_GetNumberValue(num_readwrite_storage_textures_json);
+    }
+
+    cJSON* num_readwrite_storage_buffers_json = cJSON_GetObjectItemCaseSensitive(json, "readwrite_storage_buffers");
+    if (cJSON_IsNumber(num_readwrite_storage_buffers_json))
+    {
+        create_info.num_readwrite_storage_buffers = cJSON_GetNumberValue(num_readwrite_storage_buffers_json);
+    }
+
+    cJSON* num_uniform_buffers_json = cJSON_GetObjectItemCaseSensitive(json, "uniform_buffers");
+    if (cJSON_IsNumber(num_uniform_buffers_json))
+    {
+        create_info.num_uniform_buffers = cJSON_GetNumberValue(num_uniform_buffers_json);
+    }
+
+    cJSON* threadcount_x_json = cJSON_GetObjectItemCaseSensitive(json, "threadcount_x");
+    if (cJSON_IsNumber(threadcount_x_json))
+    {
+        create_info.threadcount_x = cJSON_GetNumberValue(threadcount_x_json);
+    }
+
+    cJSON* threadcount_y_json = cJSON_GetObjectItemCaseSensitive(json, "threadcount_y");
+    if (cJSON_IsNumber(threadcount_y_json))
+    {
+        create_info.threadcount_y = cJSON_GetNumberValue(threadcount_y_json);
+    }
+
+    cJSON* threadcount_z_json = cJSON_GetObjectItemCaseSensitive(json, "threadcount_z");
+    if (cJSON_IsNumber(threadcount_z_json))
+    {
+        create_info.threadcount_z = cJSON_GetNumberValue(threadcount_z_json);
+    }
+
+    cJSON_Delete(json);
+    SDL_free(json_raw);
+
+	SDL_GPUComputePipeline* pipeline = SDL_CreateGPUComputePipeline(gpu_device, &create_info);
 	if (pipeline == NULL)
 	{
 		SDL_Log("Failed to create compute pipeline!");
@@ -1555,4 +1503,135 @@ SDL_GPUComputePipeline* Pipeline_Compute_Init
 
 	SDL_free(code);
 	return pipeline;
+}
+
+static SDL_GPUShader* Shader_Load (SDL_GPUDevice* gpu_device, const char* shaderFilename) 
+{
+	SDL_GPUShaderStage stage;
+	if (SDL_strstr(shaderFilename, ".vert"))
+	{
+		stage = SDL_GPU_SHADERSTAGE_VERTEX;
+	}
+	else if (SDL_strstr(shaderFilename, ".frag"))
+	{
+		stage = SDL_GPU_SHADERSTAGE_FRAGMENT;
+	}
+	else
+	{
+		SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Invalid shader stage: %s", shaderFilename);
+		return NULL;
+	}
+
+	char full_path[MAXIMUM_URI_LENGTH];
+	SDL_GPUShaderFormat supported_shader_formats = SDL_GetGPUShaderFormats(gpu_device);
+	SDL_GPUShaderFormat format = SDL_GPU_SHADERFORMAT_INVALID;
+	const char *entrypoint;
+
+	if (supported_shader_formats & SDL_GPU_SHADERFORMAT_SPIRV) 
+    {
+		SDL_snprintf(full_path, sizeof(full_path), "%sshaders/%s.spv", base_path, shaderFilename);
+		format = SDL_GPU_SHADERFORMAT_SPIRV;
+		entrypoint = "main";
+	} 
+    else if (supported_shader_formats & SDL_GPU_SHADERFORMAT_MSL) 
+    {
+		SDL_snprintf(full_path, sizeof(full_path), "%sshaders/%s.msl", base_path, shaderFilename);
+		format = SDL_GPU_SHADERFORMAT_MSL;
+		entrypoint = "main0";
+	} 
+    else if (supported_shader_formats & SDL_GPU_SHADERFORMAT_DXIL) 
+    {
+		SDL_snprintf(full_path, sizeof(full_path), "%sshaders/%s.dxil", base_path, shaderFilename);
+		format = SDL_GPU_SHADERFORMAT_DXIL;
+		entrypoint = "main";
+	} 
+    else 
+    {
+		SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "No valid backend shader format (SPIRV, MSL, DXIL)");
+		return NULL;
+	}
+
+	size_t code_size;
+	void* code = SDL_LoadFile(full_path, &code_size);
+	if (code == NULL)
+	{
+		SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to load shader from disk! %s", full_path);
+		return NULL;
+	}
+
+    // Shader Reflection //////////////////////////////////////////////////////
+	
+    char json_path[MAXIMUM_URI_LENGTH];
+	SDL_snprintf(json_path, sizeof(json_path), "%sshaders/%s.json", base_path, shaderFilename);
+	size_t json_size;
+	char* json_raw = (char*)SDL_LoadFile(json_path, &json_size);
+	if (json_raw == NULL)
+	{
+		SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to load shader reflection JSON from disk! %s", json_path);
+		SDL_free(code);
+		return NULL;
+	}
+
+	cJSON* json = cJSON_ParseWithLength(json_raw, (int)json_size);
+	if (json == NULL)
+	{
+		SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to parse shader reflection JSON!");
+		SDL_free(code);
+		SDL_free(json_raw);
+		return NULL;
+	}
+
+	cJSON* num_samplers_json = cJSON_GetObjectItemCaseSensitive(json, "samplers");
+	Uint32 num_samplers = 0;
+	if (cJSON_IsNumber(num_samplers_json))
+	{
+		num_samplers = cJSON_GetNumberValue(num_samplers_json);
+	}
+
+	cJSON* num_storage_textures_json = cJSON_GetObjectItemCaseSensitive(json, "storage_textures");
+	Uint32 num_storage_textures = 0;
+	if (cJSON_IsNumber(num_storage_textures_json))
+	{
+		num_storage_textures = cJSON_GetNumberValue(num_storage_textures_json);
+	}
+
+	cJSON* num_storage_buffers_json = cJSON_GetObjectItemCaseSensitive(json, "storage_buffers");
+	Uint32 num_storage_buffers = 0;
+	if (cJSON_IsNumber(num_storage_buffers_json))
+	{
+		num_storage_buffers = cJSON_GetNumberValue(num_storage_buffers_json);
+	}
+
+	cJSON* num_uniform_buffers_json = cJSON_GetObjectItemCaseSensitive(json, "uniform_buffers");
+	Uint32 num_uniform_buffers = 0;
+	if (cJSON_IsNumber(num_uniform_buffers_json))
+	{
+		num_uniform_buffers = cJSON_GetNumberValue(num_uniform_buffers_json);
+	}
+
+	cJSON_Delete(json);
+	SDL_free(json_raw);
+
+	SDL_GPUShaderCreateInfo shaderInfo = 
+    {
+		.code = (const Uint8*) code,
+		.code_size = code_size,
+		.entrypoint = entrypoint,
+		.format = format,
+		.stage = stage,
+		.num_samplers = num_samplers,
+		.num_storage_textures = num_storage_textures,
+		.num_storage_buffers = num_storage_buffers,
+		.num_uniform_buffers = num_uniform_buffers
+	};
+	SDL_GPUShader* shader = SDL_CreateGPUShader(gpu_device, &shaderInfo);
+	if (shader == NULL)
+	{
+		SDL_LogCritical(SDL_LOG_CATEGORY_ERROR, "Failed to create shader!");
+		SDL_free(code);
+		return NULL;
+	}
+
+	SDL_free(code);
+	return shader;
 }
