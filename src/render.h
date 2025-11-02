@@ -57,6 +57,14 @@ Struct (UBO_SSAOUpsample)
     float normal_power;  // additional sharpening via pow(dot, normalPower) (e.g. 8 .. 32). Set to 1 to disable.
 };
 
+Struct (UBO_Bloom_Threshold)
+{
+    float  threshold;    // e.g., 1.0–2.0 in HDR linear (after exposure)
+    float  soft_knee;    // [0..1], 0 = hard, ~0.5 is common
+    Uint32 use_maxRGB;   // 1 = maxRGB metric, 0 = luminance
+    float  exposure;
+};
+
 bool Render_LoadRenderSettings();
 bool Render_Init();
 bool Render();

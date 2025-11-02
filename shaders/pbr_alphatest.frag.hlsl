@@ -93,6 +93,10 @@ float ShadowFactor(float4 position_clipspace_light)
     if (uv.x < 0.0f || uv.x > 1.0f || uv.y < 0.0f || uv.y > 1.0f || fragment_depth > 1.0f)
         return 1.0f;
 
+    // bypass PCF
+    // float map_depth = shadow_map.SampleLevel(sampler_data_texture, uv, 0.0).r;
+    // return (fragment_depth <= (map_depth + shadow_bias));
+
     // TODO hardcode a more random pattern; https://developer.nvidia.com/gpugems/gpugems2/part-ii-shading-lighting-and-shadows/chapter-17-efficient-soft-edged-shadows-using
     // 3x3 PCF
     float sum = 0.0f;
@@ -111,10 +115,6 @@ float ShadowFactor(float4 position_clipspace_light)
 
     float kernel = (2 * radius + 1);
     return sum / (kernel * kernel);
-
-    // bypass PCF
-    // float map_depth = shadow_map.SampleLevel(sampler_data_texture, uv, 0.0).r;
-    // return (fragment_depth <= (map_depth + shadow_bias));
 }
 
 struct Fragment_Input

@@ -72,6 +72,11 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize SSAO upsample compute pipeline!");
         return false;
     }
+    if (!Pipeline_Bloom_Threshold_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bloom threshold compute pipeline!");
+        return false;
+    }
     return true;
 }
 
@@ -1388,6 +1393,34 @@ bool Pipeline_SSAOUpsample_Init()
     if (pipeline_ssao_upsample == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize SSAO upsample compute pipeline!");
+        return false;
+    }
+    return true;
+}
+
+bool Pipeline_Bloom_Threshold_Init()
+{
+    if (pipeline_bloom_threshold)
+    {
+        SDL_ReleaseGPUComputePipeline(gpu_device, pipeline_bloom_threshold);
+        pipeline_bloom_threshold = NULL;
+    }
+    pipeline_bloom_threshold = Pipeline_Compute_Init
+    (
+        gpu_device,"bloom_threshold.comp",
+        &(SDL_GPUComputePipelineCreateInfo)
+        {
+            .num_readonly_storage_textures = 1,
+            .num_readwrite_storage_textures = 1,
+            .num_uniform_buffers = 1,
+            .threadcount_x = 8,
+            .threadcount_y = 8,
+            .threadcount_z = 1,
+        }
+    );
+    if (pipeline_bloom_threshold == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bloom threshold compute pipeline!");
         return false;
     }
     return true;

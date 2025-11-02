@@ -127,7 +127,7 @@ bool Render_InitRenderTargets()
             .num_levels = 1,
             .sample_count = SDL_GPU_SAMPLECOUNT_1,
             .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER
+            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET | SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ
         }
     );
     if (virtual_screen_texture == NULL)
@@ -185,7 +185,6 @@ bool Render_InitRenderTargets()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create prepass texture: %s", SDL_GetError());
         return false;
     }
-    
 
     if (prepass_texture_half)
     {
@@ -285,6 +284,38 @@ bool Render_InitRenderTargets()
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create prepass texture: %s", SDL_GetError());
         return false;
+    }
+
+    if (bloom_level_textures[0])
+    {
+        for (int i = 0; i < MAX_BLOOM_LEVELS; i++)
+        {
+            SDL_ReleaseGPUTexture(gpu_device, bloom_level_textures[i]);
+            bloom_level_textures[i] = NULL;
+        }
+    }
+    for (int i = 0; i < MAX_BLOOM_LEVELS; i++)
+    {
+        bloom_level_textures[i] = SDL_CreateGPUTexture
+        (
+            gpu_device,
+            &(SDL_GPUTextureCreateInfo)
+            {
+                .type = SDL_GPU_TEXTURETYPE_2D,
+                .width = virtual_screen_texture_width / (1 << (i + 1)),
+                .height = virtual_screen_texture_height / (1 << (i + 1)),
+                .layer_count_or_depth = 1,
+                .num_levels = 1,
+                .sample_count = SDL_GPU_SAMPLECOUNT_1,
+                .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+                .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE
+            }
+        );
+        if (bloom_level_textures[i] == NULL)
+        {
+            SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create bloom level texture %d: %s", i, SDL_GetError());
+            return false;
+        }
     }
 
 	if (depth_texture)
@@ -1391,7 +1422,6 @@ bool Render()
             2 // num_bindings
         );
 
-        
         UBO_Fog_Frag ubo_fog_frag =
         {
             .color = {0.0f, 0.1f, 0.2f},
@@ -1412,6 +1442,73 @@ bool Render()
         SDL_DrawGPUPrimitives(fog_render_pass, 6, 1, 0, 0);
 
         SDL_EndGPURenderPass(fog_render_pass);
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // Bloom Pass /////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+    if (settings_render & SETTINGS_RENDER_ENABLE_BLOOM)
+    {
+        /*
+        Pass B: Downsample chain
+        For i in 1..L-1:
+            src = Bloom[i-1]
+            dst = Bloom[i]
+            op  = Dual-Kawase downsample + light blur
+
+        Pass C: Upsample chain (in-place)
+        temp = Bloom[L-1] // smallest level becomes the starting accumulator
+        For i in (L-2) down to 0:
+            src_small = temp           // current accumulated small level
+            src_large = Bloom[i]       // the downsampled level to be combined
+            dst       = Bloom[i]       // overwrite in-place
+            op        = Dual-Kawase upsample + light blur + add
+            temp      = Bloom[i]
+        
+        Result:
+        Bloom[0] // final bloom at half-res
+        */
+
+        // Threshold Pass /////////////////////////////////////////////////////
+
+        SDL_GPUComputePass* bloom_threshold_pass = SDL_BeginGPUComputePass
+        (
+            command_buffer_draw,
+            (SDL_GPUStorageTextureReadWriteBinding[])
+            {{
+                .texture = bloom_level_textures[0],
+                .cycle = true
+            }},
+            1,
+            NULL,
+            0
+        );
+        SDL_BindGPUComputePipeline(bloom_threshold_pass, pipeline_bloom_threshold);
+        
+        SDL_GPUTexture* texture_in = virtual_screen_texture;
+        if (settings_render & SETTINGS_RENDER_ENABLE_FOG)
+        {
+            texture_in = fog_texture;
+        }
+        SDL_BindGPUComputeStorageTextures
+        (
+            bloom_threshold_pass,
+            0, // first slot
+            &texture_in,
+            1 // num_bindings
+        );
+        
+        UBO_Bloom_Threshold ubo_bloom_threshold = 
+        {
+            .threshold = 0.5f,
+            .soft_knee = 0.5f,
+            .use_maxRGB = 0,
+            .exposure = 1.0f
+        };
+        SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_bloom_threshold, sizeof(ubo_bloom_threshold));
+        SDL_DispatchGPUCompute(bloom_threshold_pass, virtual_screen_texture_width / 8, virtual_screen_texture_height / 8, 1);
+        SDL_EndGPUComputePass(bloom_threshold_pass);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1487,7 +1584,7 @@ bool Render()
 
     if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
-        fullscreen_texture_binding.texture = ssao_texture_to_use;
+        fullscreen_texture_binding.texture = bloom_level_textures[0];
         fullscreen_texture_binding.sampler = sampler_data_texture;
     }
 

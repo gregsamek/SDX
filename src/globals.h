@@ -23,7 +23,8 @@ Enum (Uint32, Settings_Render)
     SETTINGS_RENDER_ENABLE_SHADOWS          = 1 << 3,
     SETTINGS_RENDER_USE_LINEAR_FILTERING    = 1 << 4,
     SETTINGS_RENDER_ENABLE_FOG              = 1 << 5,
-    SETTINGS_RENDER_UPSCALE_SSAO            = 1 << 6
+    SETTINGS_RENDER_UPSCALE_SSAO            = 1 << 6,
+    SETTINGS_RENDER_ENABLE_BLOOM            = 1 << 7,
 };
 
 extern Settings_Render settings_render;
@@ -94,6 +95,7 @@ extern SDL_GPUGraphicsPipeline* pipeline_fog;
 
 extern SDL_GPUComputePipeline* pipeline_prepass_downsample;
 extern SDL_GPUComputePipeline* pipeline_ssao_upsample;
+extern SDL_GPUComputePipeline* pipeline_bloom_threshold;
 
 extern SDL_GPUTexture* prepass_texture_msaa;
 extern SDL_GPUTexture* prepass_texture;
@@ -101,6 +103,8 @@ extern SDL_GPUTexture* prepass_texture_half;
 extern SDL_GPUTexture* ssao_texture;
 extern SDL_GPUTexture* ssao_texture_upsampled;
 extern SDL_GPUTexture* fog_texture;
+#define MAX_BLOOM_LEVELS 5
+extern SDL_GPUTexture* bloom_level_textures[MAX_BLOOM_LEVELS];
 extern SDL_GPUTexture* depth_texture;
 extern SDL_GPUTextureFormat depth_texture_format;
 extern SDL_GPUTexture* msaa_texture;

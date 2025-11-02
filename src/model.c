@@ -11,6 +11,7 @@
 #define CGLTF_ATOLL(str) SDL_strtoll(str, NULL, 10)
 #include "../external/cgltf.h"
 
+// TODO upload everything in one copy pass instead of a dedicated copy pass per model
 bool Model_Load_AllScenes(void)
 {   
     char path[MAXIMUM_URI_LENGTH];
