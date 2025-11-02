@@ -1450,26 +1450,6 @@ bool Render()
 
     if (settings_render & SETTINGS_RENDER_ENABLE_BLOOM)
     {
-        /*
-        Pass B: Downsample chain
-        For i in 1..L-1:
-            src = Bloom[i-1]
-            dst = Bloom[i]
-            op  = Dual-Kawase downsample + light blur
-
-        Pass C: Upsample chain (in-place)
-        temp = Bloom[L-1] // smallest level becomes the starting accumulator
-        For i in (L-2) down to 0:
-            src_small = temp           // current accumulated small level
-            src_large = Bloom[i]       // the downsampled level to be combined
-            dst       = Bloom[i]       // overwrite in-place
-            op        = Dual-Kawase upsample + light blur + add
-            temp      = Bloom[i]
-        
-        Result:
-        Bloom[0] // final bloom at half-res
-        */
-
         // Threshold Pass /////////////////////////////////////////////////////
 
         SDL_GPUComputePass* bloom_threshold_pass = SDL_BeginGPUComputePass
@@ -1540,11 +1520,10 @@ bool Render()
                 1 // num_bindings
             );
 
-            UBO_Bloom_Downsample ubo_bloom_downsample = 
+            UBO_Bloom_Sample ubo_bloom_downsample = 
             {
                 .radius = (float)(i / 2 + 1), // TODO scale wrt resolution; if rendering at 360p, use 3 levels: [0.5, 0.5, 0.75]
                 .tap_bias = 0.5f,
-                ._padding = { 0, 0 }
             };
             SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_bloom_downsample, sizeof(ubo_bloom_downsample));
 
@@ -1556,6 +1535,53 @@ bool Render()
                 1
             );
             SDL_EndGPUComputePass(bloom_downsample_pass);
+        }
+
+        // Upsample Passes ////////////////////////////////////////////////////
+
+        for (int i = MAX_BLOOM_LEVELS - 2; i >= 0; i--)
+        {
+            SDL_GPUComputePass* bloom_upsample_pass = SDL_BeginGPUComputePass
+            (
+                command_buffer_draw,
+                (SDL_GPUStorageTextureReadWriteBinding[])
+                {{
+                    .texture = bloom_level_textures[i],
+                    .cycle = true
+                }},
+                1,
+                NULL,
+                0
+            );
+            
+            SDL_BindGPUComputePipeline(bloom_upsample_pass, pipeline_bloom_upsample);
+
+            SDL_BindGPUComputeSamplers
+            (
+                bloom_upsample_pass,
+                0, // first slot
+                (SDL_GPUTextureSamplerBinding[])
+                {
+                    { .texture = bloom_level_textures[i + 1],  .sampler = default_texture_sampler },
+                },
+                1 // num_bindings
+            );
+
+            UBO_Bloom_Sample ubo_bloom_upsample = 
+            {
+                .radius = (float)(i / 2 + 1), // TODO scale wrt resolution
+                .tap_bias = 0.5f
+            };
+            SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_bloom_upsample, sizeof(ubo_bloom_upsample));
+
+            SDL_DispatchGPUCompute
+            (
+                bloom_upsample_pass,
+                (virtual_screen_texture_width >> i) / 8,
+                (virtual_screen_texture_height >> i) / 8,
+                1
+            );
+            SDL_EndGPUComputePass(bloom_upsample_pass);
         }
     }
 
@@ -1632,7 +1658,7 @@ bool Render()
 
     if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
-        fullscreen_texture_binding.texture = bloom_level_textures[MAX_BLOOM_LEVELS - 1];
+        fullscreen_texture_binding.texture = bloom_level_textures[0];
         fullscreen_texture_binding.sampler = sampler_data_texture;
     }
 

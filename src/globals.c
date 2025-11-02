@@ -83,6 +83,7 @@ SDL_GPUComputePipeline* pipeline_prepass_downsample = NULL;
 SDL_GPUComputePipeline* pipeline_ssao_upsample = NULL;
 SDL_GPUComputePipeline* pipeline_bloom_threshold = NULL;
 SDL_GPUComputePipeline* pipeline_bloom_downsample = NULL;
+SDL_GPUComputePipeline* pipeline_bloom_upsample = NULL;
 
 SDL_GPUTexture* prepass_texture_msaa = NULL;
 SDL_GPUTexture* prepass_texture = NULL;

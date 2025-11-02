@@ -65,7 +65,7 @@ Struct (UBO_Bloom_Threshold)
     float  exposure;
 };
 
-Struct (UBO_Bloom_Downsample)
+Struct (UBO_Bloom_Sample)
 {
     float radius;
     float tap_bias;

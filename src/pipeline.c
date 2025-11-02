@@ -82,6 +82,11 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bloom downsample compute pipeline!");
         return false;
     }
+    if (!Pipeline_Bloom_Upsample_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bloom upsample compute pipeline!");
+        return false;
+    }
     return true;
 }
 
@@ -1455,6 +1460,35 @@ bool Pipeline_Bloom_Downsample_Init()
     if (pipeline_bloom_downsample == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bloom downsample compute pipeline!");
+        return false;
+    }
+    return true;
+}
+
+bool Pipeline_Bloom_Upsample_Init()
+{
+    if (pipeline_bloom_upsample)
+    {
+        SDL_ReleaseGPUComputePipeline(gpu_device, pipeline_bloom_upsample);
+        pipeline_bloom_upsample = NULL;
+    }
+    pipeline_bloom_upsample = Pipeline_Compute_Init
+    (
+        gpu_device,"bloom_upsample.comp",
+        &(SDL_GPUComputePipelineCreateInfo)
+        {
+            .num_readonly_storage_textures = 0,
+            .num_samplers = 1,
+            .num_readwrite_storage_textures = 1,
+            .num_uniform_buffers = 1,
+            .threadcount_x = 8,
+            .threadcount_y = 8,
+            .threadcount_z = 1,
+        }
+    );
+    if (pipeline_bloom_upsample == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bloom upsample compute pipeline!");
         return false;
     }
     return true;

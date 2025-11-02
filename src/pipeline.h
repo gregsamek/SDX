@@ -21,6 +21,7 @@ bool Pipeline_PrepassDownsample_Init();
 bool Pipeline_SSAOUpsample_Init();
 bool Pipeline_Bloom_Threshold_Init();
 bool Pipeline_Bloom_Downsample_Init();
+bool Pipeline_Bloom_Upsample_Init();
 
 SDL_GPUComputePipeline* Pipeline_Compute_Init
 (
