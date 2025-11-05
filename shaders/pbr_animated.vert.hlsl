@@ -2,6 +2,7 @@ cbuffer Transforms : register(b0, space1)
 {
     float4x4 mvp;
     float4x4 mv;
+    float4x4 mvp_light; // light_view_projection * model
 #ifdef LIGHTING_HANDLES_NON_UNIFORM_SCALING
     float4x4 mv_inverse_transpose; // upper-left 3x3 = inverse-transpose of (V*M).xyz
 #endif
@@ -38,6 +39,7 @@ struct Vertex_Output
     float2 texture_coordinate         : TEXCOORD2;
     float3 tangent_viewspace          : TEXCOORD3;
     float3 bitangent_viewspace        : TEXCOORD4;
+    float4 position_clipspace_light   : TEXCOORD5;
 };
 
 Vertex_Output main(Vertex_Input vertex)
@@ -94,6 +96,8 @@ Vertex_Output main(Vertex_Input vertex)
     output.bitangent_viewspace = B_vs;
 
     output.texture_coordinate = vertex.texture_coordinate;
+
+    output.position_clipspace_light = mul(mvp_light, skinned_position_worldspace);
 
     return output;
 }

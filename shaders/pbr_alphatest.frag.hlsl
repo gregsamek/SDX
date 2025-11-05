@@ -10,7 +10,7 @@
     #define CLIP_TEST(v)  if (any((v) < 0)) discard
 #endif
 
-struct Light_Spotlight
+struct Light_Spot
 {
     float3 position;
     float  attenuation_constant_linear; 
@@ -34,15 +34,15 @@ SamplerState sampler_shadow_map         : register(s3, space2);
 Texture2D    texture_ssao               : register(t4, space2);
 SamplerState sampler_ssao               : register(s4, space2);
 
-StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t5, space2);
+StructuredBuffer<Light_Spot> buffer_spotlights : register(t5, space2);
 
-// struct Light_Directional_Uniform
-// {
-//     float3 light_directional_direction; 
-//     float  light_directional_strength;
-//     float3 light_directional_color; 
-//     uint   light_directional_is_shadow_caster;
-// };
+struct Light_Directional
+{
+    float3 direction; 
+    float  strength;
+    float3 color; 
+    uint   is_shadow_caster;
+};
 
 // struct Light_Hemisphere_Uniform
 // {
@@ -63,19 +63,19 @@ StructuredBuffer<Light_Spotlight> buffer_spotlights : register(t5, space2);
 
 cbuffer UBO_Main_Frag : register(b0, space3)
 {
-    float3 light_directional_direction; 
-    float  light_directional_strength;
-    float3 light_directional_color; 
-    uint   light_directional_is_shadow_caster;
+    Light_Directional light_directional;
+    
     float3 up_viewspace;
     float             _;
     float3 color_sky;
     float            __;
     float3 color_ground;
     float           ___;
+    
     float2 shadow_texel_size;
     float  shadow_bias;
     float  shadow_pcf_radius; // in texels
+    
     float2 screen_inv_resolution;
     uint   settings_render;
     float         ____;
@@ -150,7 +150,8 @@ Fragment_Output main(Fragment_Input fragment)
     // Normal Mapping
 
     float3 N_ts = texture_normal.Sample(sampler_normal, fragment.texture_coordinate).xyz * 2.0f - 1.0f;
-    // If normal map uses OpenGL convention (green down), uncomment:
+    
+    // If normal map uses OpenGL convention (green down):
     // N_ts.y = -N_ts.y;
 
     float3 T = normalize(fragment.tangent_viewspace);
@@ -163,19 +164,20 @@ Fragment_Output main(Fragment_Input fragment)
     // uncomment to override normal mapping
     // N = normalize(fragment.normal_viewspace);
 
-    float3 V = normalize(-fragment.position_viewspace); // view space camera at origin
+    // in viewspace the camera is at the origin ((0,0,0) - fragment_position)
+    float3 V = normalize(-fragment.position_viewspace);
 
     float3 F0 = float3(0.04f, 0.04f, 0.04f);
     F0 = lerp(F0, albedo.rgb, metallic);
 
     float3 Lo = float3(0.0f, 0.0f, 0.0f);
 
-    // Directional light
+    // Directional light //////////////////////////////////////////////////////
     
     // assume we are given the normalized direction the light is coming FROM
-    float3 L_directional_light = -light_directional_direction;
+    float3 L_directional_light = -light_directional.direction;
     float3 H_directional = normalize(L_directional_light + V);
-    float3 radiance = light_directional_color * light_directional_strength;
+    float3 radiance = light_directional.color * light_directional.strength;
 
     float NdotH_directional = saturate(dot(N, H_directional));
     float NdotV = saturate(dot(N, V));
@@ -193,18 +195,18 @@ Fragment_Output main(Fragment_Input fragment)
     float3 kS = F;
     float3 kD = (1.0f.xxx - kS) * (1.0f - metallic);
 
-    float3 direct_dir = (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
+    float3 light_directional_contribution = (kD * albedo.rgb / 3.14159265f + specular) * radiance * NdotL_directional;
 
-    if (light_directional_is_shadow_caster && (settings_render & SETTINGS_RENDER_ENABLE_SHADOWS))
-        Lo += direct_dir * ShadowFactor(fragment.position_clipspace_light);
+    if (light_directional.is_shadow_caster && (settings_render & SETTINGS_RENDER_ENABLE_SHADOWS))
+        Lo += light_directional_contribution * ShadowFactor(fragment.position_clipspace_light);
     else
-        Lo += direct_dir;
+        Lo += light_directional_contribution;
 
     // Spotlights
 
     for (int i = 0; i < 1; i++) // TODO: number of active lights as uniform
     {
-        Light_Spotlight light = buffer_spotlights[i];
+        Light_Spot light = buffer_spotlights[i];
 
         float3 L_unnormalized = light.position - fragment.position_viewspace;
         float distance_to_light = length(L_unnormalized);
@@ -235,12 +237,12 @@ Fragment_Output main(Fragment_Input fragment)
         float3 kS_spot = F_spot;
         float3 kD_spot = (1.0f.xxx - kS_spot) * (1.0f - metallic);
 
-        float3 light_spot = (kD_spot * albedo.rgb / 3.14159265f + specular_spot) * radiance_spot * NdotL;
+        float3 light_spot_contribution = (kD_spot * albedo.rgb / 3.14159265f + specular_spot) * radiance_spot * NdotL;
 
         if (light.shadow_caster && (settings_render & SETTINGS_RENDER_ENABLE_SHADOWS))
-            Lo += light_spot * ShadowFactor(fragment.position_clipspace_light);
+            Lo += light_spot_contribution * ShadowFactor(fragment.position_clipspace_light);
         else
-            Lo += light_spot;
+            Lo += light_spot_contribution;
     }
     
     // Hemispheric diffuse (indirect diffuse)
@@ -266,11 +268,11 @@ Fragment_Output main(Fragment_Input fragment)
 
     float3 specular_ambient = specular_environment_color * kS_ambient * (1.0f - roughness);
 
-    // float RdotSUN = saturate(dot(R, -light_directional_direction));
+    // float RdotSUN = saturate(dot(R, -light_directional.direction));
     // float shininess = lerp(16.0f, 1024.0f, (1.0f - roughness) * (1.0f - roughness));
     // float specular_sun = pow(RdotSUN, shininess);
     // // fade if sun is below horizon relative to N:
-    // specular_sun *= step(0.0f, dot(N, -light_directional_direction));
+    // specular_sun *= step(0.0f, dot(N, -light_directional.direction));
     // float3 sun_color = float3(1.0f, 1.0f, 1.0f); // tweak to taste
     // specular_ambient += sun_color * kS_ambient * specular_sun;
     

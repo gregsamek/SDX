@@ -35,11 +35,11 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize unanimated PBR pipeline!");
         return false;
     }
-    // if (!Pipeline_PBR_Animated_Init())
-    // {
-    //     SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bone animated pipeline!");
-    //     return false;
-    // }
+    if (!Pipeline_PBR_Animated_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bone animated pipeline!");
+        return false;
+    }
     if (!Pipeline_Text_Init())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize text pipeline!");
