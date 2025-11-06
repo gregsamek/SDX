@@ -145,7 +145,7 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result)
     //     SDL_free(models_unanimated);
     //     SDL_memset(&models_unanimated, 0, sizeof(Array_Model));
     // }
-    if (default_texture_sampler) SDL_ReleaseGPUSampler(gpu_device, default_texture_sampler);
+    if (sampler_albedo) SDL_ReleaseGPUSampler(gpu_device, sampler_albedo);
     if (window && gpu_device) SDL_ReleaseWindowFromGPUDevice(gpu_device, window);
     if (gpu_device) SDL_DestroyGPUDevice(gpu_device);
     if (window) SDL_DestroyWindow(window);

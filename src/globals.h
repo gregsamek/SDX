@@ -113,7 +113,7 @@ extern SDL_GPUTexture* msaa_texture;
 extern SDL_GPUTexture* virtual_screen_texture;
 extern Uint32 virtual_screen_texture_width;
 extern Uint32 virtual_screen_texture_height;
-extern SDL_GPUSampler* default_texture_sampler;
+extern SDL_GPUSampler* sampler_albedo;
 
 extern SDL_GPUBuffer* joint_matrix_storage_buffer;
 extern SDL_GPUTransferBuffer* joint_matrix_transfer_buffer;
@@ -121,7 +121,8 @@ extern SDL_GPUBuffer* lights_storage_buffer;
 extern SDL_GPUTransferBuffer* lights_transfer_buffer;
 
 extern SDL_GPUTexture* shadow_map_texture;
-extern SDL_GPUSampler* sampler_data_texture;
+extern SDL_GPUSampler* sampler_nearest_nomips;
+extern SDL_GPUSampler* sampler_linear_nomips;
 extern SDL_GPUGraphicsPipeline* pipeline_shadow_depth;
 extern SDL_GPUTextureFormat depth_sample_texture_format;
 extern Uint32 SHADOW_MAP_SIZE;

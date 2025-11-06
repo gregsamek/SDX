@@ -587,14 +587,14 @@ static void Render_Unanimated_Prepass(SDL_GPURenderPass* render_pass, SDL_GPUCom
 
         // need to sample diffuse because of alpha testing, otherwise depth buffer will be incorrect
         // if I get squeezed for performance, I could make a separate pipeline without alpha testing
-        SDL_GPUTexture* texture_diffuse = models_unanimated[i].mesh.material.texture_diffuse;    
+        SDL_GPUTexture* texture_albedo = models_unanimated[i].mesh.material.texture_diffuse;    
         SDL_BindGPUFragmentSamplers
         (
             render_pass, 
             0, // first slot
             (SDL_GPUTextureSamplerBinding[])
             {
-                { .texture = texture_diffuse,  .sampler = default_texture_sampler },
+                { .texture = texture_albedo,  .sampler = sampler_albedo },
             },
             1 // num_bindings
         );
@@ -691,9 +691,9 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
             0, // first slot
             (SDL_GPUTextureSamplerBinding[])
             {
-                { .texture = texture_diffuse,  .sampler = default_texture_sampler },
-                { .texture = texture_metallic_roughness, .sampler = default_texture_sampler },
-                { .texture = texture_normal, .sampler = default_texture_sampler }
+                { .texture = texture_diffuse,  .sampler = sampler_albedo },
+                { .texture = texture_metallic_roughness, .sampler = sampler_albedo },
+                { .texture = texture_normal, .sampler = sampler_albedo }
             },
             3 // num_bindings
         );
@@ -797,7 +797,7 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
             (SDL_GPUTextureSamplerBinding[])
             {{
                 .texture = models_bone_animated[i].model.mesh.material.texture_diffuse, 
-                .sampler = default_texture_sampler
+                .sampler = sampler_albedo
             }}, 
             1 // num_bindings
         );
@@ -888,7 +888,7 @@ static bool Render_Text(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* co
             (SDL_GPUTextureSamplerBinding[])
             {{ 
                 .texture = sequence->atlas_texture, 
-                .sampler = default_texture_sampler 
+                .sampler = sampler_albedo 
             }},
             1 // num_bindings
         );
@@ -938,7 +938,7 @@ static void Render_Sprite(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* 
             (SDL_GPUTextureSamplerBinding[])
             {{
                 .texture = sprites[i].texture, 
-                .sampler = default_texture_sampler 
+                .sampler = sampler_albedo 
             }}, 
             1 // num_bindings
         );
@@ -1124,8 +1124,8 @@ bool Render()
         command_buffer_draw,
         (SDL_GPUStorageTextureReadWriteBinding[])
         {{
-				.texture = prepass_texture_half,
-				.cycle = true
+            .texture = prepass_texture_half,
+            .cycle = true
         }},
         1,
         NULL,
@@ -1190,7 +1190,7 @@ bool Render()
             0, // first slot
             (SDL_GPUTextureSamplerBinding[])
             {
-                { .texture = prepass_texture_half,  .sampler = sampler_data_texture },
+                { .texture = prepass_texture_half,  .sampler = sampler_nearest_nomips },
             },
             1 // num_bindings
         );
@@ -1318,20 +1318,25 @@ bool Render()
 
     // can't skip these bindings, even if shadows & ssao are disabled
     // would need a separate pipeline if I wanted this for performance
-    SDL_GPUTexture* ssao_texture_to_use;
+    SDL_GPUTextureSamplerBinding ssao_binding;
     if (settings_render & SETTINGS_RENDER_UPSCALE_SSAO)
-        ssao_texture_to_use = ssao_texture_upsampled;
+    {
+        ssao_binding.texture = ssao_texture_upsampled;
+        ssao_binding.sampler = sampler_nearest_nomips;
+    }
     else
-        ssao_texture_to_use = ssao_texture;
-
+    {
+        ssao_binding.texture = ssao_texture;
+        ssao_binding.sampler = sampler_linear_nomips;
+    }
     SDL_BindGPUFragmentSamplers
     (
         virtual_render_pass, 
         3, // first slot
         (SDL_GPUTextureSamplerBinding[])
         {
-            { .texture = shadow_map_texture, .sampler = sampler_data_texture },
-            { .texture = ssao_texture_to_use, .sampler = sampler_data_texture }
+            { .texture = shadow_map_texture, .sampler = sampler_nearest_nomips },
+            ssao_binding
         },
         2 // num_bindings
     );
@@ -1416,8 +1421,8 @@ bool Render()
             0, // first slot
             (SDL_GPUTextureSamplerBinding[])
             {
-                { .texture = virtual_screen_texture, .sampler = sampler_data_texture },
-                { .texture = prepass_texture, .sampler = sampler_data_texture }
+                { .texture = virtual_screen_texture, .sampler = sampler_nearest_nomips },
+                { .texture = prepass_texture, .sampler = sampler_nearest_nomips }
             },
             2 // num_bindings
         );
@@ -1515,7 +1520,7 @@ bool Render()
                 0, // first slot
                 (SDL_GPUTextureSamplerBinding[])
                 {
-                    { .texture = bloom_level_textures[i - 1],  .sampler = default_texture_sampler },
+                    { .texture = bloom_level_textures[i - 1],  .sampler = sampler_linear_nomips },
                 },
                 1 // num_bindings
             );
@@ -1562,7 +1567,7 @@ bool Render()
                 0, // first slot
                 (SDL_GPUTextureSamplerBinding[])
                 {
-                    { .texture = bloom_level_textures[i + 1],  .sampler = default_texture_sampler },
+                    { .texture = bloom_level_textures[i + 1],  .sampler = sampler_linear_nomips },
                 },
                 1 // num_bindings
             );
@@ -1648,7 +1653,7 @@ bool Render()
     SDL_GPUTextureSamplerBinding fullscreen_texture_binding = 
     { 
         .texture = virtual_screen_texture, 
-        .sampler = default_texture_sampler 
+        .sampler = sampler_albedo 
     };
 
     if (settings_render & SETTINGS_RENDER_ENABLE_FOG)
@@ -1659,7 +1664,7 @@ bool Render()
     if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
         fullscreen_texture_binding.texture = bloom_level_textures[0];
-        fullscreen_texture_binding.sampler = sampler_data_texture;
+        fullscreen_texture_binding.sampler = sampler_nearest_nomips;
     }
 
     SDL_BindGPUFragmentSamplers
@@ -1669,7 +1674,7 @@ bool Render()
         (SDL_GPUTextureSamplerBinding[])
         {
             fullscreen_texture_binding,
-            { .texture = bloom_level_textures[0],  .sampler = default_texture_sampler },
+            { .texture = bloom_level_textures[0],  .sampler = sampler_albedo },
         }, 
         2 // num_bindings
     );

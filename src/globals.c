@@ -98,7 +98,7 @@ SDL_GPUTexture* msaa_texture = NULL;
 SDL_GPUTexture* virtual_screen_texture = NULL;
 Uint32 virtual_screen_texture_width = 0;
 Uint32 virtual_screen_texture_height = 360;
-SDL_GPUSampler* default_texture_sampler = NULL;
+SDL_GPUSampler* sampler_albedo = NULL;
 
 SDL_GPUBuffer* joint_matrix_storage_buffer = NULL;
 SDL_GPUTransferBuffer* joint_matrix_transfer_buffer = NULL;
@@ -106,7 +106,8 @@ SDL_GPUBuffer* lights_storage_buffer = NULL;
 SDL_GPUTransferBuffer* lights_transfer_buffer = NULL;
 
 SDL_GPUTexture* shadow_map_texture = NULL;
-SDL_GPUSampler* sampler_data_texture = NULL;
+SDL_GPUSampler* sampler_nearest_nomips = NULL;
+SDL_GPUSampler* sampler_linear_nomips = NULL;
 SDL_GPUGraphicsPipeline* pipeline_shadow_depth = NULL;
 SDL_GPUTextureFormat depth_sample_texture_format = SDL_GPU_TEXTUREFORMAT_INVALID;
 Uint32 SHADOW_MAP_SIZE = 1024;
