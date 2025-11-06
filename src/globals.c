@@ -72,10 +72,10 @@ SDL_GPUGraphicsPipeline* pipeline_prepass_unanimated = NULL;
 SDL_GPUGraphicsPipeline* pipeline_ssao = NULL;
 SDL_GPUGraphicsPipeline* pipeline_unanimated = NULL;
 SDL_GPUGraphicsPipeline* pipeline_bone_animated = NULL;
-SDL_GPUGraphicsPipeline* pipeline_rigid_animated = NULL;
-SDL_GPUGraphicsPipeline* pipeline_instanced = NULL;
+// SDL_GPUGraphicsPipeline* pipeline_rigid_animated = NULL;
+// SDL_GPUGraphicsPipeline* pipeline_instanced = NULL;
 SDL_GPUGraphicsPipeline* pipeline_text = NULL;
-SDL_GPUGraphicsPipeline* pipeline_fullscreen_quad = NULL;
+SDL_GPUGraphicsPipeline* pipeline_swapchain = NULL;
 SDL_GPUGraphicsPipeline* pipeline_sprite = NULL;
 SDL_GPUGraphicsPipeline* pipeline_fog = NULL;
 

@@ -1453,6 +1453,8 @@ bool Render()
     // Bloom Pass /////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
+    // TODO slightly jitter the offsets per level (e.g., add a tiny blue-noise or alternating bias)
+
     if (settings_render & SETTINGS_RENDER_ENABLE_BLOOM)
     {
         // Threshold Pass /////////////////////////////////////////////////////
@@ -1528,7 +1530,7 @@ bool Render()
             UBO_Bloom_Sample ubo_bloom_downsample = 
             {
                 .radius = (float)(i / 2 + 1), // TODO scale wrt resolution; if rendering at 360p, use 3 levels: [0.5, 0.5, 0.75]
-                .tap_bias = 0.5f,
+                .tap_bias = (i & 1) * 0.5f,
             };
             SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_bloom_downsample, sizeof(ubo_bloom_downsample));
 
@@ -1575,7 +1577,7 @@ bool Render()
             UBO_Bloom_Sample ubo_bloom_upsample = 
             {
                 .radius = (float)(i / 2 + 1), // TODO scale wrt resolution
-                .tap_bias = 0.5f
+                .tap_bias = (i & 1) * 0.5f
             };
             SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_bloom_upsample, sizeof(ubo_bloom_upsample));
 
@@ -1646,7 +1648,7 @@ bool Render()
         return true;
     }
 
-    SDL_BindGPUGraphicsPipeline(swapchain_render_pass, pipeline_fullscreen_quad);
+    SDL_BindGPUGraphicsPipeline(swapchain_render_pass, pipeline_swapchain);
 
     SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &settings_render, sizeof(settings_render));
 
@@ -1674,7 +1676,7 @@ bool Render()
         (SDL_GPUTextureSamplerBinding[])
         {
             fullscreen_texture_binding,
-            { .texture = bloom_level_textures[0],  .sampler = sampler_albedo },
+            { .texture = bloom_level_textures[0],  .sampler = sampler_linear_nomips },
         }, 
         2 // num_bindings
     );

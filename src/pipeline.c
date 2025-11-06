@@ -793,17 +793,17 @@ bool Pipeline_PBR_Animated_Init()
     return true;
 }
 
-bool Pipeline_RigidAnimated_Init()
-{
-    // TODO
-    return false;
-}
+// bool Pipeline_RigidAnimated_Init()
+// {
+//     // TODO
+//     return false;
+// }
 
-bool Pipeline_Instanced_Init()
-{
-    // TODO
-    return false;
-}
+// bool Pipeline_Instanced_Init()
+// {
+//     // TODO
+//     return false;
+// }
 
 bool Pipeline_Text_Init()
 {
@@ -976,13 +976,13 @@ bool Pipeline_Swapchain_Init()
         .fragment_shader = fragment_shader,
         .multisample_state = (SDL_GPUMultisampleState) { .sample_count = SDL_GPU_SAMPLECOUNT_1 }
     };
-    if (pipeline_fullscreen_quad)
+    if (pipeline_swapchain)
     {
-        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_fullscreen_quad);
-        pipeline_fullscreen_quad = NULL;
+        SDL_ReleaseGPUGraphicsPipeline(gpu_device, pipeline_swapchain);
+        pipeline_swapchain = NULL;
     }
-    pipeline_fullscreen_quad = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
-    if (pipeline_fullscreen_quad == NULL)
+    pipeline_swapchain = SDL_CreateGPUGraphicsPipeline(gpu_device, &pipeline_create_info);
+    if (pipeline_swapchain == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create pipeline: %s", SDL_GetError());
         return false;
