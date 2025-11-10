@@ -65,10 +65,20 @@ void Camera_Update()
     glm_vec3_add(camera.position, camera.forward, camera_target);
     glm_lookat(camera.position, camera_target, camera.up, camera.view_matrix);
 
+    float aspect_ratio = (float)window_width / (float)window_height;
+
+#define FIXED_HORIZONTAL_FOV
+#ifdef FIXED_HORIZONTAL_FOV
+    float fov_horizontal = glm_rad(camera.fov);
+    float fov_vertical = 2.0f * SDL_atanf(SDL_tanf(fov_horizontal * 0.5f) / aspect_ratio);
+#else
+    float fov_vertical = glm_rad(camera.fov);
+#endif
+
     glm_perspective
     (
-        glm_rad(camera.fov),
-        (float)window_width / (float)window_height,
+        fov_vertical,
+        aspect_ratio,
         camera.near_plane,
         camera.far_plane,
         camera.projection_matrix
