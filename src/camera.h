@@ -7,6 +7,8 @@
 #define CGLM_FORCE_LEFT_HANDED
 #include "../external/cglm/cglm.h"
 
+#define CAMERA_FIXED_HORIZONTAL_FOV
+
 Struct (Camera)
 {
     mat4 view_matrix;

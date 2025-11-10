@@ -67,8 +67,7 @@ void Camera_Update()
 
     float aspect_ratio = (float)window_width / (float)window_height;
 
-#define FIXED_HORIZONTAL_FOV
-#ifdef FIXED_HORIZONTAL_FOV
+#ifdef CAMERA_FIXED_HORIZONTAL_FOV
     float fov_horizontal = glm_rad(camera.fov);
     float fov_vertical = 2.0f * SDL_atanf(SDL_tanf(fov_horizontal * 0.5f) / aspect_ratio);
 #else
