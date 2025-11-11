@@ -6,7 +6,7 @@
 
 Enum (Uint8, InputState)
 {
-    InputState_DEFAULT,
+    InputState_DEBUG,
     InputState_COUNT,
 };
 

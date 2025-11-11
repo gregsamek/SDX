@@ -11,18 +11,18 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
         case SDL_EVENT_QUIT:
         {
             return SDL_APP_SUCCESS;
-        }
+        } break;
         case SDL_EVENT_WINDOW_RESIZED:
         case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
         {
             SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Window size changed event");
             renderer_needs_to_be_reinitialized = true;
             return SDL_APP_CONTINUE;
-        }
+        } break;
         default:
             switch(input_state)
             {
-                case InputState_DEFAULT:
+                case InputState_DEBUG:
                     if (!HandleEvent_InputState_DEFAULT(event))
                     {
                         return SDL_APP_FAILURE;
@@ -35,7 +35,7 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
     return SDL_APP_CONTINUE;
 }
 
-bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
+bool HandleEvent_InputState_DEBUG(SDL_Event* event)
 {
     switch (event->type)
     {
@@ -47,72 +47,51 @@ bool HandleEvent_InputState_DEFAULT(SDL_Event* event)
                 is_mouse_captured = true;
             }
         } break;
-        case SDL_EVENT_MOUSE_MOTION:
-        {
-            if (is_mouse_captured)
-            {
-                // TODO handle mouse inversion setting
-                float xoffset = (float)-event->motion.xrel * mouse_sensitivity;
-                float yoffset = (float)-event->motion.yrel * mouse_sensitivity;
-            }
-        } break;
+        // case SDL_EVENT_MOUSE_MOTION:
+        // {
+        //     if (is_mouse_captured)
+        //     {
+        //         // TODO handle mouse inversion setting
+        //         float xoffset = (float)-event->motion.xrel * mouse_sensitivity;
+        //         float yoffset = (float)-event->motion.yrel * mouse_sensitivity;
+        //     }
+        // } break;
         case SDL_EVENT_KEY_DOWN:
         {
-            if (event->key.scancode == SDL_SCANCODE_ESCAPE)
+            switch (event->key.scancode)
             {
-                if (is_mouse_captured) 
+                case SDL_SCANCODE_ESCAPE:
                 {
-                    SDL_SetWindowRelativeMouseMode(window, false);
-                    is_mouse_captured = false;
-                }
-            }
-            else if (event->key.scancode == SDL_SCANCODE_R)
-            {
-                SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Event: request to reload assets and reinitialize renderer");
-                renderer_needs_to_be_reinitialized = true;
-            }
-            else if (event->key.scancode == SDL_SCANCODE_TAB)
-            {
-                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
-            }
-            else if(event->key.scancode == SDL_SCANCODE_C)
-            {
-                Camera_Log();
-            }
-            else if (event->key.scancode == SDL_SCANCODE_0)
-            {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_SHOW_DEBUG_TEXTURE);
-            }
-            else if (event->key.scancode == SDL_SCANCODE_1)
-            {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE);
-            }
-            else if (event->key.scancode == SDL_SCANCODE_2)
-            {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_SSAO);
-            }
-            else if (event->key.scancode == SDL_SCANCODE_3)
-            {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_SHADOWS);
-            }
-            else if (event->key.scancode == SDL_SCANCODE_4)
-            {
-                // TODO the way the renderer is reinitialized currently overrides this flag, so this doesn't actually do anything
-                // Bit_Toggle(settings_render, SETTINGS_RENDER_USE_LINEAR_FILTERING);
-                // renderer_needs_to_be_reinitialized = true;
-                SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Linear Filtering must currently be overridden by changing the settings file and reloading the renderer");
-            }
-            else if (event->key.scancode == SDL_SCANCODE_5)
-            {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_FOG);
-            }
-            else if (event->key.scancode == SDL_SCANCODE_6)
-            {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_UPSCALE_SSAO);
-            }
-            else if (event->key.scancode == SDL_SCANCODE_7)
-            {
-                Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_BLOOM);
+                    if (is_mouse_captured) 
+                    {
+                        SDL_SetWindowRelativeMouseMode(window, false);
+                        is_mouse_captured = false;
+                    }
+                } break;
+                case SDL_SCANCODE_R:
+                {
+                    SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Event: request to reload assets and reinitialize renderer");
+                    renderer_needs_to_be_reinitialized = true;
+                } break;
+                case SDL_SCANCODE_TAB:
+                {
+                    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
+                } break;
+                case SDL_SCANCODE_C: Camera_Log(); break;
+                case SDL_SCANCODE_0: Bit_Toggle(settings_render, SETTINGS_RENDER_SHOW_DEBUG_TEXTURE); break;
+                case SDL_SCANCODE_1: Bit_Toggle(settings_render, SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE); break;
+                case SDL_SCANCODE_2: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_SSAO); break;
+                case SDL_SCANCODE_3: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_SHADOWS); break;
+                case SDL_SCANCODE_4:
+                {
+                    // TODO the way the renderer is reinitialized currently overrides this flag, so this doesn't actually do anything
+                    // Bit_Toggle(settings_render, SETTINGS_RENDER_USE_LINEAR_FILTERING);
+                    // renderer_needs_to_be_reinitialized = true;
+                    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Linear Filtering must currently be overridden by changing the settings file and reloading the renderer");
+                } break;
+                case SDL_SCANCODE_5: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_FOG); break;
+                case SDL_SCANCODE_6: Bit_Toggle(settings_render, SETTINGS_RENDER_UPSCALE_SSAO); break;
+                case SDL_SCANCODE_7: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_BLOOM); break;
             }
         } break;
     }

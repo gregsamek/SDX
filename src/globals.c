@@ -27,7 +27,7 @@ const char* base_path = NULL;
 
 bool* keyboard_state = NULL;
 bool is_mouse_captured = false;
-InputState input_state = InputState_DEFAULT;
+InputState input_state = InputState_DEBUG;
 
 Model Array models_unanimated = NULL;
 Model_BoneAnimated Array models_bone_animated = NULL;
