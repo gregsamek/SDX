@@ -11,6 +11,6 @@ Enum (Uint8, InputState)
 };
 
 
-bool HandleEvent_InputState_DEFAULT(SDL_Event* event);
+bool HandleEvent_InputState_DEBUG(SDL_Event* event);
 
 #endif // EVENTS_H
