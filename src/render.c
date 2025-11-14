@@ -1520,7 +1520,7 @@ bool Render()
         
         UBO_Bloom_Threshold ubo_bloom_threshold = 
         {
-            .threshold = 1.0f,
+            .threshold = 1.2f,
             .soft_knee = 0.5f,
             .use_maxRGB = 0,
             .exposure = 1.0f
@@ -1601,7 +1601,7 @@ bool Render()
                 0, // first slot
                 (SDL_GPUTextureSamplerBinding[])
                 {
-                    { .texture = bloom_textures_downsampled[i + 1], .sampler = sampler_linear_nomips },
+                    { .texture = bloom_textures_upsampled[i + 1], .sampler = sampler_linear_nomips },
                     { .texture = bloom_textures_downsampled[i],     .sampler = sampler_linear_nomips }
                 },
                 2 // num_bindings
