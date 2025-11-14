@@ -286,17 +286,17 @@ bool Render_InitRenderTargets()
         return false;
     }
 
-    if (bloom_level_textures[0])
+    if (bloom_textures_downsampled[0])
     {
         for (int i = 0; i < MAX_BLOOM_LEVELS; i++)
         {
-            SDL_ReleaseGPUTexture(gpu_device, bloom_level_textures[i]);
-            bloom_level_textures[i] = NULL;
+            SDL_ReleaseGPUTexture(gpu_device, bloom_textures_downsampled[i]);
+            bloom_textures_downsampled[i] = NULL;
         }
     }
     for (int i = 0; i < MAX_BLOOM_LEVELS; i++)
     {
-        bloom_level_textures[i] = SDL_CreateGPUTexture
+        bloom_textures_downsampled[i] = SDL_CreateGPUTexture
         (
             gpu_device,
             &(SDL_GPUTextureCreateInfo)
@@ -311,7 +311,39 @@ bool Render_InitRenderTargets()
                 .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE
             }
         );
-        if (bloom_level_textures[i] == NULL)
+        if (bloom_textures_downsampled[i] == NULL)
+        {
+            SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create bloom level texture %d: %s", i, SDL_GetError());
+            return false;
+        }
+    }
+
+    if (bloom_textures_upsampled[0])
+    {
+        for (int i = 0; i < MAX_BLOOM_LEVELS; i++)
+        {
+            SDL_ReleaseGPUTexture(gpu_device, bloom_textures_upsampled[i]);
+            bloom_textures_upsampled[i] = NULL;
+        }
+    }
+    for (int i = 0; i < MAX_BLOOM_LEVELS; i++)
+    {
+        bloom_textures_upsampled[i] = SDL_CreateGPUTexture
+        (
+            gpu_device,
+            &(SDL_GPUTextureCreateInfo)
+            {
+                .type = SDL_GPU_TEXTURETYPE_2D,
+                .width = virtual_screen_texture_width >> (i + 1),
+                .height = virtual_screen_texture_height >> (i + 1),
+                .layer_count_or_depth = 1,
+                .num_levels = 1,
+                .sample_count = SDL_GPU_SAMPLECOUNT_1,
+                .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+                .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE
+            }
+        );
+        if (bloom_textures_upsampled[i] == NULL)
         {
             SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create bloom level texture %d: %s", i, SDL_GetError());
             return false;
@@ -1464,7 +1496,7 @@ bool Render()
             command_buffer_draw,
             (SDL_GPUStorageTextureReadWriteBinding[])
             {{
-                .texture = bloom_level_textures[0],
+                .texture = bloom_textures_downsampled[0],
                 .cycle = true
             }},
             1,
@@ -1506,7 +1538,7 @@ bool Render()
                 command_buffer_draw,
                 (SDL_GPUStorageTextureReadWriteBinding[])
                 {{
-                    .texture = bloom_level_textures[i],
+                    .texture = bloom_textures_downsampled[i],
                     .cycle = true
                 }},
                 1,
@@ -1522,7 +1554,7 @@ bool Render()
                 0, // first slot
                 (SDL_GPUTextureSamplerBinding[])
                 {
-                    { .texture = bloom_level_textures[i - 1],  .sampler = sampler_linear_nomips },
+                    { .texture = bloom_textures_downsampled[i - 1],  .sampler = sampler_linear_nomips },
                 },
                 1 // num_bindings
             );
@@ -1553,7 +1585,7 @@ bool Render()
                 command_buffer_draw,
                 (SDL_GPUStorageTextureReadWriteBinding[])
                 {{
-                    .texture = bloom_level_textures[i],
+                    .texture = bloom_textures_upsampled[i],
                     .cycle = true
                 }},
                 1,
@@ -1569,9 +1601,10 @@ bool Render()
                 0, // first slot
                 (SDL_GPUTextureSamplerBinding[])
                 {
-                    { .texture = bloom_level_textures[i + 1],  .sampler = sampler_linear_nomips },
+                    { .texture = bloom_textures_downsampled[i + 1], .sampler = sampler_linear_nomips },
+                    { .texture = bloom_textures_downsampled[i],     .sampler = sampler_linear_nomips }
                 },
-                1 // num_bindings
+                2 // num_bindings
             );
 
             UBO_Bloom_Sample ubo_bloom_upsample = 
@@ -1665,7 +1698,7 @@ bool Render()
 
     if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
-        fullscreen_texture_binding.texture = bloom_level_textures[0];
+        fullscreen_texture_binding.texture = bloom_textures_upsampled[0];
         fullscreen_texture_binding.sampler = sampler_nearest_nomips;
     }
 
@@ -1676,7 +1709,7 @@ bool Render()
         (SDL_GPUTextureSamplerBinding[])
         {
             fullscreen_texture_binding,
-            { .texture = bloom_level_textures[0],  .sampler = sampler_linear_nomips },
+            { .texture = bloom_textures_upsampled[0],  .sampler = sampler_linear_nomips },
         }, 
         2 // num_bindings
     );

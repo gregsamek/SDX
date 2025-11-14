@@ -36,6 +36,12 @@ float3 linear_to_srgb(float3 c)
     return lerp(lo, hi, step(0.0031308.xxx, c));
 }
 
+// // cheap approximation
+// float3 linear_to_srgb(float3 c) 
+// {
+//     return pow(abs(color), float(1.0f/2.2f).xxx);
+// }
+
 float LinearizeDepth(float depth, float near, float far)
 {
     return (2.0 * near) / (far + near - depth * (far - near));

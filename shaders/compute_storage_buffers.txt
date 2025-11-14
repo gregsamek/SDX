@@ -1,0 +1,1 @@
+RWStructuredBuffer<Foo> FooBuffer : register(u0, space1);

@@ -106,7 +106,8 @@ extern SDL_GPUTexture* ssao_texture;
 extern SDL_GPUTexture* ssao_texture_upsampled;
 extern SDL_GPUTexture* fog_texture;
 #define MAX_BLOOM_LEVELS 5
-extern SDL_GPUTexture* bloom_level_textures[MAX_BLOOM_LEVELS];
+extern SDL_GPUTexture* bloom_textures_downsampled[MAX_BLOOM_LEVELS];
+extern SDL_GPUTexture* bloom_textures_upsampled[MAX_BLOOM_LEVELS];
 extern SDL_GPUTexture* depth_texture;
 extern SDL_GPUTextureFormat depth_texture_format;
 extern SDL_GPUTexture* msaa_texture;
