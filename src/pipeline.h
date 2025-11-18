@@ -19,6 +19,7 @@ bool Pipeline_ShadowDepth_Init();
 bool Pipeline_Fog_Init();
 bool Pipeline_PrepassDownsample_Init();
 bool Pipeline_SSAOUpsample_Init();
+bool Pipeline_GaussianBlur_Init();
 bool Pipeline_Bloom_Threshold_Init();
 bool Pipeline_Bloom_Downsample_Init();
 bool Pipeline_Bloom_Upsample_Init();

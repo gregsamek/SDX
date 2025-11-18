@@ -75,11 +75,17 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize SSAO upsample compute pipeline!");
         return false;
     }
+    if (!Pipeline_GaussianBlur_Init())
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize Gaussian blur compute pipeline!");
+        return false;
+    }
     if (!Pipeline_Bloom_Threshold_Init())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bloom threshold compute pipeline!");
         return false;
     }
+#if DUAL_KAWASE_BLOOM
     if (!Pipeline_Bloom_Downsample_Init())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bloom downsample compute pipeline!");
@@ -90,6 +96,7 @@ bool Pipeline_Init()
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize bloom upsample compute pipeline!");
         return false;
     }
+#endif
     return true;
 }
 
@@ -1301,6 +1308,25 @@ bool Pipeline_SSAOUpsample_Init()
     if (pipeline_ssao_upsample == NULL)
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize SSAO upsample compute pipeline!");
+        return false;
+    }
+    return true;
+}
+
+bool Pipeline_GaussianBlur_Init()
+{
+    if (pipeline_gaussian_blur)
+    {
+        SDL_ReleaseGPUComputePipeline(gpu_device, pipeline_gaussian_blur);
+        pipeline_gaussian_blur = NULL;
+    }
+    pipeline_gaussian_blur = Pipeline_Compute_Init
+    (
+        gpu_device,"gaussian_blur.comp"
+    );
+    if (pipeline_gaussian_blur == NULL)
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to initialize gaussian blur compute pipeline!");
         return false;
     }
     return true;

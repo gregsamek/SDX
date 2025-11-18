@@ -86,3 +86,65 @@ void main(uint3 GlobalInvocationID : SV_DispatchThreadID)
     // Write to the half-resolution bloom level 0
     bright_out[dst] = float4(outColor, 1.0);
 }
+
+// Texture2D<float4> color_in : register(t0, space0);
+// [[vk::image_format("rgba16f")]]
+// RWTexture2D<float4> bright_out : register(u0, space1);
+
+// cbuffer BloomParams : register(b0, space2)
+// {
+//     float threshold;
+//     float soft_knee;
+//     uint  use_maxRGB;
+//     float exposure; // if you have auto-exposure, see note below
+// }
+
+// float Brightness(float3 c, bool useMaxRGB)
+// {
+//     if (useMaxRGB) return max(c.r, max(c.g, c.b));
+//     return dot(c, float3(0.2126, 0.7152, 0.0722));
+// }
+
+// float3 BrightPass_SoftKnee_FromBrightness(float3 c, float x, float threshold, float softKnee)
+// {
+//     float K = max(threshold * softKnee, 1e-5);
+//     float s = saturate((x - threshold + K) / (2.0 * K));
+//     // optional smoother curve (slightly more stable than pure quadratic):
+//     // s = s*s*(3.0 - 2.0*s);
+//     float hard = max(x - threshold, 0.0);
+//     float soft = K * s * s;
+//     float w = hard + soft;
+//     return c * (w / max(x, 1e-4));
+// }
+
+// [numthreads(8, 8, 1)]
+// void main(uint3 GlobalInvocationID : SV_DispatchThreadID)
+// {
+//     uint2 dst = GlobalInvocationID.xy;
+//     uint outW, outH;
+//     bright_out.GetDimensions(outW, outH);
+//     if (dst.x >= outW || dst.y >= outH) return;
+
+//     // 2x2 box prefilter in full-res, then threshold once
+//     uint inW, inH;
+//     color_in.GetDimensions(inW, inH);
+
+//     uint2 base = dst * 2;
+//     int2 tl = int2(min(base.x + 0, inW - 1), min(base.y + 0, inH - 1));
+//     int2 tr = int2(min(base.x + 1, inW - 1), min(base.y + 0, inH - 1));
+//     int2 bl = int2(min(base.x + 0, inW - 1), min(base.y + 1, inH - 1));
+//     int2 br = int2(min(base.x + 1, inW - 1), min(base.y + 1, inH - 1));
+
+//     float3 c = (
+//         color_in.Load(int3(tl, 0)).rgb +
+//         color_in.Load(int3(tr, 0)).rgb +
+//         color_in.Load(int3(bl, 0)).rgb +
+//         color_in.Load(int3(br, 0)).rgb
+//     ) * (0.25 * exposure);
+
+//     bool useMax = (use_maxRGB != 0);
+//     float x = Brightness(c, useMax);
+//     float3 outColor = BrightPass_SoftKnee_FromBrightness(c, x, threshold, soft_knee);
+
+//     bright_out[dst] = float4(outColor, 1.0);
+// }

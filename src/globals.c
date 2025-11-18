@@ -84,6 +84,7 @@ SDL_GPUComputePipeline* pipeline_ssao_upsample = NULL;
 SDL_GPUComputePipeline* pipeline_bloom_threshold = NULL;
 SDL_GPUComputePipeline* pipeline_bloom_downsample = NULL;
 SDL_GPUComputePipeline* pipeline_bloom_upsample = NULL;
+SDL_GPUComputePipeline* pipeline_gaussian_blur = NULL;
 
 SDL_GPUTexture* prepass_texture_msaa = NULL;
 SDL_GPUTexture* prepass_texture = NULL;
@@ -91,8 +92,13 @@ SDL_GPUTexture* prepass_texture_half = NULL;
 SDL_GPUTexture* ssao_texture = NULL;
 SDL_GPUTexture* ssao_texture_upsampled = NULL;
 SDL_GPUTexture* fog_texture = NULL;
+
+#if DUAL_KAWASE_BLOOM
 SDL_GPUTexture* bloom_textures_downsampled[MAX_BLOOM_LEVELS] = { 0 };
 SDL_GPUTexture* bloom_textures_upsampled[MAX_BLOOM_LEVELS] = { 0 };
+#endif
+SDL_GPUTexture* bloom_textures[2] = { 0 };
+
 SDL_GPUTexture* depth_texture = NULL;
 SDL_GPUTextureFormat depth_texture_format = SDL_GPU_TEXTUREFORMAT_INVALID;
 SDL_GPUTexture* msaa_texture = NULL;

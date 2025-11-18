@@ -57,6 +57,13 @@ Struct (UBO_SSAOUpsample)
     float normal_power;  // additional sharpening via pow(dot, normalPower) (e.g. 8 .. 32). Set to 1 to disable.
 };
 
+Struct (UBO_Gaussian_Blur)
+{
+    Uint32 horizontal;
+    float stride;
+    float padding[2];
+};
+
 Struct (UBO_Bloom_Threshold)
 {
     float  threshold;    // e.g., 1.0–2.0 in HDR linear (after exposure)

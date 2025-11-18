@@ -1,8 +1,8 @@
-Texture2D<float4> src_level   : register(t0, space0);
-SamplerState      linearBorder: register(s0, space0); // border black
+Texture2D<float4> texture_in   : register(t0, space0);
+SamplerState      sampler_linear: register(s0, space0); // border black
 
 [[vk::image_format("rgba16f")]]
-RWTexture2D<float4> dst_level : register(u0, space1);
+RWTexture2D<float4> texture_out : register(u0, space1);
 
 cbuffer KawaseDownParams : register(b0, space2)
 {
@@ -17,11 +17,11 @@ void main(uint3 Gid : SV_DispatchThreadID)
     uint2 dst = Gid.xy;
 
     uint outW, outH;
-    dst_level.GetDimensions(outW, outH);
+    texture_out.GetDimensions(outW, outH);
     if (dst.x >= outW || dst.y >= outH) return;
 
     uint inW, inH;
-    src_level.GetDimensions(inW, inH);
+    texture_in.GetDimensions(inW, inH);
 
     // Map dst pixel center to source UV (exact for 2x downsample)
     float2 uv = (float2(dst) + 0.5) / float2(outW, outH);
@@ -32,13 +32,13 @@ void main(uint3 Gid : SV_DispatchThreadID)
     float3 c = 0.0.xxx;
 
     // center * 4
-    c += src_level.SampleLevel(linearBorder, uv, 0).rgb * 4.0;
+    c += texture_in.SampleLevel(sampler_linear, uv, 0).rgb * 4.0;
 
     // 4 diagonals * 1
-    c += src_level.SampleLevel(linearBorder, uv + float2( o.x,  o.y), 0).rgb;
-    c += src_level.SampleLevel(linearBorder, uv + float2(-o.x,  o.y), 0).rgb;
-    c += src_level.SampleLevel(linearBorder, uv + float2( o.x, -o.y), 0).rgb;
-    c += src_level.SampleLevel(linearBorder, uv + float2(-o.x, -o.y), 0).rgb;
+    c += texture_in.SampleLevel(sampler_linear, uv + float2( o.x,  o.y), 0).rgb;
+    c += texture_in.SampleLevel(sampler_linear, uv + float2(-o.x,  o.y), 0).rgb;
+    c += texture_in.SampleLevel(sampler_linear, uv + float2( o.x, -o.y), 0).rgb;
+    c += texture_in.SampleLevel(sampler_linear, uv + float2(-o.x, -o.y), 0).rgb;
 
-    dst_level[dst] = float4(c / 8.0, 1.0);
+    texture_out[dst] = float4(c / 8.0, 1.0);
 }

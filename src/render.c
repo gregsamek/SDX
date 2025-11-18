@@ -286,6 +286,7 @@ bool Render_InitRenderTargets()
         return false;
     }
 
+#if DUAL_KAWASE_BLOOM
     if (bloom_textures_downsampled[0])
     {
         for (int i = 0; i < MAX_BLOOM_LEVELS; i++)
@@ -344,6 +345,39 @@ bool Render_InitRenderTargets()
             }
         );
         if (bloom_textures_upsampled[i] == NULL)
+        {
+            SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create bloom level texture %d: %s", i, SDL_GetError());
+            return false;
+        }
+    }
+#endif
+
+    if (bloom_textures[0])
+    {
+        for (int i = 0; i < 2; i++)
+        {
+            SDL_ReleaseGPUTexture(gpu_device, bloom_textures[i]);
+            bloom_textures[i] = NULL;
+        }
+    }
+    for (int i = 0; i < 2; i++)
+    {
+        bloom_textures[i] = SDL_CreateGPUTexture
+        (
+            gpu_device,
+            &(SDL_GPUTextureCreateInfo)
+            {
+                .type = SDL_GPU_TEXTURETYPE_2D,
+                .width = virtual_screen_texture_width >> 1,
+                .height = virtual_screen_texture_height >> 1,
+                .layer_count_or_depth = 1,
+                .num_levels = 1,
+                .sample_count = SDL_GPU_SAMPLECOUNT_1,
+                .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
+                .usage = SDL_GPU_TEXTUREUSAGE_SAMPLER | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_READ | SDL_GPU_TEXTUREUSAGE_COMPUTE_STORAGE_WRITE
+            }
+        );
+        if (bloom_textures[i] == NULL)
         {
             SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create bloom level texture %d: %s", i, SDL_GetError());
             return false;
@@ -1486,7 +1520,7 @@ bool Render()
     ///////////////////////////////////////////////////////////////////////////
 
     // TODO slightly jitter the offsets per level (e.g., add a tiny blue-noise or alternating bias)
-
+    
     if (settings_render & SETTINGS_RENDER_ENABLE_BLOOM)
     {
         // Threshold Pass /////////////////////////////////////////////////////
@@ -1496,7 +1530,7 @@ bool Render()
             command_buffer_draw,
             (SDL_GPUStorageTextureReadWriteBinding[])
             {{
-                .texture = bloom_textures_downsampled[0],
+                .texture = bloom_textures[0],
                 .cycle = true
             }},
             1,
@@ -1529,6 +1563,51 @@ bool Render()
         SDL_DispatchGPUCompute(bloom_threshold_pass, virtual_screen_texture_width / 8, virtual_screen_texture_height / 8, 1);
         SDL_EndGPUComputePass(bloom_threshold_pass);
 
+        // Gaussian Blur Passes ///////////////////////////////////////////////
+
+        Uint32 horizontal = 1;
+
+        for (int i = 0; i < 10; i++)
+        {
+            SDL_GPUComputePass* bloom_blur_pass = SDL_BeginGPUComputePass
+            (
+                command_buffer_draw,
+                (SDL_GPUStorageTextureReadWriteBinding[])
+                {{
+                    .texture = bloom_textures[horizontal],
+                    .cycle = true
+                }},
+                1,
+                NULL,
+                0
+            );
+
+            SDL_BindGPUComputePipeline(bloom_blur_pass, pipeline_gaussian_blur);
+
+            SDL_BindGPUComputeSamplers
+            (
+                bloom_blur_pass,
+                0, // first slot
+                (SDL_GPUTextureSamplerBinding[])
+                {
+                    { .texture = bloom_textures[!horizontal],  .sampler = sampler_linear_nomips },
+                },
+                1 // num_bindings
+            );
+
+            UBO_Gaussian_Blur ubo_gaussian_blur = 
+            {
+                .horizontal = horizontal,
+                .stride = (float)i // TODO scale wrt resolution
+            };
+            SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_gaussian_blur, sizeof(ubo_gaussian_blur));
+            SDL_DispatchGPUCompute(bloom_blur_pass, virtual_screen_texture_width / 8, virtual_screen_texture_height / 8, 1);
+            SDL_EndGPUComputePass(bloom_blur_pass);
+
+            horizontal = !horizontal;
+        }
+
+#if DUAL_KAWASE_BLOOM
         // Downsample Passes //////////////////////////////////////////////////
 
         for (int i = 1; i < MAX_BLOOM_LEVELS; i++)
@@ -1561,7 +1640,7 @@ bool Render()
 
             UBO_Bloom_Sample ubo_bloom_downsample = 
             {
-                .radius = (float)(i / 2 + 1), // TODO scale wrt resolution; if rendering at 360p, use 3 levels: [0.5, 0.5, 0.75]
+                .radius = 0.5f * i + 0.5f, // TODO scale wrt resolution; if rendering at 360p, use 3 levels: [0.5, 0.5, 0.75]
                 .tap_bias = (i & 1) * 0.5f,
             };
             SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_bloom_downsample, sizeof(ubo_bloom_downsample));
@@ -1609,7 +1688,7 @@ bool Render()
 
             UBO_Bloom_Sample ubo_bloom_upsample = 
             {
-                .radius = (float)(i / 2 + 1), // TODO scale wrt resolution
+                .radius = 0.5f * i + 0.5f, // TODO scale wrt resolution
                 .tap_bias = (i & 1) * 0.5f
             };
             SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_bloom_upsample, sizeof(ubo_bloom_upsample));
@@ -1623,6 +1702,7 @@ bool Render()
             );
             SDL_EndGPUComputePass(bloom_upsample_pass);
         }
+#endif
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1698,7 +1778,7 @@ bool Render()
 
     if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
-        fullscreen_texture_binding.texture = bloom_textures_upsampled[0];
+        fullscreen_texture_binding.texture = bloom_textures[1];
         fullscreen_texture_binding.sampler = sampler_nearest_nomips;
     }
 
@@ -1709,7 +1789,7 @@ bool Render()
         (SDL_GPUTextureSamplerBinding[])
         {
             fullscreen_texture_binding,
-            { .texture = bloom_textures_upsampled[0],  .sampler = sampler_linear_nomips },
+            { .texture = bloom_textures[1],  .sampler = sampler_linear_nomips },
         }, 
         2 // num_bindings
     );
