@@ -27,6 +27,11 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event)
                     {
                         return SDL_APP_FAILURE;
                     } break;
+                case InputState_FIRSTPERSONCONTROLLER:
+                    if (!HandleEvent_InputState_FIRSTPERSONCONTROLLER(event))
+                    {
+                        return SDL_APP_FAILURE;
+                    } break;
                 default:
                     SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Unhandled input state %d", input_state);
                     break;
@@ -75,7 +80,9 @@ bool HandleEvent_InputState_DEBUG(SDL_Event* event)
                 } break;
                 case SDL_SCANCODE_TAB:
                 {
-                    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
+                    // SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
+                    input_state = InputState_FIRSTPERSONCONTROLLER;
+                    activeCamera = &player.camera;
                 } break;
                 case SDL_SCANCODE_C: Camera_Log(); break;
                 case SDL_SCANCODE_0: Bit_Toggle(settings_render, SETTINGS_RENDER_SHOW_DEBUG_TEXTURE);      break;
@@ -92,6 +99,78 @@ bool HandleEvent_InputState_DEBUG(SDL_Event* event)
                 case SDL_SCANCODE_5: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_FOG);   break;
                 case SDL_SCANCODE_6: Bit_Toggle(settings_render, SETTINGS_RENDER_UPSCALE_SSAO); break;
                 case SDL_SCANCODE_7: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_BLOOM); break;
+                default: break;
+            }
+        } break;
+        default: break;
+    }
+    return true;
+}
+
+
+bool HandleEvent_InputState_FIRSTPERSONCONTROLLER(SDL_Event* event)
+{
+    switch (event->type)
+    {
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
+        {
+            if (event->button.button == SDL_BUTTON_LEFT && !is_mouse_captured)
+            {
+                SDL_SetWindowRelativeMouseMode(window, true);
+                is_mouse_captured = true;
+            }
+        } break;
+        // case SDL_EVENT_MOUSE_MOTION:
+        // {
+        //     if (is_mouse_captured)
+        //     {
+        //         // TODO handle mouse inversion setting
+        //         float xoffset = (float)-event->motion.xrel * mouse_sensitivity;
+        //         float yoffset = (float)-event->motion.yrel * mouse_sensitivity;
+        //     }
+        // } break;
+        case SDL_EVENT_KEY_DOWN:
+        {
+            switch (event->key.scancode)
+            {
+                case SDL_SCANCODE_ESCAPE:
+                {
+                    if (is_mouse_captured) 
+                    {
+                        SDL_SetWindowRelativeMouseMode(window, false);
+                        is_mouse_captured = false;
+                    }
+                } break;
+                case SDL_SCANCODE_R:
+                {
+                    SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Event: request to reload assets and reinitialize renderer");
+                    renderer_needs_to_be_reinitialized = true;
+                } break;
+                case SDL_SCANCODE_TAB:
+                {
+                    // SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
+                    input_state = InputState_DEBUG;
+                    activeCamera = &camera_noClip;
+                } break;
+                case SDL_SCANCODE_C: Camera_Log(); break;
+                case SDL_SCANCODE_0: Bit_Toggle(settings_render, SETTINGS_RENDER_SHOW_DEBUG_TEXTURE);      break;
+                case SDL_SCANCODE_1: Bit_Toggle(settings_render, SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE); break;
+                case SDL_SCANCODE_2: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_SSAO);             break;
+                case SDL_SCANCODE_3: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_SHADOWS);          break;
+                case SDL_SCANCODE_4:
+                {
+                    // TODO the way the renderer is reinitialized currently overrides this flag, so this doesn't actually do anything
+                    // Bit_Toggle(settings_render, SETTINGS_RENDER_USE_LINEAR_FILTERING);
+                    // renderer_needs_to_be_reinitialized = true;
+                    SDL_LogWarn(SDL_LOG_CATEGORY_APPLICATION, "Linear Filtering must currently be overridden by changing the settings file and reloading the renderer");
+                } break;
+                case SDL_SCANCODE_5: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_FOG);   break;
+                case SDL_SCANCODE_6: Bit_Toggle(settings_render, SETTINGS_RENDER_UPSCALE_SSAO); break;
+                case SDL_SCANCODE_7: Bit_Toggle(settings_render, SETTINGS_RENDER_ENABLE_BLOOM); break;
+                case SDL_SCANCODE_SPACE:
+                {
+                    // Player_Print(&player);
+                } break;
                 default: break;
             }
         } break;

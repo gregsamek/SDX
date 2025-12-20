@@ -24,7 +24,7 @@ bool Lights_Update()
     vec3 light_direction_world = {1.0f, -1.0f, 1.0f};
     vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
     vec4 light_direction_viewspace_4;
-    glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
+    glm_mat4_mulv(activeCamera->view_matrix, light_direction_world_4, light_direction_viewspace_4);
     vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
     glm_vec3_normalize(light_direction_viewspace);
 
@@ -46,7 +46,7 @@ bool Lights_Update()
 
     vec4 world_up_4 = { 0.0f, 1.0f, 0.0f, 0.0f };
     vec4 view_up_4;
-    glm_mat4_mulv(camera.view_matrix, world_up_4, view_up_4);
+    glm_mat4_mulv(activeCamera->view_matrix, world_up_4, view_up_4);
     vec3 view_up = { view_up_4[0], view_up_4[1], view_up_4[2] };
     glm_vec3_normalize(view_up);
 
@@ -111,12 +111,12 @@ bool Lights_StorageBuffer_UpdateAndUpload()
 
             vec4 light_position_world_4 = { light.position[0], light.position[1], light.position[2], 1.0f };
             vec4 light_position_viewspace_4;
-            glm_mat4_mulv(camera.view_matrix, light_position_world_4, light_position_viewspace_4);
+            glm_mat4_mulv(activeCamera->view_matrix, light_position_world_4, light_position_viewspace_4);
             vec3 light_position_viewspace = { light_position_viewspace_4[0], light_position_viewspace_4[1], light_position_viewspace_4[2] };
             
             vec4 light_direction_world_4 = { light_direction_world[0], light_direction_world[1], light_direction_world[2], 0.0f };
             vec4 light_direction_viewspace_4;
-            glm_mat4_mulv(camera.view_matrix, light_direction_world_4, light_direction_viewspace_4);
+            glm_mat4_mulv(activeCamera->view_matrix, light_direction_world_4, light_direction_viewspace_4);
             vec3 light_direction_viewspace = { light_direction_viewspace_4[0], light_direction_viewspace_4[1], light_direction_viewspace_4[2] };
             glm_vec3_normalize(light_direction_viewspace);
             
@@ -155,7 +155,7 @@ void Lights_UpdateShadowMatrices_Directional(vec3 light_dir_world)
     // glm_vec3_normalize(light_dir_world);
 
     mat4 inverse_camera_view;
-    glm_mat4_inv(camera.view_matrix, inverse_camera_view);
+    glm_mat4_inv(activeCamera->view_matrix, inverse_camera_view);
 
     vec3 cam_pos = { inverse_camera_view[3][0], inverse_camera_view[3][1], inverse_camera_view[3][2] };
     vec3 cam_fwd = { -inverse_camera_view[2][0], -inverse_camera_view[2][1], -inverse_camera_view[2][2] };

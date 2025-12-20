@@ -598,10 +598,10 @@ static void Render_Unanimated_Prepass(SDL_GPURenderPass* render_pass, SDL_GPUCom
         glm_mat4_identity(model_matrix);
 
         mat4 mv_matrix;
-        glm_mat4_mul(camera.view_matrix, model_matrix, mv_matrix);
+        glm_mat4_mul(activeCamera->view_matrix, model_matrix, mv_matrix);
         
         mat4 mvp_matrix;
-        glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
+        glm_mat4_mul(activeCamera->view_projection_matrix, model_matrix, mvp_matrix);
 
         // TODO light mvp not needed for prepass; make a separate UBO without it?
         TransformsUBO transforms = {0};
@@ -690,10 +690,10 @@ static void Render_Unanimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuff
         glm_mat4_identity(model_matrix);
 
         mat4 mv_matrix;
-        glm_mat4_mul(camera.view_matrix, model_matrix, mv_matrix);
+        glm_mat4_mul(activeCamera->view_matrix, model_matrix, mv_matrix);
         
         mat4 mvp_matrix;
-        glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
+        glm_mat4_mul(activeCamera->view_projection_matrix, model_matrix, mvp_matrix);
 
         // TODO we already calculated this in shadow pass; cache it
         mat4 light_mvp_model;
@@ -796,10 +796,10 @@ static void Render_BoneAnimated(SDL_GPURenderPass* render_pass, SDL_GPUCommandBu
         glm_mat4_identity(model_matrix);
 
         mat4 mv_matrix;
-        glm_mat4_mul(camera.view_matrix, model_matrix, mv_matrix);
+        glm_mat4_mul(activeCamera->view_matrix, model_matrix, mv_matrix);
         
         mat4 mvp_matrix;
-        glm_mat4_mul(camera.view_projection_matrix, model_matrix, mvp_matrix);
+        glm_mat4_mul(activeCamera->view_projection_matrix, model_matrix, mvp_matrix);
         
         TransformsUBO transforms = {0};
         glm_mat4_copy(mvp_matrix, transforms.mvp);
@@ -885,7 +885,7 @@ static bool Render_Text(SDL_GPURenderPass* render_pass, SDL_GPUCommandBuffer* co
     SDL_BindGPUGraphicsPipeline(render_pass, pipeline_text);
     
     char test_text[256];
-    // snprintf(test_text, sizeof(test_text), "Camera Position: (%.2f, %.2f, %.2f)\nVertices: %d, Indices: %d", camera.position[0], camera.position[1], camera.position[2], text_renderable.vertex_count, text_renderable.index_count);
+    // snprintf(test_text, sizeof(test_text), "Camera Position: (%.2f, %.2f, %.2f)\nVertices: %d, Indices: %d", activeCamera->position[0], activeCamera->position[1], activeCamera->position[2], text_renderable.vertex_count, text_renderable.index_count);
     // snprintf(test_text, sizeof(test_text), "ABCDEFGHIJKLMNOPQRSTUVWXYZ\nabcdefghijklmnopqrstuvwxyz\n0123456789\n!@#$%%^&*()_+[]{}|;':\",.<>?/~`");
     snprintf(test_text, sizeof(test_text), "%.0f", average_frame_rate);
     
@@ -1272,7 +1272,7 @@ bool Render()
             .kernel_size = 16.0f,
         };
 
-        glm_mat4_copy(camera.projection_matrix, ubo_ssao.projection_matrix);
+        glm_mat4_copy(activeCamera->projection_matrix, ubo_ssao.projection_matrix);
 
         SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &ubo_ssao, sizeof(ubo_ssao));
 
@@ -1505,8 +1505,8 @@ bool Render()
             .fog_height = 0.0f,
             .height_falloff = 0.0f,
         };
-        glm_mat4_inv(camera.projection_matrix, ubo_fog_frag.inv_proj_mat);
-        glm_mat4_inv(camera.view_matrix, ubo_fog_frag.inv_view_mat);
+        glm_mat4_inv(activeCamera->projection_matrix, ubo_fog_frag.inv_proj_mat);
+        glm_mat4_inv(activeCamera->view_matrix, ubo_fog_frag.inv_view_mat);
 
         SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &ubo_fog_frag, sizeof(ubo_fog_frag));
 

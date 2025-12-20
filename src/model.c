@@ -1,6 +1,7 @@
 #include "model.h"
 #include "globals.h"
 #include "texture.h"
+#include "physics.h"
 
 // TODO: remove other libc references from cgltf and replace with SDL versions
 #define CGLTF_IMPLEMENTATION
@@ -125,6 +126,19 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Node %s has unknown model type", node->name);
         return false;
     }
+
+    if (model_type == MODEL_TYPE_COLLIDER)
+    {
+        if (!Model_Load_Collider(gltf_data, node))
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load collider model from node: %s", node->name);
+            return false;
+        }
+        else return true;
+    }
+
+    /**************** Animation / Rigging ****************/
+
     Animation_Rig animation_rig = {0};
     if (model_type == MODEL_TYPE_BONE_ANIMATED_MIXAMO)
     {
@@ -339,7 +353,7 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
         }
     }
 
-    /**************** Model Mesh ****************/
+    /**************** Mesh ****************/
 
     if (node->mesh->primitives_count != 1)
     {
@@ -910,6 +924,106 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
         Array_Append(models_unanimated, new_model);
     }
     SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Successfully loaded model: %s", node->name);
+
+    return true;
+}
+
+bool Model_Load_Collider(cgltf_data* gltf_data, cgltf_node* node)
+{
+    if (node->mesh->primitives_count != 1)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error: Expected mesh with one primitive. Found %zu primitives in node: %s.", node->mesh->primitives_count, node->name);
+        return false;
+    }
+
+    cgltf_primitive* primitive = node->mesh->primitives;
+    if (primitive->type != cgltf_primitive_type_triangles)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error: gltf primitive has type %d, expected type %d (triangles).", primitive->type, cgltf_primitive_type_triangles);
+        return false;
+    }
+
+    cgltf_accessor* position_accessor = NULL;
+
+    for (size_t i = 0; i < primitive->attributes_count; ++i)
+    {
+        cgltf_attribute* attr = &(primitive->attributes[i]);
+        if (attr->type == cgltf_attribute_type_position)
+        {
+            position_accessor = attr->data;
+        }
+    }
+
+    if (!position_accessor)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing attribute: POSITION.");
+        return false;
+    }
+
+    if (position_accessor->component_type != cgltf_component_type_r_32f) 
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ERROR: Expected POSITION to be Float32. Current gltf loader does not support automatic conversion.");
+        return false;
+    }
+
+    cgltf_accessor* index_accessor = primitive->indices;
+    if (index_accessor == NULL)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing indices.");
+        return false;
+    }
+    if (index_accessor->component_type != cgltf_component_type_r_16u)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Expected index component type to be Uint16, got %d", index_accessor->component_type);
+        return false;
+    }
+
+    int index_count = (int)index_accessor->count;
+
+    const uint8_t* pos_data_base = cgltf_buffer_view_data(position_accessor->buffer_view);
+    if (pos_data_base == NULL) 
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to get position data buffer view.");
+        return false;
+    }
+    pos_data_base += position_accessor->offset;
+
+    Uint16 indices[index_count];
+
+    size_t unpacked_indices_count = cgltf_accessor_unpack_indices(index_accessor, indices, sizeof(Uint16), index_count);
+    if (unpacked_indices_count != index_count)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error unpacking gltf primitive indices: unexpected index_count (unpacked %zu, expected %u).", unpacked_indices_count, index_count);
+        return false;
+    }
+
+    for (int i = 0; i < index_count; i +=3)
+    {
+        Uint16 index0 = indices[i];
+        Uint16 index1 = indices[i + 1];
+        Uint16 index2 = indices[i + 2];
+
+        Collider collider;
+        
+        const void* src_pos0 = pos_data_base + index0 * position_accessor->stride;
+        memcpy(&collider.tri.a, src_pos0, sizeof(float) * 3);
+        const void* src_pos1 = pos_data_base + index1 * position_accessor->stride;
+        memcpy(&collider.tri.b, src_pos1, sizeof(float) * 3);
+        const void* src_pos2 = pos_data_base + index2 * position_accessor->stride;
+        memcpy(&collider.tri.c, src_pos2, sizeof(float) * 3);
+
+        AABBFromTri(collider.tri, collider.aabb);
+        
+        vec3 ba;
+        glm_vec3_sub(collider.tri.b, collider.tri.a, ba);
+        vec3 ca;
+        glm_vec3_sub(collider.tri.c, collider.tri.a, ca);
+        vec3 n_raw;
+        glm_vec3_cross(ba, ca, n_raw);
+        glm_vec3_normalize_to(n_raw, collider.normal);
+        
+        Array_Append(colliders, collider);
+    }
 
     return true;
 }

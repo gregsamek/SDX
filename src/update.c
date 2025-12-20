@@ -9,15 +9,26 @@ bool Update()
     delta_time = (float)((double)(current_ticks - last_ticks) / performance_frequency);
     last_ticks = current_ticks;
     
-    if (delta_time > MAXIMUM_DELTA_TIME)
+    if (delta_time > MAXIMUM_DELTA_TIME) delta_time = MAXIMUM_DELTA_TIME;
+
+    Camera_UpdateDirection(activeCamera);
+
+    switch (input_state)
     {
-        delta_time = MAXIMUM_DELTA_TIME;
+        case InputState_DEBUG:
+            Camera_MoveNoClip(&camera_noClip);
+            break;
+        case InputState_FIRSTPERSONCONTROLLER:
+            Player_IntendedVelocity(&player);
+            MoveAndSlide(&player.capsule, colliders, delta_time);
+            glm_vec3_copy(player.capsule.position, player.camera.position);
+            player.camera.position[1] += player.eyeHeightOffset;
+            break;
+        default:
+            break;
     }
 
-    if (input_state == InputState_DEBUG)
-    {
-        Camera_Update();
-    }
+    Camera_UpdateMatrices(activeCamera);
 
     return true;
 }

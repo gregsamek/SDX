@@ -10,6 +10,8 @@
 #include "text.h"
 #include "sprite.h"
 #include "lights.h"
+#include "physics.h"
+#include "player.h"
 
 #include "array.h"
 
@@ -28,9 +30,6 @@ Enum (Uint32, Settings_Render)
 };
 
 extern Settings_Render settings_render;
-
-extern float mouse_sensitivity;
-extern float movement_speed;
 
 extern vec3 WORLD_UP_VECTOR;
 
@@ -53,6 +52,10 @@ extern bool* keyboard_state;
 extern bool is_mouse_captured;
 extern InputState input_state;
 
+extern Player player;
+
+extern Collider Array colliders;
+
 extern Model Array models_unanimated;
 extern Model_BoneAnimated Array models_bone_animated;
 
@@ -62,8 +65,11 @@ extern Light_Spot Array lights_spot;
 
 extern Sprite Array sprites;
 
+extern float mouse_sensitivity;
 extern float input_deadzone_squared;
-extern Camera camera;
+extern float camera_noclip_movementSpeed;
+extern Camera camera_noClip;
+extern Camera* activeCamera;
 
 extern TTF_Font *font;
 extern TTF_TextEngine *textEngine;

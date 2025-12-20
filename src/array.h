@@ -1,7 +1,7 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
-
+#include <SDL3/SDL.h>
 
 /**********************************************
 
@@ -157,11 +157,12 @@ inline bool _Array_DeleteSwap(void** array, size_t index)
     return true;
 }
 
-inline bool _Array_SDL_free(void** array)
+// Remember, this only frees the array of elements, not any data the elements may point to 
+inline bool _Array_Free(void** array)
 {
     if (!array || !*array) return false;
     _Array_Header* header = Array_Header(*array);
-    SDL_free(header);
+    SDL_free(header); // TODO abstract this out into a define so this header can be used without SDL
     *array = NULL;
     return true;
 }

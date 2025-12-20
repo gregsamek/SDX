@@ -101,6 +101,8 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
+    // Level / Savestate specific data ////////////////////////////////////////
+
     Array_Init(sprites, 1);
     if (!sprites)
     {
@@ -127,6 +129,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize models_bone_animated array");
         return SDL_APP_FAILURE;
     }
+    
+    Array_Init(colliders, 1);
+    if (!colliders)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize colliders array");
+        return SDL_APP_FAILURE;
+    }
 
     if (!Model_Load_AllScenes())
     {
@@ -143,6 +152,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
     if (!Lights_LoadLights())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to load lights");
+        return SDL_APP_FAILURE;
+    }
+
+    vec3 startPosition = {0.0f, 2.0f, 0.0f};
+    if (!Player_Init(&player, startPosition, 1.8f, 0.5f))
+    {
+        SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize player!");
         return SDL_APP_FAILURE;
     }
 

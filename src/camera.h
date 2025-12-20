@@ -7,7 +7,7 @@
 #define CGLM_FORCE_LEFT_HANDED
 #include "../external/cglm/cglm.h"
 
-#define CAMERA_FIXED_HORIZONTAL_FOV
+// #define CAMERA_FIXED_HORIZONTAL_FOV
 
 Struct (Camera)
 {
@@ -26,7 +26,9 @@ Struct (Camera)
     float _padding[3];
 };
 
-void Camera_Update();
+void Camera_UpdateDirection(Camera* camera);
+void Camera_MoveNoClip(Camera* camera);
+void Camera_UpdateMatrices(Camera* camera);
 void Camera_Log();
 
 #endif // CAMERA_H

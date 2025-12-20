@@ -7,9 +7,6 @@ Settings_Render settings_render =
     SETTINGS_RENDER_ENABLE_SHADOWS | SETTINGS_RENDER_USE_LINEAR_FILTERING | 
     SETTINGS_RENDER_UPSCALE_SSAO | SETTINGS_RENDER_ENABLE_BLOOM;
 
-float mouse_sensitivity = 0.1f;
-float movement_speed = 10.0f; // Units per second
-
 vec3 WORLD_UP_VECTOR = {0.0f, 1.0f, 0.0f};
 
 SDL_Window* window;
@@ -27,7 +24,11 @@ const char* base_path = NULL;
 
 bool* keyboard_state = NULL;
 bool is_mouse_captured = false;
-InputState input_state = InputState_DEBUG;
+InputState input_state = InputState_FIRSTPERSONCONTROLLER;
+
+Player player = {0};
+
+Collider Array colliders = NULL;
 
 Model Array models_unanimated = NULL;
 Model_BoneAnimated Array models_bone_animated = NULL;
@@ -38,8 +39,10 @@ Light_Spot Array lights_spot = NULL;
 
 Sprite Array sprites = NULL;
 
+float mouse_sensitivity = 0.1f;
 float input_deadzone_squared = 0.001f;
-Camera camera =
+float camera_noclip_movementSpeed = 10.0f; // Units per second
+Camera camera_noClip =
 {
     .position = {6.0f, 2.5f, 5.5f},
     .forward = {0},
@@ -47,11 +50,12 @@ Camera camera =
     .right = {0},
     .yaw = 222.0f,
     .pitch = -15.0f,
-    .fov = 120.0f,
+    .fov = 70.0f,
     .near_plane = 0.1f,
     .far_plane = 200.0f,
     .view_projection_matrix = {0}
 };
+Camera* activeCamera = NULL;
 
 TTF_Font *font = NULL;
 TTF_TextEngine *textEngine = NULL;
