@@ -8,8 +8,8 @@ void Camera_UpdateDirection(Camera* camera)
 {
     // Direction //////////////////////////////////////////////////////////////
 
-    camera->yaw += keyboard_state[SDL_SCANCODE_LEFT] * camera_angle_adjust_speed * delta_time;
-    camera->yaw -= keyboard_state[SDL_SCANCODE_RIGHT] * camera_angle_adjust_speed * delta_time;
+    camera->yaw -= keyboard_state[SDL_SCANCODE_LEFT] * camera_angle_adjust_speed * delta_time;
+    camera->yaw += keyboard_state[SDL_SCANCODE_RIGHT] * camera_angle_adjust_speed * delta_time;
     if (camera->yaw > 360.0f) camera->yaw -= 360.0f;
     if (camera->yaw < 0.0f)   camera->yaw += 360.0f;
     
@@ -32,8 +32,8 @@ void Camera_UpdateDirection(Camera* camera)
 
 void Camera_MoveNoClip(Camera* camera)
 {
-    float input_forward = (int)keyboard_state[SDL_SCANCODE_W]  - (int)keyboard_state[SDL_SCANCODE_S];
-    float input_right   = (int)keyboard_state[SDL_SCANCODE_A]  - (int)keyboard_state[SDL_SCANCODE_D];
+    float input_forward = (int)keyboard_state[SDL_SCANCODE_W] - (int)keyboard_state[SDL_SCANCODE_S];
+    float input_right   = (int)keyboard_state[SDL_SCANCODE_D] - (int)keyboard_state[SDL_SCANCODE_A];
     float input_up      = (int)keyboard_state[SDL_SCANCODE_E] - (int)keyboard_state[SDL_SCANCODE_Q];
     
     vec3 forward_no_z; glm_vec3_copy(camera->forward, forward_no_z); 

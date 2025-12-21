@@ -930,7 +930,7 @@ bool Pipeline_Swapchain_Init()
     SDL_GPUShader* vertex_shader = Shader_Load
     (
         gpu_device,
-        "fullscreen_quad.vert"
+        "fullscreen_quad_flipped.vert"
     );
     if (vertex_shader == NULL)
     {

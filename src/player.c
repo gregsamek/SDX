@@ -42,8 +42,8 @@ void Player_IntendedVelocity(Player* player)
 {
     glm_vec3_zero(player->capsule.velocity);
 
-    float input_forward = (int)keyboard_state[SDL_SCANCODE_W]  - (int)keyboard_state[SDL_SCANCODE_S];
-    float input_right   = (int)keyboard_state[SDL_SCANCODE_A]  - (int)keyboard_state[SDL_SCANCODE_D];
+    float input_forward = (int)keyboard_state[SDL_SCANCODE_W] - (int)keyboard_state[SDL_SCANCODE_S];
+    float input_right   = (int)keyboard_state[SDL_SCANCODE_D] - (int)keyboard_state[SDL_SCANCODE_A];
     
     vec3 forward_no_z; glm_vec3_copy(player->camera.forward, forward_no_z); 
     forward_no_z[1] = 0.0f; 
