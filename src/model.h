@@ -12,14 +12,15 @@
 
 Enum (Uint8, Model_Type)
 {
-    MODEL_TYPE_UNKNOWN = 0,
-	MODEL_TYPE_UNRENDERED, // mesh that may have use in Blender, but not the game
+    MODEL_TYPE_INVALID = 0,
+	MODEL_TYPE_DO_NOT_IMPORT, // node that may e.g. have use in Blender, but not the game
 	MODEL_TYPE_UNANIMATED,
 	MODEL_TYPE_BONE_ANIMATED_MIXAMO, // TODO how to handle some of these not being mutually exclusive?
 	MODEL_TYPE_BONE_ANIMATED,
 	MODEL_TYPE_RIGID_ANIMATED,
 	MODEL_TYPE_INSTANCED,
 	MODEL_TYPE_COLLIDER,
+	MODEL_TYPE_TRIGGER,
 };
 
 Struct (TransformsUBO)
@@ -190,5 +191,6 @@ void Model_Free(Model* model);
 void Model_BoneAnimated_Free(Model_BoneAnimated* model);
 bool Model_JointMat_UpdateAndUpload();
 bool Model_Load_Collider(cgltf_data* gltf_data, cgltf_node* node);
+bool Model_Load_Trigger(cgltf_data* gltf_data, cgltf_node* node);
 
 #endif // MODEL_H

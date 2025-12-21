@@ -137,6 +137,13 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv)
         return SDL_APP_FAILURE;
     }
 
+    Array_Init(triggers, 1);
+    if (!triggers)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to initialize triggers array");
+        return SDL_APP_FAILURE;
+    }
+
     if (!Model_Load_AllScenes())
     {
         SDL_LogCritical(SDL_LOG_CATEGORY_APPLICATION, "Failed to load models");

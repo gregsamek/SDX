@@ -391,3 +391,23 @@ void MoveAndSlide(Capsule* capsule, Collider Array colliders, float dt)
 
     // TODO down cast + snap if found to be necessary during playtesting (jitter)
 }
+
+void CheckTriggers(Capsule* capsule, Trigger Array triggers)
+{
+    for (int i = 0; i < Array_Len(triggers); ++i) 
+    {
+        if (glm_aabb_aabb(capsule->aabb, triggers[i].aabb)) 
+        {
+            if (triggers[i].callback_enter) 
+            {
+                triggers[i].callback_enter();
+            }
+        }
+    }
+}
+
+bool Trigger_DummyCallback(void)
+{
+    SDL_Log("Trigger_DummyCallback called.");
+    return true;
+}

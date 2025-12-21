@@ -23,6 +23,7 @@ bool Update()
             MoveAndSlide(&player.capsule, colliders, delta_time);
             glm_vec3_copy(player.capsule.position, player.camera.position);
             player.camera.position[1] += player.eyeHeightOffset;
+            CheckTriggers(&player.capsule, triggers);
             break;
         default:
             break;

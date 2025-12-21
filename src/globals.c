@@ -29,6 +29,7 @@ InputState input_state = InputState_FIRSTPERSONCONTROLLER;
 Player player = {0};
 
 Collider Array colliders = NULL;
+Trigger Array triggers = NULL;
 
 Model Array models_unanimated = NULL;
 Model_BoneAnimated Array models_bone_animated = NULL;

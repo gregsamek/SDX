@@ -55,6 +55,7 @@ extern InputState input_state;
 extern Player player;
 
 extern Collider Array colliders;
+extern Trigger Array triggers;
 
 extern Model Array models_unanimated;
 extern Model_BoneAnimated Array models_bone_animated;

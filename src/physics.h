@@ -33,6 +33,16 @@ Struct (Collider)
     vec3 normal; // precomputed face normal
 };
 
+typedef bool (*Trigger_Callback)(void);
+
+// TODO exit callback requires state, extra code in trigger loop.
+Struct (Trigger)
+{
+    vec3 aabb[2];
+    Trigger_Callback callback_enter;
+    // Trigger_Callback callback_exit;
+};
+
 Struct (Capsule) 
 {
     union
@@ -70,5 +80,8 @@ void ClosestPointsSegmentSegment
 Penetration CapsuleTrianglePenetration(Capsule* player, Tri* tri, vec3 normal);
 void Capsule_UpdatePosition(Capsule* capsule, vec3 newPosition);
 void MoveAndSlide(Capsule* capsule, Collider Array colliders, float dt);
+
+void CheckTriggers(Capsule* capsule, Trigger Array triggers);
+bool Trigger_DummyCallback(void);
 
 #endif // PHYSICS_H

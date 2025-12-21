@@ -121,20 +121,30 @@ bool Model_Load_Scene(const char* filename)
 bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
 {
     Model_Type model_type = (Model_Type)SDL_atoi(node->name);
-    if (model_type == MODEL_TYPE_UNKNOWN)
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Node %s has unknown model type", node->name);
-        return false;
-    }
 
-    if (model_type == MODEL_TYPE_COLLIDER)
+    switch (model_type)
     {
-        if (!Model_Load_Collider(gltf_data, node))
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load collider model from node: %s", node->name);
+        case MODEL_TYPE_INVALID:
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Node %s has unknown model type", node->name);
             return false;
-        }
-        else return true;
+        case MODEL_TYPE_DO_NOT_IMPORT:
+            return true;
+        case MODEL_TYPE_COLLIDER:
+            if (!Model_Load_Collider(gltf_data, node))
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load collider model from node: %s", node->name);
+                return false;
+            }
+            else return true;
+        case MODEL_TYPE_TRIGGER:
+            if (!Model_Load_Trigger(gltf_data, node))
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to load trigger model from node: %s", node->name);
+                return false;
+            }
+            else return true;
+            break;
+        default: break;
     }
 
     /**************** Animation / Rigging ****************/
@@ -924,6 +934,104 @@ bool Model_Load(cgltf_data* gltf_data, cgltf_node* node)
         Array_Append(models_unanimated, new_model);
     }
     SDL_LogTrace(SDL_LOG_CATEGORY_APPLICATION, "Successfully loaded model: %s", node->name);
+
+    return true;
+}
+
+bool Model_Load_Trigger(cgltf_data* gltf_data, cgltf_node* node)
+{
+    if (node->mesh->primitives_count != 1)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error: Expected mesh with one primitive. Found %zu primitives in node: %s.", node->mesh->primitives_count, node->name);
+        return false;
+    }
+
+    cgltf_primitive* primitive = node->mesh->primitives;
+    if (primitive->type != cgltf_primitive_type_triangles)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error: gltf primitive has type %d, expected type %d (triangles).", primitive->type, cgltf_primitive_type_triangles);
+        return false;
+    }
+
+    cgltf_accessor* position_accessor = NULL;
+
+    for (size_t i = 0; i < primitive->attributes_count; ++i)
+    {
+        cgltf_attribute* attr = &(primitive->attributes[i]);
+        if (attr->type == cgltf_attribute_type_position)
+        {
+            position_accessor = attr->data;
+        }
+    }
+
+    if (!position_accessor)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing attribute: POSITION.");
+        return false;
+    }
+
+    if (position_accessor->component_type != cgltf_component_type_r_32f) 
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "ERROR: Expected POSITION to be Float32. Current gltf loader does not support automatic conversion.");
+        return false;
+    }
+
+    cgltf_accessor* index_accessor = primitive->indices;
+    if (index_accessor == NULL)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Primitive is missing indices.");
+        return false;
+    }
+    if (index_accessor->component_type != cgltf_component_type_r_16u)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Expected index component type to be Uint16, got %d", index_accessor->component_type);
+        return false;
+    }
+
+    int index_count = (int)index_accessor->count;
+
+    const uint8_t* pos_data_base = cgltf_buffer_view_data(position_accessor->buffer_view);
+    if (pos_data_base == NULL) 
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to get position data buffer view.");
+        return false;
+    }
+    pos_data_base += position_accessor->offset;
+
+    Uint16 indices[index_count];
+
+    size_t unpacked_indices_count = cgltf_accessor_unpack_indices(index_accessor, indices, sizeof(Uint16), index_count);
+    if (unpacked_indices_count != index_count)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Error unpacking gltf primitive indices: unexpected index_count (unpacked %zu, expected %u).", unpacked_indices_count, index_count);
+        return false;
+    }
+
+    Trigger trigger = 
+    {
+        .aabb = 
+        {
+            {FLT_MAX, FLT_MAX, FLT_MAX},
+            {-FLT_MAX, -FLT_MAX, -FLT_MAX}
+        },
+        .callback_enter = Trigger_DummyCallback, // TODO load real callbacks
+        // .callback_exit = NULL
+    };
+
+    for (int i = 0; i < index_count; i++)
+    {        
+        float* raw = (float*)(pos_data_base + indices[i] * position_accessor->stride);
+        vec3 triangle;
+        glm_vec3_copy(raw, triangle);
+        trigger.aabb[0][0] = glm_min(trigger.aabb[0][0], triangle[0]);
+        trigger.aabb[0][1] = glm_min(trigger.aabb[0][1], triangle[1]);
+        trigger.aabb[0][2] = glm_min(trigger.aabb[0][2], triangle[2]);
+        trigger.aabb[1][0] = glm_max(trigger.aabb[1][0], triangle[0]);
+        trigger.aabb[1][1] = glm_max(trigger.aabb[1][1], triangle[1]);
+        trigger.aabb[1][2] = glm_max(trigger.aabb[1][2], triangle[2]);
+    }
+    
+    Array_Append(triggers, trigger);
 
     return true;
 }
