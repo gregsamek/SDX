@@ -1,3 +1,8 @@
+cbuffer UBO : register(b0, space1)
+{
+    int flipX;
+}
+
 struct Vertex_Output 
 {
     float4 position : SV_Position;
@@ -26,7 +31,10 @@ Vertex_Output main(uint vid : SV_VertexID)
 
     Vertex_Output output;
     output.position = float4(pos[i], 0.0, 1.0); // clip space
-    output.texcoord = uv[i];
+    if (flipX == 1)
+        output.texcoord = float2(1.0 - uv[i].x, uv[i].y);
+    else
+        output.texcoord = uv[i];
     return output;
 }
 

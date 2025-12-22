@@ -1250,6 +1250,15 @@ bool Render()
 
         SDL_BindGPUGraphicsPipeline(ssao_render_pass, pipeline_ssao);
 
+        int flipX = 0;
+        SDL_PushGPUVertexUniformData
+        (
+            command_buffer_draw, 
+            0, // uniform buffer slot
+            &flipX, 
+            sizeof(float)
+        );
+
         SDL_BindGPUFragmentSamplers
         (
             ssao_render_pass,
@@ -1480,6 +1489,15 @@ bool Render()
         }
 
         SDL_BindGPUGraphicsPipeline(fog_render_pass, pipeline_fog);
+
+        int flipX = 0;
+        SDL_PushGPUVertexUniformData
+        (
+            command_buffer_draw, 
+            0, // uniform buffer slot
+            &flipX, 
+            sizeof(float)
+        );
 
         SDL_BindGPUFragmentSamplers
         (
@@ -1764,6 +1782,15 @@ bool Render()
     }
 
     SDL_BindGPUGraphicsPipeline(swapchain_render_pass, pipeline_swapchain);
+
+    int flipX = 1;
+    SDL_PushGPUVertexUniformData
+    (
+        command_buffer_draw, 
+        0, // uniform buffer slot
+        &flipX, 
+        sizeof(float)
+    );
 
     SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &settings_render, sizeof(settings_render));
 
