@@ -1565,9 +1565,11 @@ bool Render()
 
         // Gaussian Blur Passes ///////////////////////////////////////////////
 
-        Uint32 horizontal = 1;
+        Uint8 horizontal = 1; // doing something hacky here where I treat the texture index as a bool (there are only 2 bloom textures for ping-ponging)
+        Uint8 bloom_blurPasses = 10; // TODO make this configurable
+        float bloom_spreadFactor = 2.0f; // TODO make this configurable; needs to be scaled wrt resolution
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < bloom_blurPasses; i++)
         {
             SDL_GPUComputePass* bloom_blur_pass = SDL_BeginGPUComputePass
             (
@@ -1598,7 +1600,7 @@ bool Render()
             UBO_Gaussian_Blur ubo_gaussian_blur = 
             {
                 .horizontal = horizontal,
-                .stride = (float)i // TODO scale wrt resolution
+                .stride = (float)i * bloom_spreadFactor
             };
             SDL_PushGPUComputeUniformData(command_buffer_draw, 0, &ubo_gaussian_blur, sizeof(ubo_gaussian_blur));
             SDL_DispatchGPUCompute(bloom_blur_pass, virtual_screen_texture_width / 8, virtual_screen_texture_height / 8, 1);
