@@ -110,7 +110,6 @@ extern SDL_GPUComputePipeline* pipeline_bloom_downsample;
 extern SDL_GPUComputePipeline* pipeline_bloom_upsample;
 extern SDL_GPUComputePipeline* pipeline_gaussian_blur;
 
-extern SDL_GPUTexture* prepass_texture_msaa;
 extern SDL_GPUTexture* prepass_texture;
 extern SDL_GPUTexture* prepass_texture_half;
 extern SDL_GPUTexture* ssao_texture;

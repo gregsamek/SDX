@@ -136,31 +136,6 @@ bool Render_InitRenderTargets()
         return false;
     }
 
-    if (prepass_texture_msaa)
-    {
-        SDL_ReleaseGPUTexture(gpu_device, prepass_texture_msaa);
-    }
-    prepass_texture_msaa = SDL_CreateGPUTexture
-    (
-        gpu_device,
-        &(SDL_GPUTextureCreateInfo)
-        {
-            .type = SDL_GPU_TEXTURETYPE_2D,
-            .width = virtual_screen_texture_width,
-            .height = virtual_screen_texture_height,
-            .layer_count_or_depth = 1,
-            .num_levels = 1,
-            .sample_count = msaa_level,
-            .format = SDL_GPU_TEXTUREFORMAT_R16G16B16A16_FLOAT,
-            .usage = SDL_GPU_TEXTUREUSAGE_COLOR_TARGET
-        }
-    );
-    if (prepass_texture_msaa == NULL)
-    {
-        SDL_LogCritical(SDL_LOG_CATEGORY_GPU, "Failed to create prepass msaa texture: %s", SDL_GetError());
-        return false;
-    }
-
     if (prepass_texture)
     {
         SDL_ReleaseGPUTexture(gpu_device, prepass_texture);
@@ -1134,7 +1109,7 @@ bool Render()
 
     if (msaa_level > SDL_GPU_SAMPLECOUNT_1)
     {
-        prepass_target_info.texture = prepass_texture_msaa;
+        prepass_target_info.texture = msaa_texture;
         prepass_target_info.store_op = SDL_GPU_STOREOP_RESOLVE_AND_STORE;
         prepass_target_info.resolve_texture = prepass_texture;
         prepass_target_info.cycle_resolve_texture = true;
@@ -1407,7 +1382,7 @@ bool Render()
     SDL_BindGPUFragmentSamplers
     (
         virtual_render_pass, 
-        3, // first slot
+        3, // we start at 3 because 0-2 are set per draw call
         (SDL_GPUTextureSamplerBinding[])
         {
             { .texture = shadow_map_texture, .sampler = sampler_nearest_nomips },
@@ -1443,18 +1418,6 @@ bool Render()
     Render_Unanimated(virtual_render_pass, command_buffer_draw);
 
     Render_BoneAnimated(virtual_render_pass, command_buffer_draw);
-
-    Render_Sprite(virtual_render_pass, command_buffer_draw);
-
-    // TODO need to overhaul text rendering
-    if (text_renderable.vertex_buffer && text_renderable.index_buffer)
-    {
-        if (!Render_Text(virtual_render_pass, command_buffer_draw))
-        {
-            SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to render text");
-            return true;
-        }
-    }
 
     SDL_EndGPURenderPass(virtual_render_pass);
 
@@ -1724,6 +1687,22 @@ bool Render()
         }
 #endif
     }
+
+    ///////////////////////////////////////////////////////////////////////////
+    // UI Pass ////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////////////////////////////////////
+
+    // Render_Sprite(virtual_render_pass, command_buffer_draw);
+
+    // // TODO need to overhaul text rendering
+    // if (text_renderable.vertex_buffer && text_renderable.index_buffer)
+    // {
+    //     if (!Render_Text(virtual_render_pass, command_buffer_draw))
+    //     {
+    //         SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to render text");
+    //         return true;
+    //     }
+    // }
 
     ///////////////////////////////////////////////////////////////////////////
     // Swapchain Pass /////////////////////////////////////////////////////////
