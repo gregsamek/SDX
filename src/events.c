@@ -52,15 +52,14 @@ bool HandleEvent_InputState_DEBUG(SDL_Event* event)
                 is_mouse_captured = true;
             }
         } break;
-        // case SDL_EVENT_MOUSE_MOTION:
-        // {
-        //     if (is_mouse_captured)
-        //     {
-        //         // TODO handle mouse inversion setting
-        //         float xoffset = (float)-event->motion.xrel * mouse_sensitivity;
-        //         float yoffset = (float)-event->motion.yrel * mouse_sensitivity;
-        //     }
-        // } break;
+        case SDL_EVENT_MOUSE_MOTION:
+        {
+            if (is_mouse_captured)
+            {
+                mouse_xrel = (float)event->motion.xrel;
+                mouse_yrel = (float)event->motion.yrel;
+            }
+        } break;
         case SDL_EVENT_KEY_DOWN:
         {
             switch (event->key.scancode)
@@ -120,15 +119,14 @@ bool HandleEvent_InputState_FIRSTPERSONCONTROLLER(SDL_Event* event)
                 is_mouse_captured = true;
             }
         } break;
-        // case SDL_EVENT_MOUSE_MOTION:
-        // {
-        //     if (is_mouse_captured)
-        //     {
-        //         // TODO handle mouse inversion setting
-        //         float xoffset = (float)-event->motion.xrel * mouse_sensitivity;
-        //         float yoffset = (float)-event->motion.yrel * mouse_sensitivity;
-        //     }
-        // } break;
+        case SDL_EVENT_MOUSE_MOTION:
+        {
+            if (is_mouse_captured)
+            {
+                mouse_xrel = (float)event->motion.xrel;
+                mouse_yrel = (float)event->motion.yrel;
+            }
+        } break;
         case SDL_EVENT_KEY_DOWN:
         {
             switch (event->key.scancode)

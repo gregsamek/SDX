@@ -51,6 +51,15 @@ extern const char* base_path;
 extern bool* keyboard_state;
 extern bool is_mouse_captured;
 extern InputState input_state;
+extern float mouse_sensitivity;
+extern float input_deadzone_squared;
+extern float camera_noclip_movementSpeed;
+extern Camera camera_noClip;
+extern Camera* activeCamera;
+extern float mouse_xrel;
+extern float mouse_yrel;
+extern bool mouse_invertX;
+extern bool mouse_invertY;
 
 extern Player player;
 
@@ -65,12 +74,6 @@ extern Light_Hemisphere light_hemisphere;
 extern Light_Spot Array lights_spot;
 
 extern Sprite Array sprites;
-
-extern float mouse_sensitivity;
-extern float input_deadzone_squared;
-extern float camera_noclip_movementSpeed;
-extern Camera camera_noClip;
-extern Camera* activeCamera;
 
 extern TTF_Font *font;
 extern TTF_TextEngine *textEngine;

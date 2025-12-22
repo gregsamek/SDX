@@ -25,21 +25,6 @@ const char* base_path = NULL;
 bool* keyboard_state = NULL;
 bool is_mouse_captured = false;
 InputState input_state = InputState_FIRSTPERSONCONTROLLER;
-
-Player player = {0};
-
-Collider Array colliders = NULL;
-Trigger Array triggers = NULL;
-
-Model Array models_unanimated = NULL;
-Model_BoneAnimated Array models_bone_animated = NULL;
-
-Light_Directional light_directional = {0};
-Light_Hemisphere light_hemisphere = {0};
-Light_Spot Array lights_spot = NULL;
-
-Sprite Array sprites = NULL;
-
 float mouse_sensitivity = 0.1f;
 float input_deadzone_squared = 0.001f;
 float camera_noclip_movementSpeed = 10.0f; // Units per second
@@ -57,6 +42,24 @@ Camera camera_noClip =
     .view_projection_matrix = {0}
 };
 Camera* activeCamera = NULL;
+float mouse_xrel = 0.0f;
+float mouse_yrel = 0.0f;
+bool mouse_invertX = false;
+bool mouse_invertY = false;
+
+Player player = {0};
+
+Collider Array colliders = NULL;
+Trigger Array triggers = NULL;
+
+Model Array models_unanimated = NULL;
+Model_BoneAnimated Array models_bone_animated = NULL;
+
+Light_Directional light_directional = {0};
+Light_Hemisphere light_hemisphere = {0};
+Light_Spot Array lights_spot = NULL;
+
+Sprite Array sprites = NULL;
 
 TTF_Font *font = NULL;
 TTF_TextEngine *textEngine = NULL;

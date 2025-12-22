@@ -10,13 +10,17 @@ void Camera_UpdateDirection(Camera* camera)
 
     camera->yaw -= keyboard_state[SDL_SCANCODE_LEFT] * camera_angle_adjust_speed * delta_time;
     camera->yaw += keyboard_state[SDL_SCANCODE_RIGHT] * camera_angle_adjust_speed * delta_time;
+    camera->yaw += mouse_xrel * mouse_sensitivity * (mouse_invertX ? -1.0f : 1.0f);
     if (camera->yaw > 360.0f) camera->yaw -= 360.0f;
     if (camera->yaw < 0.0f)   camera->yaw += 360.0f;
+    mouse_xrel = 0.0f;
     
     camera->pitch += keyboard_state[SDL_SCANCODE_UP] * camera_angle_adjust_speed * delta_time;
     camera->pitch -= keyboard_state[SDL_SCANCODE_DOWN] * camera_angle_adjust_speed * delta_time;
+    camera->pitch -= mouse_yrel * mouse_sensitivity * (mouse_invertY ? -1.0f : 1.0f);
     if (camera->pitch > 89.0f)  camera->pitch = 89.0f;
     if (camera->pitch < -89.0f) camera->pitch = -89.0f;
+    mouse_yrel = 0.0f;
 
     vec3 camera_forward_new;
     camera_forward_new[0] = SDL_cosf(glm_rad(camera->yaw)) * SDL_cosf(glm_rad(camera->pitch));
