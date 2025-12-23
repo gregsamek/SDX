@@ -1,5 +1,3 @@
-#define SETTINGS_RENDER_SHOW_DEBUG_TEXTURE 1
-#define SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE 2
 #define SETTINGS_RENDER_ENABLE_BLOOM (1 << 7)
 
 cbuffer Settings_Uniform : register(b0, space3)
@@ -49,35 +47,19 @@ float LinearizeDepth(float depth, float near, float far)
 
 float4 main(FragmentInput input): SV_Target0
 {
+    float exposure = 1.0; // Adjust as needed
+    float4 hdr = texture_hdr.Sample(sampler_hdr, input.TexCoord);
+    float alpha = hdr.a;
+    float3 color = hdr.rgb * exposure;
+    if (settings_render & SETTINGS_RENDER_ENABLE_BLOOM)
+    {
+        float3 bloom = texture_bloom.Sample(sampler_bloom, input.TexCoord).rgb;
+        color += bloom;
+    }
 
-    if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
-    {
-        // float3 color = texture_hdr.Sample(sampler_hdr, input.TexCoord).rgb;
-        // if (settings_render & SETTINGS_RENDER_LINEARIZE_DEBUG_TEXTURE)
-        //     color = LinearizeDepth(color.r, 0.1, 200.0); // near/far plane values
-        // return float4(color, 1.0);
-        float exposure = 1.0; // Adjust as needed
-        float3 hdr = texture_hdr.Sample(sampler_hdr, input.TexCoord).rgb;
-        float3 color = hdr * exposure;
-        // color = reinhardTonemap(color);
-        color = saturate(color);
-        color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR (not currently trying to support this)
-        return float4(color, 1.0);   
-    }
-    else
-    {
-        float exposure = 1.0; // Adjust as needed
-        float3 hdr = texture_hdr.Sample(sampler_hdr, input.TexCoord).rgb;
-        float3 color = hdr * exposure;
-        if (settings_render & SETTINGS_RENDER_ENABLE_BLOOM)
-        {
-            float3 bloom = texture_bloom.Sample(sampler_bloom, input.TexCoord).rgb;
-            color += bloom;
-        }
-        // color = reinhardTonemap(color);
-        color = saturate(color);
-        color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR (not currently trying to support this)
-        return float4(color, 1.0);    
-    }
+    // Tonemap here if desired
     
+    color = saturate(color);
+    color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR (not currently trying to support this)
+    return float4(color, alpha);    
 }

@@ -1231,7 +1231,7 @@ bool Render()
             command_buffer_draw, 
             0, // uniform buffer slot
             &flipX, 
-            sizeof(float)
+            sizeof(int)
         );
 
         SDL_BindGPUFragmentSamplers
@@ -1459,7 +1459,7 @@ bool Render()
             command_buffer_draw, 
             0, // uniform buffer slot
             &flipX, 
-            sizeof(float)
+            sizeof(int)
         );
 
         SDL_BindGPUFragmentSamplers
@@ -1692,17 +1692,66 @@ bool Render()
     // UI Pass ////////////////////////////////////////////////////////////////
     ///////////////////////////////////////////////////////////////////////////
 
-    // Render_Sprite(virtual_render_pass, command_buffer_draw);
+    SDL_GPUTexture *texture_ui = prepass_texture; // should be able to repurpose prepass texture
 
-    // // TODO need to overhaul text rendering
-    // if (text_renderable.vertex_buffer && text_renderable.index_buffer)
-    // {
-    //     if (!Render_Text(virtual_render_pass, command_buffer_draw))
-    //     {
-    //         SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to render text");
-    //         return true;
-    //     }
-    // }
+    SDL_GPUColorTargetInfo ui_target_info = 
+    {
+        .texture = texture_ui,
+        .clear_color = (SDL_FColor){ 0.0f, 0.0f, 0.0f, 0.0f },
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .store_op = SDL_GPU_STOREOP_STORE,
+        .cycle = true
+    };
+
+    if (msaa_level > SDL_GPU_SAMPLECOUNT_1)
+    {
+        ui_target_info.texture = msaa_texture;
+        ui_target_info.store_op = SDL_GPU_STOREOP_RESOLVE_AND_STORE;
+        ui_target_info.resolve_texture = texture_ui;
+        ui_target_info.cycle_resolve_texture = true;
+    }
+
+    // use depth buffer or just rely on draw order?
+    depth_stencil_target_info = (SDL_GPUDepthStencilTargetInfo)
+    {
+        .texture = depth_texture,
+        .clear_depth = 1.0f,
+        .load_op = SDL_GPU_LOADOP_CLEAR,
+        .store_op = SDL_GPU_STOREOP_DONT_CARE,
+        .cycle = true,
+
+        .stencil_load_op = SDL_GPU_LOADOP_DONT_CARE,
+        .stencil_store_op = SDL_GPU_STOREOP_DONT_CARE,
+    };
+
+    SDL_GPURenderPass* ui_render_pass = SDL_BeginGPURenderPass
+    (
+        command_buffer_draw,
+        &ui_target_info,
+        1,
+        &depth_stencil_target_info
+    );
+
+    if (!ui_render_pass)
+    {
+        SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to begin ui render pass: %s", SDL_GetError());
+        SDL_CancelGPUCommandBuffer(command_buffer_draw);
+        return true;
+    }
+
+    Render_Sprite(ui_render_pass, command_buffer_draw);
+
+    // TODO need to overhaul text rendering
+    if (text_renderable.vertex_buffer && text_renderable.index_buffer)
+    {
+        if (!Render_Text(ui_render_pass, command_buffer_draw))
+        {
+            SDL_LogWarn(SDL_LOG_CATEGORY_GPU, "Failed to render text");
+            return true;
+        }
+    }
+
+    SDL_EndGPURenderPass(ui_render_pass);
 
     ///////////////////////////////////////////////////////////////////////////
     // Swapchain Pass /////////////////////////////////////////////////////////
@@ -1768,7 +1817,7 @@ bool Render()
         command_buffer_draw, 
         0, // uniform buffer slot
         &flipX, 
-        sizeof(float)
+        sizeof(int)
     );
 
     SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &settings_render, sizeof(settings_render));
@@ -1786,7 +1835,7 @@ bool Render()
 
     if (settings_render & SETTINGS_RENDER_SHOW_DEBUG_TEXTURE)
     {
-        fullscreen_texture_binding.texture = bloom_textures[1];
+        fullscreen_texture_binding.texture = texture_ui;
         fullscreen_texture_binding.sampler = sampler_nearest_nomips;
     }
 
@@ -1800,6 +1849,34 @@ bool Render()
             { .texture = bloom_textures[1],  .sampler = sampler_linear_nomips },
         }, 
         2 // num_bindings
+    );
+
+    SDL_DrawGPUPrimitives(swapchain_render_pass, 6, 1, 0, 0);
+
+    // UI /////////////////////////////////////////////////////////////////////
+
+    flipX = 0;
+    SDL_PushGPUVertexUniformData
+    (
+        command_buffer_draw, 
+        0, // uniform buffer slot
+        &flipX, 
+        sizeof(int)
+    );
+
+    // disable post-processing effects for UI (e.g. bloom)
+    Uint32 settings_render_ui = 0;
+    SDL_PushGPUFragmentUniformData(command_buffer_draw, 0, &settings_render_ui, sizeof(settings_render_ui));
+
+    SDL_BindGPUFragmentSamplers
+    (
+        swapchain_render_pass, 
+        0, // fragment sampler slot
+        (SDL_GPUTextureSamplerBinding[])
+        {
+            { .texture = texture_ui,  .sampler = sampler_albedo },
+        }, 
+        1 // num_bindings
     );
 
     SDL_DrawGPUPrimitives(swapchain_render_pass, 6, 1, 0, 0);
