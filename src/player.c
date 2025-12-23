@@ -9,9 +9,9 @@ bool Player_Init(Player* player, vec3 startPosition, float height, float radius)
         return false;
     }
 
-    Capsule_UpdatePosition(&player->capsule, startPosition);
     player->capsule.height = height;
     player->capsule.radius = radius;
+    Capsule_UpdatePosition(&player->capsule, startPosition);
     glm_vec3_zero(player->capsule.velocity);
     player->capsule.grounded = false;
     glm_vec3_zero(player->capsule.groundNormal);
