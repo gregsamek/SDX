@@ -45,10 +45,16 @@ void Player_IntendedVelocity(Player* player)
     float input_forward = (int)keyboard_state[SDL_SCANCODE_W] - (int)keyboard_state[SDL_SCANCODE_S];
     float input_right   = (int)keyboard_state[SDL_SCANCODE_D] - (int)keyboard_state[SDL_SCANCODE_A];
     
-    vec3 forward_no_z; glm_vec3_copy(player->camera.forward, forward_no_z); 
-    forward_no_z[1] = 0.0f; 
-    glm_vec3_normalize(forward_no_z);
+    vec3 forward_no_z;
+    glm_vec3_copy(player->camera.forward, forward_no_z); 
+    forward_no_z[1] = 0.0f;
     
+    // Only normalize if the vector isn't zero length to avoid NaN
+    if (glm_vec3_norm2(forward_no_z) > 1e-6f) 
+        glm_vec3_normalize(forward_no_z);
+    else 
+        glm_vec3_zero(forward_no_z); // Fallback if looking straight up/down (though pitch clamp helps, this is safer)
+ 
     vec3 movement_direction = {0.0f, 0.0f, 0.0f};
     if (input_forward != 0.0f) 
     { 

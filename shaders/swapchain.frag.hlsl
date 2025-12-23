@@ -58,6 +58,8 @@ float4 main(FragmentInput input): SV_Target0
     }
 
     // Tonemap here if desired
+    // color = reinhardTonemap(color);
+    // color = tonemapACES(color);
     
     color = saturate(color);
     color = linear_to_srgb(color); // can skip if SDL_GPU_SWAPCHAINCOMPOSITION_SDR_LINEAR (not currently trying to support this)

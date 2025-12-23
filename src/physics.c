@@ -312,75 +312,84 @@ Penetration CapsuleTrianglePenetration(Capsule* capsule, Tri* tri, vec3 n)
 
 void MoveAndSlide(Capsule* capsule, Collider Array colliders, float dt) 
 {
-    const float skin = 0.001f;       // small separation to avoid jitter
+    const float MAX_TIME_STEP = 0.033f; // assumes 0.5 radius and 10m/s movement in both xz and y (~14 m/s diagonal)
+    const float skin = 0.001f;          // small separation to avoid jitter
     const int maxIters = 4;
 
     const float maxSlopeDeg = 50.0f;
     const float maxSlopeCos = SDL_cosf(maxSlopeDeg * (3.14159265f / 180.0f));
 
-    vec3 displacement = { capsule->velocity[0] * dt, capsule->velocity[1] * dt, capsule->velocity[2] * dt };
-
     bool grounded = false;
     vec3 groundNormal = {0,0,0};
 
-    for (int iter = 0; iter < maxIters; ++iter) 
+    float time_remaining = dt;
+
+    while (time_remaining > 0.0f)
     {
-        vec3 newPosition;
-        glm_vec3_add(capsule->position, displacement, newPosition);
-        Capsule_UpdatePosition(capsule, newPosition);
+        float step = (time_remaining > MAX_TIME_STEP) ? MAX_TIME_STEP : time_remaining;
 
-        int anyPush = 0;
+        vec3 displacement = { capsule->velocity[0] * step, capsule->velocity[1] * step, capsule->velocity[2] * step };
 
-        // TODO replace loop with broadphase query of triangles e.g. spatial grid
-        for (int i = 0; i < Array_Len(colliders); ++i) 
+        for (int iter = 0; iter < maxIters; ++iter) 
         {
-            if (!glm_aabb_aabb(capsule->aabb, colliders[i].aabb)) continue;
-            
-            Penetration penetration = CapsuleTrianglePenetration(capsule, &colliders[i].tri, colliders[i].normal);
-            
-            if (!penetration.hit) continue;
-
-            anyPush = 1;
-
-            // TODO this doesn't check how high the collider is relative to the capsule base
-            // if the top of the capsule collides with a ledge, would that count as ground?
-            if (penetration.normal[1] >= maxSlopeCos && glm_vec3_dot(capsule->velocity, penetration.normal) < 0.0f)
-            {
-                grounded = true;
-                glm_vec3_copy(penetration.normal, groundNormal); // TODO keep the steepest normal?
-            }
-
-            // push out (depenetrate)
-            float push = penetration.depth + skin;
-            vec3 pushVec;
-            glm_vec3_scale(penetration.normal, push, pushVec);
-            glm_vec3_add(capsule->position, pushVec, newPosition);
+            vec3 newPosition;
+            glm_vec3_add(capsule->position, displacement, newPosition);
             Capsule_UpdatePosition(capsule, newPosition);
 
-            // slide: remove motion/velocity into the contact
-            float velocity_normal = glm_vec3_dot(capsule->velocity, penetration.normal);
-            
-            if (velocity_normal < 0.0f)
+            int anyPush = 0;
+
+            // TODO replace loop with broadphase query of triangles e.g. spatial grid
+            for (int i = 0; i < Array_Len(colliders); ++i) 
             {
-                vec3 temp;
-                glm_vec3_scale(penetration.normal, velocity_normal, temp);
-                glm_vec3_sub(capsule->velocity, temp, capsule->velocity);
+                if (!glm_aabb_aabb(capsule->aabb, colliders[i].aabb)) continue;
+                
+                Penetration penetration = CapsuleTrianglePenetration(capsule, &colliders[i].tri, colliders[i].normal);
+                
+                if (!penetration.hit) continue;
+
+                anyPush = 1;
+
+                // TODO this doesn't check how high the collider is relative to the capsule base
+                // if the top of the capsule collides with a ledge, would that count as ground?
+                if (penetration.normal[1] >= maxSlopeCos && glm_vec3_dot(capsule->velocity, penetration.normal) < 0.0f)
+                {
+                    grounded = true;
+                    glm_vec3_copy(penetration.normal, groundNormal); // TODO keep the steepest normal?
+                }
+
+                // push out (depenetrate)
+                float push = penetration.depth + skin;
+                vec3 pushVec;
+                glm_vec3_scale(penetration.normal, push, pushVec);
+                glm_vec3_add(capsule->position, pushVec, newPosition);
+                Capsule_UpdatePosition(capsule, newPosition);
+
+                // slide: remove motion/velocity into the contact
+                float velocity_normal = glm_vec3_dot(capsule->velocity, penetration.normal);
+                
+                if (velocity_normal < 0.0f)
+                {
+                    vec3 temp;
+                    glm_vec3_scale(penetration.normal, velocity_normal, temp);
+                    glm_vec3_sub(capsule->velocity, temp, capsule->velocity);
+                }
+
+                float displacement_normal = glm_vec3_dot(displacement, penetration.normal);
+                
+                if (displacement_normal < 0.0f) 
+                {
+                    vec3 temp;
+                    glm_vec3_scale(penetration.normal, displacement_normal, temp);
+                    glm_vec3_sub(displacement, temp, displacement);
+                }
             }
 
-            float displacement_normal = glm_vec3_dot(displacement, penetration.normal);
-            
-            if (displacement_normal < 0.0f) 
-            {
-                vec3 temp;
-                glm_vec3_scale(penetration.normal, displacement_normal, temp);
-                glm_vec3_sub(displacement, temp, displacement);
-            }
+            if (!anyPush) break;
+
+            // optional: shrink remaining disp each iteration to avoid micro-oscillation
+            glm_vec3_scale(displacement, 0.5f, displacement);
         }
-
-        if (!anyPush) break;
-
-        // optional: shrink remaining disp each iteration to avoid micro-oscillation
-        glm_vec3_scale(displacement, 0.5f, displacement);
+        time_remaining -= step;
     }
 
     capsule->grounded = grounded;
