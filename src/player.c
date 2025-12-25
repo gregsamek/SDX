@@ -16,7 +16,7 @@ bool Player_Init(Player* player, vec3 startPosition, float height, float radius)
     player->capsule.grounded = false;
     glm_vec3_zero(player->capsule.groundNormal);
     
-    player->eyeHeightOffset = height * 0.9f; // eyes at 90% of capsule height
+    player->eyeHeightOffset = (height - radius) - (0.1f * height); // eyes at 90% of capsule height
     
     player->camera = (Camera)
     {
