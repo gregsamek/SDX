@@ -31,9 +31,9 @@ bool Player_Init(Player* player, vec3 startPosition, float height, float radius)
         .far_plane = 200.0f,
         .view_projection_matrix = {0}
     };
-    activeCamera = &player->camera;
+    camera_active = &player->camera;
     
-    player->movementSpeed = 10.0f; // meters per second
+    player->movementSpeed = 5.0f; // meters per second
 
     return true;
 }

@@ -81,7 +81,7 @@ bool HandleEvent_InputState_DEBUG(SDL_Event* event)
                 {
                     // SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
                     input_state = InputState_FIRSTPERSONCONTROLLER;
-                    activeCamera = &player.camera;
+                    camera_active = &player.camera;
                 } break;
                 case SDL_SCANCODE_C: Camera_Log(); break;
                 case SDL_SCANCODE_0: Bit_Toggle(settings_render, SETTINGS_RENDER_SHOW_DEBUG_TEXTURE);      break;
@@ -118,6 +118,10 @@ bool HandleEvent_InputState_FIRSTPERSONCONTROLLER(SDL_Event* event)
                 SDL_SetWindowRelativeMouseMode(window, true);
                 is_mouse_captured = true;
             }
+            if (event->button.button == SDL_BUTTON_LEFT)
+            {
+                mouse_clickedLeft = true;
+            }
         } break;
         case SDL_EVENT_MOUSE_MOTION:
         {
@@ -148,7 +152,7 @@ bool HandleEvent_InputState_FIRSTPERSONCONTROLLER(SDL_Event* event)
                 {
                     // SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_INFORMATION, "Tab Pressed", "Tab key was pressed!", window);
                     input_state = InputState_DEBUG;
-                    activeCamera = &camera_noClip;
+                    camera_active = &camera_noClip;
                 } break;
                 case SDL_SCANCODE_C: Camera_Log(); break;
                 case SDL_SCANCODE_0: Bit_Toggle(settings_render, SETTINGS_RENDER_SHOW_DEBUG_TEXTURE);      break;

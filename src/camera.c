@@ -114,11 +114,11 @@ void Camera_Log()
         "Camera FOV: %.2f\n"
         "Camera Near Plane: %.2f\n"
         "Camera Far Plane: %.2f\n",
-        camera_noClip.position[0], camera_noClip.position[1], camera_noClip.position[2],
-        camera_noClip.forward[0], camera_noClip.forward[1], camera_noClip.forward[2],
-        camera_noClip.up[0], camera_noClip.up[1], camera_noClip.up[2],
-        camera_noClip.right[0], camera_noClip.right[1], camera_noClip.right[2],
-        camera_noClip.yaw, camera_noClip.pitch,
-        camera_noClip.fov, camera_noClip.near_plane, camera_noClip.far_plane
+        camera_active->position[0], camera_active->position[1], camera_active->position[2],
+        camera_active->forward[0], camera_active->forward[1], camera_active->forward[2],
+        camera_active->up[0], camera_active->up[1], camera_active->up[2],
+        camera_active->right[0], camera_active->right[1], camera_active->right[2],
+        camera_active->yaw, camera_active->pitch,
+        camera_active->fov, camera_active->near_plane, camera_active->far_plane
     );
 }

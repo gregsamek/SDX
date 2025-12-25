@@ -11,7 +11,7 @@ bool Update()
     
     if (delta_time > MAXIMUM_DELTA_TIME) delta_time = MAXIMUM_DELTA_TIME;
 
-    Camera_UpdateDirection(activeCamera);
+    Camera_UpdateDirection(camera_active);
 
     switch (input_state)
     {
@@ -24,12 +24,15 @@ bool Update()
             glm_vec3_copy(player.capsule.position, player.camera.position);
             player.camera.position[1] += player.eyeHeightOffset;
             CheckTriggers(&player.capsule, triggers);
+            if (mouse_clickedLeft)
+                CheckRayCast(player.camera.position, player.camera.forward, 100.0f);
+            mouse_clickedLeft = false;
             break;
         default:
             break;
     }
 
-    Camera_UpdateMatrices(activeCamera);
+    Camera_UpdateMatrices(camera_active);
 
     return true;
 }

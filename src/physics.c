@@ -1,4 +1,5 @@
 #include "physics.h"
+#include "globals.h"
 
 
 #ifndef PHYS_INLINE
@@ -35,6 +36,60 @@ void AABBFromTri(Tri tri, vec3 aabb[2])
     aabb[1][0] = SDL_max(tri.a[0], SDL_max(tri.b[0], tri.c[0]));
     aabb[1][1] = SDL_max(tri.a[1], SDL_max(tri.b[1], tri.c[1]));
     aabb[1][2] = SDL_max(tri.a[2], SDL_max(tri.b[2], tri.c[2]));
+}
+
+#include <cglm/cglm.h>
+#include <float.h> // For FLT_MAX
+#include <math.h>  // For fminf, fmaxf, fabsf
+
+
+bool RayAABB(vec3 origin, vec3 direction, vec3 aabb[2], float* out_tMin) 
+{
+    // We initialize tMin to 0.0 so we only detect hits in front of the ray.
+    // If you want to detect hits starting from behind the ray, set this to -FLT_MAX.
+    float tMin = 0.0f; 
+    float tMax = FLT_MAX;
+
+    // Iterate over the 3 axes (x, y, z)
+    for (int i = 0; i < 3; i++) 
+    {
+        // Handle case where ray is parallel to the slab (direction is 0 on this axis)
+        if (fabsf(direction[i]) < GLM_FLT_EPSILON) 
+        {
+            // If the origin is not within the slab's bounds, it misses the box entirely
+            if (origin[i] < aabb[0][i] || origin[i] > aabb[1][i]) 
+                return false;
+        } 
+        else 
+        {
+            // Standard Slab Method
+            float invDir = 1.0f / direction[i];
+            float t1 = (aabb[0][i] - origin[i]) * invDir;
+            float t2 = (aabb[1][i] - origin[i]) * invDir;
+
+            // Ensure t1 is the near intersection and t2 is the far intersection
+            if (t1 > t2) 
+            {
+                float temp = t1;
+                t1 = t2;
+                t2 = temp;
+            }
+
+            // Narrow the intersection interval
+            tMin = fmaxf(tMin, t1);
+            tMax = fminf(tMax, t2);
+
+            // If the interval is invalid (start > end), the ray misses
+            if (tMin > tMax) 
+                return false;
+        }
+    }
+
+    // Collision detected
+    if (out_tMin)
+        *out_tMin = tMin;
+
+    return true;
 }
 
 void ClosestPointOnTriangle(vec3 p, vec3 a, vec3 b, vec3 c, vec3 out)
@@ -419,4 +474,55 @@ bool Trigger_DummyCallback(void)
 {
     SDL_Log("Trigger_DummyCallback called.");
     return true;
+}
+
+void CheckRayCast(vec3 rayOrigin, vec3 rayDirection, float rayTMax)
+{
+    Collider Array rayTargets = colliders; // TODO separate array of raycast targets
+    float bestT = rayTMax;
+    int bestIdx = -1;
+    for (int i = 0; i < Array_Len(rayTargets); i++)
+    {
+        // how much would initial RayAABB save here?
+        float t;
+        bool hit = glm_ray_triangle
+        (
+            rayOrigin, rayDirection,
+            rayTargets[i].tri.a,
+            rayTargets[i].tri.b,
+            rayTargets[i].tri.c,
+            &t
+        );
+        if (hit && t < bestT)
+        {
+            // check if ray is cast from front of triangle
+            float dot = glm_vec3_dot(rayDirection, rayTargets[i].normal);
+            if (dot >= 0.0f)
+                continue; // backface hit; ignore
+            bestT = t;
+            bestIdx = i;
+        }
+    }
+    // check occluders
+    for (int i = 0; i < Array_Len(colliders); i++)
+    {
+        float t;
+        bool hit = glm_ray_triangle
+        (
+            rayOrigin, rayDirection,
+            colliders[i].tri.a,
+            colliders[i].tri.b,
+            colliders[i].tri.c,
+            &t
+        );
+        if (hit && t < bestT)
+        {
+            // occluders occlude from both sides; no dot product check
+            return;
+        }
+    }
+    if (bestIdx != -1)
+    {
+        SDL_Log("Raycast hit collider index %d at t=%f", bestIdx, bestT);
+    }
 }

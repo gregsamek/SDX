@@ -38,7 +38,8 @@ Struct (Collider)
 
 typedef bool (*Trigger_Callback)(void);
 
-// TODO exit callback requires state, extra code in trigger loop.
+// TODO propper enter/exit callback requires state, extra code in trigger loop.
+// for now, callback is called each frame the trigger is overlapped.
 Struct (Trigger)
 {
     vec3 aabb[2];
@@ -69,7 +70,16 @@ Struct (Penetration)
     bool hit;
 };
 
+// Struct (SpatialGrid)
+// {
+//     Collider Array colliders;
+//     float cellSize;
+//     float invCellSize;
+// };
+// index = (x * dimY * dimZ) + (y * dimZ) + z
+
 void AABBFromTri(Tri tri, vec3 aabb[2]);
+bool RayAABB(vec3 origin, vec3 direction, vec3 aabb[2], float* out_tMin);
 
 void ClosestPointOnTriangle(vec3 p, vec3 a, vec3 b, vec3 c, vec3 out);
 
@@ -86,5 +96,7 @@ void MoveAndSlide(Capsule* capsule, Collider Array colliders, float dt);
 
 void CheckTriggers(Capsule* capsule, Trigger Array triggers);
 bool Trigger_DummyCallback(void);
+
+void CheckRayCast(vec3 rayOrigin, vec3 rayDirection, float rayTMax);
 
 #endif // PHYSICS_H

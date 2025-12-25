@@ -55,9 +55,10 @@ extern float mouse_sensitivity;
 extern float input_deadzone_squared;
 extern float camera_noclip_movementSpeed;
 extern Camera camera_noClip;
-extern Camera* activeCamera;
+extern Camera* camera_active;
 extern float mouse_xrel;
 extern float mouse_yrel;
+extern bool mouse_clickedLeft;
 extern bool mouse_invertX;
 extern bool mouse_invertY;
 

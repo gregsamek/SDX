@@ -41,9 +41,10 @@ Camera camera_noClip =
     .far_plane = 200.0f,
     .view_projection_matrix = {0}
 };
-Camera* activeCamera = NULL;
+Camera* camera_active = NULL;
 float mouse_xrel = 0.0f;
 float mouse_yrel = 0.0f;
+bool mouse_clickedLeft = false;
 bool mouse_invertX = false;
 bool mouse_invertY = false;
 
